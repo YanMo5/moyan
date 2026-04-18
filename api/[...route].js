@@ -407,23 +407,21 @@ function readBody(req) {
 }
 
 function getRoutePath(req) {
-    const route = req.query && (req.query.route || req.query.rest);
+    const route = req.query && req.query.route;
     if (Array.isArray(route)) {
         return '/' + route.map(part => String(part || '').trim()).filter(Boolean).join('/');
     }
     if (typeof route === 'string' && route.trim()) {
         return '/' + route.trim();
     }
-    
-    // Fallback: parse from URL path if available
-    if (req.url && typeof req.url === 'string') {
-        const url = req.url.split('?')[0];
-        const match = url.match(/^\/api\/(.+)$/);
-        if (match) {
-            return '/' + match[1];
+    // Fallback: try to parse from req.url if route is not set
+    if (req.url) {
+        const urlPath = String(req.url).split('?')[0];
+        const cleanPath = urlPath.replace(/^\/api\//i, '').replace(/^\/api$/i, '') || urlPath.replace(/^\//, '');
+        if (cleanPath && cleanPath !== '/' && cleanPath !== '/api') {
+            return cleanPath.startsWith('/') ? cleanPath : ('/' + cleanPath);
         }
     }
-    
     return '/';
 }
 

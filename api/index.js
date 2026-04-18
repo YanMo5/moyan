@@ -17,7 +17,11 @@ module.exports = function handler(req, res) {
     // Fallback: when platform routing sends /api/* to api/index.js,
     // convert path to the shape expected by api/[...route].js.
     const pathWithoutQuery = originalUrl.split('?')[0];
-    const cleanedPath = pathWithoutQuery.replace(/^\//, '');
+    // Remove leading /api prefix if present (Vercel may preserve it in req.url)
+    let cleanedPath = pathWithoutQuery.replace(/^\/api\//i, '').replace(/^\/api$/i, '');
+    if (!cleanedPath && pathWithoutQuery !== '/api') {
+        cleanedPath = pathWithoutQuery.replace(/^\//, '');
+    }
     const segments = cleanedPath.split('/').filter(Boolean);
 
     req.query = req.query || {};
