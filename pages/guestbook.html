@@ -66,43 +66,113 @@
                 </div>
             </div>
             <script>
+                const MESSAGE_CACHE_KEY = 'yanmo.site.messages.cache.v1';
+
+                function escapeHtml(value) {
+                    return String(value || '').replace(/[&<>'"]/g, function (char) {
+                        return {
+                            '&': '&amp;',
+                            '<': '&lt;',
+                            '>': '&gt;',
+                            "'": '&#39;',
+                            '"': '&quot;'
+                        }[char] || char;
+                    });
+                }
+
+                function readMessageCache() {
+                    try {
+                        const raw = localStorage.getItem(MESSAGE_CACHE_KEY);
+                        const parsed = JSON.parse(raw || '[]');
+                        return Array.isArray(parsed) ? parsed : [];
+                    } catch (error) {
+                        return [];
+                    }
+                }
+
+                function writeMessageCache(messages) {
+                    try {
+                        if (Array.isArray(messages) && messages.length > 0) {
+                            localStorage.setItem(MESSAGE_CACHE_KEY, JSON.stringify(messages.slice(0, 100)));
+                        }
+                    } catch (error) {
+                        // Ignore storage failures.
+                    }
+                }
+
+                function renderMessages(messages, fromCache) {
+                    const messageList = document.getElementById('message-list');
+                    messageList.innerHTML = '';
+
+                    if (!Array.isArray(messages) || messages.length === 0) {
+                        messageList.innerHTML = `
+                            <div class="message-item">
+                                <div class="message-content" style="text-align: center; padding: 2rem;">
+                                    <p>暂无留言</p>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    if (fromCache) {
+                        const cacheNotice = document.createElement('div');
+                        cacheNotice.className = 'message-item';
+                        cacheNotice.innerHTML = `
+                            <div class="message-content" style="text-align:center;padding:0.8rem 1rem;color:#9ad3ff;">
+                                当前节点暂无数据，已展示最近缓存留言。
+                            </div>
+                        `;
+                        messageList.appendChild(cacheNotice);
+                    }
+
+                    messages.forEach(message => {
+                        const messageItem = document.createElement('div');
+                        messageItem.className = 'guestbook-item';
+                        const safeName = escapeHtml(message.name || '匿名用户');
+                        const safeContent = escapeHtml(message.message || '');
+                        const dateText = escapeHtml(String(message.created_at || '').split(' ')[0] || '--');
+                        messageItem.innerHTML = `
+                            <div class="message-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">
+                                <span class="message-author" style="color:#0ff;font-family:'Orbitron',sans-serif;font-size:0.9rem;font-weight:700;">&#9658; ${safeName}</span>
+                                <span class="cyber-badge badge-cyan">${dateText}</span>
+                            </div>
+                            <div class="message-content">
+                                <p style="color:#c0c0c0;line-height:1.7;">${safeContent}</p>
+                            </div>
+                        `;
+                        messageList.appendChild(messageItem);
+                    });
+                }
+
                 // 加载留言数据
                 async function loadMessages() {
                     try {
                         const response = await fetch('/api/messages');
                         if (response.ok) {
                             const messages = await response.json();
-                            const messageList = document.getElementById('message-list');
-                            messageList.innerHTML = '';
-                            
-                            if (messages.length === 0) {
-                                messageList.innerHTML = `
-                                    <div class="message-item">
-                                        <div class="message-content" style="text-align: center; padding: 2rem;">
-                                            <p>暂无留言</p>
-                                        </div>
-                                    </div>
-                                `;
+                            if (Array.isArray(messages) && messages.length > 0) {
+                                writeMessageCache(messages);
+                                renderMessages(messages, false);
                                 return;
                             }
-                            
-                            messages.forEach(message => {
-                                const messageItem = document.createElement('div');
-                                messageItem.className = 'guestbook-item';
-                                messageItem.innerHTML = `
-                                    <div class="message-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">
-                                        <span class="message-author" style="color:#0ff;font-family:'Orbitron',sans-serif;font-size:0.9rem;font-weight:700;">&#9658; ${message.name}</span>
-                                        <span class="cyber-badge badge-cyan">${message.created_at.split(' ')[0]}</span>
-                                    </div>
-                                    <div class="message-content">
-                                        <p style="color:#c0c0c0;line-height:1.7;">${message.message}</p>
-                                    </div>
-                                `;
-                                messageList.appendChild(messageItem);
-                            });
+
+                            const cachedMessages = readMessageCache();
+                            if (cachedMessages.length > 0) {
+                                renderMessages(cachedMessages, true);
+                                return;
+                            }
+
+                            renderMessages([], false);
                         }
                     } catch (error) {
                         console.error('加载留言失败:', error);
+                        const cachedMessages = readMessageCache();
+                        if (cachedMessages.length > 0) {
+                            renderMessages(cachedMessages, true);
+                            return;
+                        }
+
                         const messageList = document.getElementById('message-list');
                         messageList.innerHTML = `
                             <div class="message-item">

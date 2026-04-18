@@ -130,7 +130,7 @@
                     const keywordInput = document.getElementById('links-keyword');
                     const keyword = String((keywordInput && keywordInput.value) || '').trim().toLowerCase();
 
-                    let visible = links.filter(link => link.status === 'approved');
+                    let visible = links.slice();
 
                     if (keyword) {
                         visible = visible.filter(link => {
@@ -169,17 +169,30 @@
                         const safeName = escapeHtml(link.site_name);
                         const safeSiteUrl = safeUrl(link.site_url);
                         const isApproved = link.status === 'approved';
+                        const statusText = isApproved ? '已通过' : (link.status === 'rejected' ? '已拒绝' : '审核中');
+                        const statusClass = isApproved ? 'badge-green' : (link.status === 'rejected' ? 'badge-cyan' : 'badge-magenta');
+                        const safeDesc = escapeHtml(link.site_description || '');
+                        const href = isApproved ? safeSiteUrl : '#';
 
                         const linkCard = document.createElement('a');
-                        linkCard.href = safeSiteUrl;
+                        linkCard.href = href;
                         linkCard.target = '_blank';
                         linkCard.rel = 'noopener noreferrer';
                         linkCard.className = isApproved ? 'link-card link-card-compact' : 'link-card link-card-compact link-card-pending';
 
+                        if (!isApproved) {
+                            linkCard.target = '';
+                            linkCard.rel = '';
+                        }
+
                         linkCard.innerHTML = `
                             <div class="link-main">
                                 ${avatarBlock(link)}
-                                <div class="link-name">${safeName}</div>
+                                <div>
+                                    <div class="link-name">${safeName}</div>
+                                    <div style="margin-top:0.35rem;"><span class="cyber-badge ${statusClass}">${statusText}</span></div>
+                                    ${safeDesc ? `<div style="margin-top:0.5rem;color:#b8b8b8;font-size:0.86rem;line-height:1.4;">${safeDesc}</div>` : ''}
+                                </div>
                             </div>
                         `;
 

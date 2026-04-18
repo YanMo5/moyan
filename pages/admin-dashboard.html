@@ -452,6 +452,16 @@
                 messageEl.style.color = isError ? '#ff6b6b' : '#00ff80';
             }
 
+            async function parseErrorMessage(response, fallbackText) {
+                try {
+                    const payload = await response.json();
+                    const message = payload && (payload.message || payload.error);
+                    return message ? `${fallbackText}: ${message}` : fallbackText;
+                } catch (error) {
+                    return fallbackText;
+                }
+            }
+
             function updateLinksCounters(links) {
                 const pending = links.filter(item => item.status === 'pending').length;
                 const approved = links.filter(item => item.status === 'approved').length;
@@ -743,7 +753,8 @@
                         await loadLinks();
                         await getStats();
                     } else {
-                        setLinksAuditMessage('审核失败，请稍后重试', true);
+                        const reason = await parseErrorMessage(response, '审核失败');
+                        setLinksAuditMessage(reason, true);
                     }
                 } catch (error) {
                     console.error('审核友链失败:', error);
@@ -769,7 +780,8 @@
                         await loadLinks();
                         await getStats();
                     } else {
-                        setLinksAuditMessage('拒绝失败，请稍后重试', true);
+                        const reason = await parseErrorMessage(response, '拒绝失败');
+                        setLinksAuditMessage(reason, true);
                     }
                 } catch (error) {
                     console.error('拒绝友链失败:', error);
@@ -795,7 +807,8 @@
                             await loadLinks();
                             await getStats();
                         } else {
-                            setLinksAuditMessage('删除失败，请稍后重试', true);
+                            const reason = await parseErrorMessage(response, '删除失败');
+                            setLinksAuditMessage(reason, true);
                         }
                     } catch (error) {
                         console.error('删除友链失败:', error);
@@ -868,6 +881,9 @@
                         hideAddArticleForm();
                         loadArticles();
                         getStats();
+                    } else {
+                        const reason = await parseErrorMessage(response, '添加文章失败');
+                        alert(reason);
                     }
                 } catch (error) {
                     console.error('添加文章失败:', error);
