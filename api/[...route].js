@@ -167,11 +167,11 @@ async function ensureDbSchema(pool) {
 }
 
 async function loadData() {
-    if (memoryData) {
+    const pool = getDbPool();
+    if (!pool && memoryData) {
         return memoryData;
     }
 
-    const pool = getDbPool();
     if (pool) {
         try {
             await ensureDbSchema(pool);
@@ -218,7 +218,7 @@ async function loadData() {
 
             memoryData = dbData;
             dataStorageMode = 'database';
-            return memoryData;
+            return dbData;
         } catch (error) {
             // Fall back to file storage when database initialization fails.
         }
