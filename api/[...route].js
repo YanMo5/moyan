@@ -467,7 +467,7 @@ module.exports = function handler(req, res) {
             mode: 'server-api',
             route: '/api',
             method,
-            message: 'Cloud API is active.'
+            message: 'Cloud API is active. [v' + new Date().getTime() + ']'
         });
     }
 
