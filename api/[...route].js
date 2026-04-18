@@ -2,6 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
+let Pool = null;
+
 const SESSION_COOKIE_NAME = 'yanmo_admin_session';
 const CSRF_HEADER_NAME = 'x-csrf-token';
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
@@ -19,6 +21,8 @@ let memoryData = null;
 let memoryCredentials = null;
 let dataStorageMode = 'memory';
 const loginFailures = new Map();
+let dbPool = null;
+let dbSchemaReady = false;
 
 function now() {
     return new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -74,9 +78,150 @@ function normalizeData(raw) {
     };
 }
 
-function loadData() {
+function getDbPool() {
+    const connectionString = toSafeText(process.env.DATABASE_URL);
+    if (!connectionString) {
+        return null;
+    }
+
+    if (!Pool) {
+        try {
+            ({ Pool } = require('pg'));
+        } catch (error) {
+            return null;
+        }
+    }
+
+    if (!dbPool) {
+        dbPool = new Pool({
+            connectionString,
+            ssl: { rejectUnauthorized: false }
+        });
+    }
+
+    return dbPool;
+}
+
+async function ensureDbSchema(pool) {
+    if (dbSchemaReady) {
+        return;
+    }
+
+    await pool.query(`
+        CREATE TABLE IF NOT EXISTS messages (
+            id BIGSERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS links (
+            id BIGSERIAL PRIMARY KEY,
+            site_name TEXT NOT NULL,
+            site_url TEXT NOT NULL,
+            site_description TEXT NOT NULL,
+            site_avatar TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'pending',
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS articles (
+            id BIGSERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            category TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS contact_messages (
+            id BIGSERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS audit_logs (
+            id BIGSERIAL PRIMARY KEY,
+            action TEXT NOT NULL,
+            status TEXT NOT NULL,
+            username TEXT NOT NULL,
+            client_ip TEXT NOT NULL,
+            detail TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        CREATE TABLE IF NOT EXISTS site_stats (
+            id INTEGER PRIMARY KEY DEFAULT 1,
+            total_views BIGINT NOT NULL DEFAULT 0
+        );
+
+        INSERT INTO site_stats (id, total_views)
+        VALUES (1, 0)
+        ON CONFLICT (id) DO NOTHING;
+    `);
+
+    dbSchemaReady = true;
+}
+
+async function loadData() {
     if (memoryData) {
         return memoryData;
+    }
+
+    const pool = getDbPool();
+    if (pool) {
+        try {
+            await ensureDbSchema(pool);
+
+            const [messagesResult, linksResult, articlesResult, contactMessagesResult, auditLogsResult, statsResult] = await Promise.all([
+                pool.query('SELECT id, name, email, message, created_at FROM messages ORDER BY created_at DESC, id DESC'),
+                pool.query('SELECT id, site_name, site_url, site_description, site_avatar, status, created_at FROM links ORDER BY created_at DESC, id DESC'),
+                pool.query('SELECT id, title, content, category, created_at FROM articles ORDER BY created_at DESC, id DESC'),
+                pool.query('SELECT id, name, email, subject, message, created_at FROM contact_messages ORDER BY created_at DESC, id DESC'),
+                pool.query('SELECT id, action, status, username, client_ip, detail, created_at FROM audit_logs ORDER BY created_at DESC, id DESC'),
+                pool.query('SELECT total_views FROM site_stats WHERE id = 1 LIMIT 1')
+            ]);
+
+            const dbData = normalizeData({
+                messages: messagesResult.rows,
+                links: linksResult.rows,
+                articles: articlesResult.rows,
+                contact_messages: contactMessagesResult.rows,
+                audit_logs: auditLogsResult.rows,
+                stats: {
+                    total_views: Number(statsResult.rows[0] && statsResult.rows[0].total_views) || 0
+                }
+            });
+
+            const hasDbRows = [
+                messagesResult.rows.length,
+                linksResult.rows.length,
+                articlesResult.rows.length,
+                contactMessagesResult.rows.length,
+                auditLogsResult.rows.length,
+                Number(statsResult.rows[0] && statsResult.rows[0].total_views) || 0
+            ].some(value => Number(value) > 0);
+
+            if (!hasDbRows && fs.existsSync(dataFile)) {
+                try {
+                    const parsed = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+                    const fileData = normalizeData(parsed);
+                    await saveData(fileData);
+                    return fileData;
+                } catch (error) {
+                    // Fall through to empty database-backed state.
+                }
+            }
+
+            memoryData = dbData;
+            dataStorageMode = 'database';
+            return memoryData;
+        } catch (error) {
+            // Fall back to file storage when database initialization fails.
+        }
     }
 
     try {
@@ -95,8 +240,65 @@ function loadData() {
     return memoryData;
 }
 
-function saveData(data) {
+async function saveData(data) {
     memoryData = normalizeData(data);
+
+    const pool = getDbPool();
+    if (pool) {
+        await ensureDbSchema(pool);
+
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+            await client.query('TRUNCATE TABLE messages, links, articles, contact_messages, audit_logs, site_stats RESTART IDENTITY');
+
+            for (const item of memoryData.messages) {
+                await client.query(
+                    'INSERT INTO messages (id, name, email, message, created_at) VALUES ($1, $2, $3, $4, $5)',
+                    [Number(item.id) || null, item.name, item.email, item.message, item.created_at]
+                );
+            }
+
+            for (const item of memoryData.links) {
+                await client.query(
+                    'INSERT INTO links (id, site_name, site_url, site_description, site_avatar, status, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                    [Number(item.id) || null, item.site_name, item.site_url, item.site_description, item.site_avatar || '', item.status || 'pending', item.created_at]
+                );
+            }
+
+            for (const item of memoryData.articles) {
+                await client.query(
+                    'INSERT INTO articles (id, title, content, category, created_at) VALUES ($1, $2, $3, $4, $5)',
+                    [Number(item.id) || null, item.title, item.content, item.category, item.created_at]
+                );
+            }
+
+            for (const item of memoryData.contact_messages) {
+                await client.query(
+                    'INSERT INTO contact_messages (id, name, email, subject, message, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
+                    [Number(item.id) || null, item.name, item.email, item.subject, item.message, item.created_at]
+                );
+            }
+
+            for (const item of memoryData.audit_logs) {
+                await client.query(
+                    'INSERT INTO audit_logs (id, action, status, username, client_ip, detail, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                    [Number(item.id) || null, item.action, item.status, item.username, item.client_ip, item.detail, item.created_at]
+                );
+            }
+
+            await client.query('INSERT INTO site_stats (id, total_views) VALUES (1, $1)', [Number(memoryData.stats.total_views) || 0]);
+            await client.query('COMMIT');
+            dataStorageMode = 'database';
+            return;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+    }
+
     try {
         fs.writeFileSync(dataFile, JSON.stringify(memoryData), 'utf8');
         dataStorageMode = 'file';
@@ -454,12 +656,12 @@ function toCsvLine(values) {
     }).join(',');
 }
 
-module.exports = function handler(req, res) {
+module.exports = async function handler(req, res) {
     const method = String(req.method || 'GET').toUpperCase();
     const routePath = getRoutePath(req);
     const body = readBody(req);
     const clientIp = String(req.headers['x-forwarded-for'] || req.socket && req.socket.remoteAddress || '').split(',')[0].trim() || 'unknown';
-    const data = loadData();
+    const data = await loadData();
 
     if (routePath === '/' || routePath === '') {
         return res.status(200).json({
@@ -518,7 +720,7 @@ module.exports = function handler(req, res) {
             created_at: now()
         };
         data.messages.unshift(item);
-        saveData(data);
+        await saveData(data);
         return res.status(201).json(item);
     }
 
@@ -558,7 +760,7 @@ module.exports = function handler(req, res) {
             created_at: now()
         };
         data.links.unshift(item);
-        saveData(data);
+        await saveData(data);
         return res.status(201).json(item);
     }
 
@@ -592,7 +794,7 @@ module.exports = function handler(req, res) {
         };
         data.articles.unshift(item);
         writeAuditLog(data, 'article_create', 'success', clientIp, session.u, `article_id=${item.id}`);
-        saveData(data);
+        await saveData(data);
         return res.status(201).json(item);
     }
 
@@ -632,7 +834,7 @@ module.exports = function handler(req, res) {
         if (!valid) {
             recordLoginFailure(clientIp);
             writeAuditLog(data, 'admin_login', 'failed', clientIp, username, 'invalid_credentials');
-            saveData(data);
+            await saveData(data);
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
@@ -641,7 +843,7 @@ module.exports = function handler(req, res) {
         const sessionInfo = createSessionToken(credentials.username);
         setSessionCookie(res, sessionInfo.token);
         writeAuditLog(data, 'admin_login', 'success', clientIp, credentials.username, 'login_success');
-        saveData(data);
+        await saveData(data);
 
         return res.status(200).json({
             success: true,
@@ -661,7 +863,7 @@ module.exports = function handler(req, res) {
         }
         clearSessionCookie(res);
         writeAuditLog(data, 'admin_logout', 'success', clientIp, session.u, 'logout_success');
-        saveData(data);
+        await saveData(data);
         return res.status(200).json({ success: true, message: 'Logged out' });
     }
 
@@ -688,7 +890,7 @@ module.exports = function handler(req, res) {
 
         if (!verifyPassword(currentPassword, credentials.password_salt, credentials.password_hash, credentials.password_iterations)) {
             writeAuditLog(data, 'credentials_change', 'failed', clientIp, session.u, 'current_password_invalid');
-            saveData(data);
+            await saveData(data);
             return res.status(401).json({ success: false, message: 'Current password is incorrect' });
         }
 
@@ -705,7 +907,7 @@ module.exports = function handler(req, res) {
 
         const saved = saveAdminCredentials(finalUsername, finalPassword);
         writeAuditLog(data, 'credentials_change', 'success', clientIp, session.u, `username=${saved.username}`);
-        saveData(data);
+        await saveData(data);
         return res.status(200).json({ success: true, message: 'Credentials updated successfully', username: saved.username });
     }
 
@@ -735,13 +937,13 @@ module.exports = function handler(req, res) {
         const confirmText = toSafeText(body.confirm_text);
         if (confirmText !== 'RESET_ADMIN') {
             writeAuditLog(data, 'credentials_reset', 'failed', clientIp, session.u, 'invalid_confirm_text');
-            saveData(data);
+            await saveData(data);
             return res.status(400).json({ success: false, message: 'Invalid confirmation text' });
         }
 
         saveAdminCredentials('admin', hashPassword('admin'));
         writeAuditLog(data, 'credentials_reset', 'success', clientIp, session.u, 'reset_to_default');
-        saveData(data);
+        await saveData(data);
         return res.status(200).json({ success: true, message: 'Credentials reset to default', username: 'admin' });
     }
 
@@ -763,7 +965,7 @@ module.exports = function handler(req, res) {
             message,
             created_at: now()
         });
-        saveData(data);
+        await saveData(data);
         return res.status(201).json({ success: true, message: '消息已发送' });
     }
 
@@ -885,14 +1087,14 @@ module.exports = function handler(req, res) {
             }
             data.links[index].status = status;
             writeAuditLog(data, 'link_status_update', 'success', clientIp, session.u, `link_id=${linkId},status=${status}`);
-            saveData(data);
+            await saveData(data);
             return res.status(200).json({ id: linkId, status });
         }
 
         if (method === 'DELETE') {
             data.links.splice(index, 1);
             writeAuditLog(data, 'link_delete', 'success', clientIp, session.u, `link_id=${linkId}`);
-            saveData(data);
+            await saveData(data);
             return res.status(200).json({ id: linkId, deleted: true });
         }
     }
@@ -915,7 +1117,7 @@ module.exports = function handler(req, res) {
 
         data.messages.splice(index, 1);
         writeAuditLog(data, 'message_delete', 'success', clientIp, session.u, `message_id=${messageId}`);
-        saveData(data);
+        await saveData(data);
         return res.status(200).json({ id: messageId, deleted: true });
     }
 
@@ -947,7 +1149,7 @@ module.exports = function handler(req, res) {
 
             data.articles.splice(index, 1);
             writeAuditLog(data, 'article_delete', 'success', clientIp, session.u, `article_id=${articleId}`);
-            saveData(data);
+            await saveData(data);
             return res.status(200).json({ id: articleId, deleted: true });
         }
     }
