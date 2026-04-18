@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>友情链接 - YanMo的个人博客</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/beautify.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+            </div>
+            <button class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="index.html"><span class="shimmer"></span>首页</a></li>
+                    <li><a href="articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="about.html"><span class="shimmer"></span>关于我</a></li>
+                    <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
+                    <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
+                    <li><a href="links.html" class="active"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="admin.html"><span class="shimmer"></span>管理</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <script src="/js/local-api.js"></script>
+    <script src="/js/ux-enhancements.js"></script>
+
+    <main>
+        <section class="links-page reveal">
+            <div class="terminal-label">TRUSTED_NODES // PEER_NETWORK // VETTED_SOURCES</div>
+            <h1 class="glitch-text" data-text="友情链接 / LINKS">友情链接 / LINKS</h1>
+            <p class="links-description">汇集各路安全大牛，交换赛博空间情报</p>
+            
+            <div class="links-actions">
+                <a href="link-apply.html" class="btn btn-primary">申请友链接入</a>
+            </div>
+
+            <div class="links-summary" id="links-summary">
+                <span class="summary-item">总数 <strong id="links-count-all">0</strong></span>
+                <span class="summary-item">已通过 <strong id="links-count-approved">0</strong></span>
+            </div>
+
+            <div class="links-list">
+                <div class="section-header">
+                    <h2>已认证 / CERTIFIED_NODES</h2>
+                    <div class="section-header-bar"></div>
+                </div>
+                <div class="links-grid" id="links-grid">
+                    <!-- 友链数据将通过JavaScript动态加载 -->
+                    <div class="link-card link-state-card">
+                        <div class="link-state-title">加载中...</div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                let allLinks = [];
+
+                function escapeHtml(value) {
+                    return String(value || '').replace(/[&<>'"]/g, function (char) {
+                        return {
+                            '&': '&amp;',
+                            '<': '&lt;',
+                            '>': '&gt;',
+                            "'": '&#39;',
+                            '"': '&quot;'
+                        }[char] || char;
+                    });
+                }
+
+                function safeUrl(url) {
+                    const value = String(url || '').trim();
+                    if (/^https?:\/\//i.test(value)) {
+                        return value;
+                    }
+                    return '#';
+                }
+
+                function avatarBlock(link) {
+                    const avatar = String(link.site_avatar || '').trim();
+                    const name = String(link.site_name || '站点').trim();
+                    const initial = escapeHtml((name[0] || '站').toUpperCase());
+
+                    const avatarUsable =
+                        avatar.startsWith('data:image/') ||
+                        /^https?:\/\//i.test(avatar) ||
+                        avatar.startsWith('/');
+
+                    if (avatar && avatarUsable) {
+                        return `<img class="link-avatar" src="${avatar}" alt="${escapeHtml(name)} 头像">`;
+                    }
+
+                    return `<div class="link-avatar fallback">${initial}</div>`;
+                }
+
+                function updateSummary(links) {
+                    const allCount = links.length;
+                    const approvedCount = links.filter(link => link.status === 'approved').length;
+
+                    document.getElementById('links-count-all').textContent = String(allCount);
+                    document.getElementById('links-count-approved').textContent = String(approvedCount);
+                }
+
+                function showLinksState(title, description) {
+                    const linksGrid = document.getElementById('links-grid');
+                    linksGrid.innerHTML = `
+                        <div class="link-card link-state-card">
+                            <div class="link-state-title">${escapeHtml(title)}</div>
+                            ${description ? `<p class="link-state-desc">${escapeHtml(description)}</p>` : ''}
+                        </div>
+                    `;
+                }
+
+                function getVisibleLinks(links) {
+                    const keywordInput = document.getElementById('links-keyword');
+                    const keyword = String((keywordInput && keywordInput.value) || '').trim().toLowerCase();
+
+                    let visible = links.filter(link => link.status === 'approved');
+
+                    if (keyword) {
+                        visible = visible.filter(link => {
+                            const haystack = [link.site_name, link.site_description, link.site_url]
+                                .join(' ')
+                                .toLowerCase();
+                            return haystack.includes(keyword);
+                        });
+                    }
+
+                    return visible.sort((a, b) => {
+                        if (a.status !== b.status) {
+                            return a.status === 'approved' ? -1 : 1;
+                        }
+                        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+                    });
+                }
+
+                function renderLinks() {
+                    const linksGrid = document.getElementById('links-grid');
+                    linksGrid.innerHTML = '';
+
+                    if (!allLinks.length) {
+                        showLinksState('暂无友情链接', '当前还没有可展示的友链，欢迎先提交申请。');
+                        return;
+                    }
+
+                    const visibleLinks = getVisibleLinks(allLinks);
+
+                    if (!visibleLinks.length) {
+                        showLinksState('无匹配结果', '请调整筛选条件后重试。');
+                        return;
+                    }
+
+                    visibleLinks.forEach(link => {
+                        const safeName = escapeHtml(link.site_name);
+                        const safeSiteUrl = safeUrl(link.site_url);
+                        const isApproved = link.status === 'approved';
+
+                        const linkCard = document.createElement('a');
+                        linkCard.href = safeSiteUrl;
+                        linkCard.target = '_blank';
+                        linkCard.rel = 'noopener noreferrer';
+                        linkCard.className = isApproved ? 'link-card link-card-compact' : 'link-card link-card-compact link-card-pending';
+
+                        linkCard.innerHTML = `
+                            <div class="link-main">
+                                ${avatarBlock(link)}
+                                <div class="link-name">${safeName}</div>
+                            </div>
+                        `;
+
+                        linksGrid.appendChild(linkCard);
+                    });
+                }
+
+                // 加载已通过的友链
+                async function loadApprovedLinks() {
+                    try {
+                        const response = await fetch('/api/links');
+                        if (response.ok) {
+                            allLinks = await response.json();
+                            updateSummary(allLinks);
+                            renderLinks();
+                        }
+                    } catch (error) {
+                        console.error('加载友链失败:', error);
+                        showLinksState('加载失败', '请检查服务状态后刷新页面重试。');
+                    }
+                }
+
+                const keywordInputEl = document.getElementById('links-keyword');
+                const approvedOnlyEl = document.getElementById('links-approved-only');
+                if (keywordInputEl) {
+                    keywordInputEl.addEventListener('input', renderLinks);
+                }
+                if (approvedOnlyEl) {
+                    approvedOnlyEl.addEventListener('change', renderLinks);
+                }
+                
+                // 初始加载友链
+                loadApprovedLinks();
+                
+                // 每30秒刷新一次
+                setInterval(loadApprovedLinks, 30000);
+            </script>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo的个人博客</h3>
+                <p>信息安全专家 | 渗透测试 | 人工智能</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="link-apply.html" class="footer-link">前往友链申请页面</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 主题切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.querySelector('.theme-toggle');
+            const body = document.body;
+            
+            // 检查本地存储中的主题偏好
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                themeToggle.textContent = '切换到赛博模式';
+            }
+            
+            // 主题切换点击事件
+            themeToggle.addEventListener('click', function() {
+                body.classList.toggle('light-mode');
+                
+                if (body.classList.contains('light-mode')) {
+                    themeToggle.textContent = '切换到赛博模式';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    themeToggle.textContent = '切换到白昼模式';
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

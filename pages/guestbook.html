@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>留言板 - YanMo的个人博客</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/beautify.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+            </div>
+            <button class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="index.html"><span class="shimmer"></span>首页</a></li>
+                    <li><a href="articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="about.html"><span class="shimmer"></span>关于我</a></li>
+                    <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
+                    <li><a href="guestbook.html" class="active"><span class="shimmer"></span>留言板</a></li>
+                    <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="admin.html"><span class="shimmer"></span>管理</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <script src="/js/local-api.js"></script>
+    <script src="/js/ux-enhancements.js"></script>
+
+    <main>
+        <section class="guestbook-page reveal">
+            <div class="terminal-label">VISITOR_LOG // OPEN_CHANNEL // APPEND_ONLY</div>
+            <h1 class="glitch-text" data-text="留言板 / GUESTBOOK">留言板 / GUESTBOOK</h1>
+            <p class="guestbook-description">留下你的访问脚印，或者分享你的安全见解</p>
+            
+            <div class="guestbook-actions">
+                <a href="message-apply.html" class="btn btn-primary">写留言</a>
+            </div>
+
+            <div class="guestbook-messages">
+                <div class="section-header">
+                    <h2>访客日志 / VISITOR_LOG</h2>
+                    <div class="section-header-bar"></div>
+                </div>
+                <div class="message-list" id="message-list">
+                    <!-- 留言数据将通过JavaScript动态加载 -->
+                    <div class="message-item">
+                        <div class="message-content" style="text-align: center; padding: 2rem;">
+                            <p>加载中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script>
+                // 加载留言数据
+                async function loadMessages() {
+                    try {
+                        const response = await fetch('/api/messages');
+                        if (response.ok) {
+                            const messages = await response.json();
+                            const messageList = document.getElementById('message-list');
+                            messageList.innerHTML = '';
+                            
+                            if (messages.length === 0) {
+                                messageList.innerHTML = `
+                                    <div class="message-item">
+                                        <div class="message-content" style="text-align: center; padding: 2rem;">
+                                            <p>暂无留言</p>
+                                        </div>
+                                    </div>
+                                `;
+                                return;
+                            }
+                            
+                            messages.forEach(message => {
+                                const messageItem = document.createElement('div');
+                                messageItem.className = 'guestbook-item';
+                                messageItem.innerHTML = `
+                                    <div class="message-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">
+                                        <span class="message-author" style="color:#0ff;font-family:'Orbitron',sans-serif;font-size:0.9rem;font-weight:700;">&#9658; ${message.name}</span>
+                                        <span class="cyber-badge badge-cyan">${message.created_at.split(' ')[0]}</span>
+                                    </div>
+                                    <div class="message-content">
+                                        <p style="color:#c0c0c0;line-height:1.7;">${message.message}</p>
+                                    </div>
+                                `;
+                                messageList.appendChild(messageItem);
+                            });
+                        }
+                    } catch (error) {
+                        console.error('加载留言失败:', error);
+                        const messageList = document.getElementById('message-list');
+                        messageList.innerHTML = `
+                            <div class="message-item">
+                                <div class="message-content" style="text-align: center; padding: 2rem;">
+                                    <p>加载失败</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+                
+                // 初始加载留言
+                loadMessages();
+                
+                // 每30秒刷新一次
+                setInterval(loadMessages, 30000);
+            </script>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo的个人博客</h3>
+                <p>信息安全专家 | 渗透测试 | 人工智能</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="link-apply.html" class="footer-link">前往友链申请页面</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 主题切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.querySelector('.theme-toggle');
+            const body = document.body;
+            
+            // 检查本地存储中的主题偏好
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                themeToggle.textContent = '切换到赛博模式';
+            }
+            
+            // 主题切换点击事件
+            themeToggle.addEventListener('click', function() {
+                body.classList.toggle('light-mode');
+                
+                if (body.classList.contains('light-mode')) {
+                    themeToggle.textContent = '切换到赛博模式';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    themeToggle.textContent = '切换到白昼模式';
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

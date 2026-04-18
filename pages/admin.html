@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员登录 - YanMo的个人博客</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/beautify.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+            </div>
+            <button class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="index.html"><span class="shimmer"></span>首页</a></li>
+                    <li><a href="articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="about.html"><span class="shimmer"></span>关于我</a></li>
+                    <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
+                    <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
+                    <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="admin.html" class="active"><span class="shimmer"></span>管理</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <script src="/js/local-api.js"></script>
+    <script src="/js/ux-enhancements.js"></script>
+    <script>
+        const REAL_ADMIN_SESSION_KEY = 'yanmo.site.admin.real-session.v1';
+        const ADMIN_CSRF_TOKEN_KEY = 'yanmo.site.admin.csrf.v1';
+
+        if (window.SiteLocalApi && window.SiteLocalApi.isAdminLoggedIn()) {
+            window.location.replace('admin-dashboard.html');
+        }
+    </script>
+
+    <main>
+        <section class="login-page reveal">
+            <div class="login-container">
+                <h1 class="glitch-text" data-text="安全登录 / ACCESS_GRANTED">安全登录 / ACCESS_GRANTED</h1>
+                <form id="login-form" class="login-form terminal-form">
+                    <div class="form-group">
+                        <label for="username">> ADMIN_CID:</label>
+                        <input type="text" id="username" name="username" placeholder="输入识别码..." required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">> ACCESS_KEY:</label>
+                        <input type="password" id="password" name="password" placeholder="输入访问密钥..." required>
+                    </div>
+                    <button type="submit" class="btn">登录</button>
+                    <div id="login-message" class="form-message"></div>
+                </form>
+                <script>
+                    document.getElementById('login-form').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        
+                        const username = document.getElementById('username').value;
+                        const password = document.getElementById('password').value;
+                        const loginMessage = document.getElementById('login-message');
+                        
+                        loginMessage.textContent = '登录中...';
+                        loginMessage.style.color = '#0ff';
+                        
+                        try {
+                            const response = await fetch('/api/login', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ username, password })
+                            });
+                            
+                            if (response.ok) {
+                                const result = await response.json();
+                                if (result.success) {
+                                    sessionStorage.setItem(REAL_ADMIN_SESSION_KEY, '1');
+                                    if (result.csrf_token) {
+                                        sessionStorage.setItem(ADMIN_CSRF_TOKEN_KEY, String(result.csrf_token));
+                                    }
+                                    loginMessage.textContent = '登录成功，正在跳转...';
+                                    loginMessage.style.color = '#00ff80';
+                                    setTimeout(() => {
+                                        window.location.href = 'admin-dashboard.html';
+                                    }, 1500);
+                                } else {
+                                    loginMessage.textContent = '登录失败: ' + result.message;
+                                    loginMessage.style.color = '#ff6b6b';
+                                }
+                            } else {
+                                const error = await response.json();
+                                loginMessage.textContent = '登录失败: ' + error.message;
+                                loginMessage.style.color = '#ff6b6b';
+                            }
+                        } catch (error) {
+                            loginMessage.textContent = '网络错误，请稍后再试';
+                            loginMessage.style.color = '#ff6b6b';
+                        }
+                    });
+                </script>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo的个人博客</h3>
+                <p>信息安全专家 | 渗透测试 | 人工智能</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>YanMo的个人博客 © 2026 All Copyrights Reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

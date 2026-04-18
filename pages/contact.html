@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>联系我 - YanMo的个人博客</title>
+    <meta name="description" content="欢迎联系YanMo交流课程学习、CTF训练与技术实践。可通过邮箱、QQ或GitHub进行沟通。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/beautify.css">
+</head>
+<body class="contact-view">
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+            </div>
+            <button class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="index.html"><span class="shimmer"></span>首页</a></li>
+                    <li><a href="articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="about.html"><span class="shimmer"></span>关于我</a></li>
+                    <li><a href="contact.html" class="active"><span class="shimmer"></span>联系</a></li>
+                    <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
+                    <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="admin.html"><span class="shimmer"></span>管理</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <script src="/js/local-api.js"></script>
+    <script src="/js/ux-enhancements.js"></script>
+
+    <main>
+        <section class="contact-page reveal">
+            <div class="terminal-label">CAMPUS_CONNECT // OPEN_FOR_LEARNING // FRIENDLY_CHANNEL</div>
+            <h1 class="glitch-text" data-text="联系我 / CONTACT">联系我 / CONTACT</h1>
+            <p class="contact-lead">如果你也在学习网络安全，欢迎来交流题目思路、课程项目和学习路线。技术互助和经验分享都很欢迎。</p>
+            <div class="contact-quick-tips">
+                <span>建议主题：CTF 交流</span>
+                <span>建议主题：课程项目讨论</span>
+                <span>建议主题：博客友链申请</span>
+            </div>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h2 class="glitch-text" data-text="联系方式 / CHANNELS">联系方式 / CHANNELS</h2>
+                    <div class="contact-block note-block">
+                        <h3>回复说明</h3>
+                        <ul>
+                            <li>学生日常时间以课程为主，通常会在 24-48 小时内回复。</li>
+                            <li>问题描述越具体（环境、报错、尝试过程），越容易快速定位。</li>
+                            <li>如需互换友链，请附上站点名称、简介和链接地址。</li>
+                        </ul>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">MAIL</div>
+                        <div class="contact-text">
+                            <h3>邮箱 / EMAIL</h3>
+                            <p>3351708803@qq.com</p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">GIT</div>
+                        <div class="contact-text">
+                            <h3>代码仓库 / GITHUB</h3>
+                            <p><a href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer">github.com/YanMo5</a></p>
+                        </div>
+                    </div>
+                    <div class="contact-item">
+                        <div class="contact-icon">IM</div>
+                        <div class="contact-text">
+                            <h3>即时沟通 / INSTANT MESSAGE</h3>
+                            <p>QQ：3351708803</p>
+                            <p>微信：15206561773</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-form">
+                    <h2 class="glitch-text" data-text="发消息给我 / SEND MESSAGE">发消息给我 / SEND MESSAGE</h2>
+                    <form id="contact-form" class="terminal-form">
+                        <div class="form-group">
+                            <label for="name">> YOUR_NAME:</label>
+                            <input type="text" id="name" name="name" placeholder="怎么称呼你？" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">> CONTACT_EMAIL:</label>
+                            <input type="email" id="email" name="email" placeholder="your_email@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">> TOPIC:</label>
+                            <input type="text" id="subject" name="subject" placeholder="比如：CTF Web 题目交流" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">> MESSAGE:</label>
+                            <textarea id="message" name="message" rows="6" placeholder="可以写下你的问题背景、已尝试的方法、希望交流的方向" required></textarea>
+                        </div>
+                        <div class="cyber-divider"></div>
+                        <button type="submit" class="btn btn-primary">发送消息</button>
+                        <div id="contact-message" class="form-message"></div>
+                        <div id="contact-receipt" class="contact-receipt" style="display: none;" role="status" aria-live="polite">
+                            <h3>提交回执</h3>
+                            <p><span>提交时间</span><strong id="receipt-time">-</strong></p>
+                            <p><span>主题</span><strong id="receipt-subject">-</strong></p>
+                            <p><span>联系邮箱</span><strong id="receipt-email">-</strong></p>
+                            <p><span>状态</span><strong id="receipt-status">已接收，等待回复</strong></p>
+                        </div>
+                    </form>
+                    <script>
+                        document.getElementById('contact-form').addEventListener('submit', async (e) => {
+                            e.preventDefault();
+
+                            const name = document.getElementById('name').value;
+                            const email = document.getElementById('email').value;
+                            const subject = document.getElementById('subject').value;
+                            const message = document.getElementById('message').value;
+                            const contactMessage = document.getElementById('contact-message');
+                            const receipt = document.getElementById('contact-receipt');
+                            const receiptTime = document.getElementById('receipt-time');
+                            const receiptSubject = document.getElementById('receipt-subject');
+                            const receiptEmail = document.getElementById('receipt-email');
+
+                            if (receipt) {
+                                receipt.style.display = 'none';
+                                receipt.classList.remove('is-visible');
+                            }
+
+                            contactMessage.textContent = '正在发送...';
+                            contactMessage.style.color = '#0ff';
+
+                            try {
+                                const response = await fetch('/api/contact', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({ name, email, subject, message })
+                                });
+
+                                const result = await response.json();
+                                if (response.ok) {
+                                    contactMessage.textContent = result.message || '消息发送成功！';
+                                    contactMessage.style.color = '#00ff80';
+
+                                    if (receipt && receiptTime && receiptSubject && receiptEmail) {
+                                        const nowText = new Date().toLocaleString('zh-CN', { hour12: false });
+                                        receiptTime.textContent = nowText;
+                                        receiptSubject.textContent = subject || '未填写';
+                                        receiptEmail.textContent = email;
+                                        receipt.style.display = 'block';
+                                        requestAnimationFrame(() => {
+                                            receipt.classList.add('is-visible');
+                                        });
+                                    }
+
+                                    document.getElementById('contact-form').reset();
+                                } else {
+                                    if (response.status === 404) {
+                                        contactMessage.textContent = '当前留言接口暂不可用，请先通过 QQ 或邮箱联系。';
+                                    } else {
+                                        contactMessage.textContent = '发送失败: ' + (result.error || '请稍后再试');
+                                    }
+                                    contactMessage.style.color = '#ff6b6b';
+                                }
+                            } catch (error) {
+                                contactMessage.textContent = '网络错误，请稍后再试';
+                                contactMessage.style.color = '#ff6b6b';
+                            }
+                        });
+                    </script>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo的个人博客</h3>
+                <p>大学生安全学习记录 | Web 安全 | CTF | AI 安全探索</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="link-apply.html" class="footer-link">前往友链申请页面</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 主题切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.querySelector('.theme-toggle');
+            const body = document.body;
+            
+            // 检查本地存储中的主题偏好
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                themeToggle.textContent = '切换到赛博模式';
+            }
+            
+            // 主题切换点击事件
+            themeToggle.addEventListener('click', function() {
+                body.classList.toggle('light-mode');
+                
+                if (body.classList.contains('light-mode')) {
+                    themeToggle.textContent = '切换到赛博模式';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    themeToggle.textContent = '切换到白昼模式';
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

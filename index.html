@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正在进入 - YanMo的个人博客</title>
+    <style>
+        :root {
+            --bg: #060810;
+            --panel: rgba(11, 18, 30, 0.86);
+            --cyan: #16f2d2;
+            --orange: #ff8c3a;
+            --text: #d5e7f1;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(900px 360px at 12% 0%, rgba(22, 242, 210, 0.16), transparent 55%),
+                radial-gradient(760px 300px at 100% 12%, rgba(255, 140, 58, 0.14), transparent 52%),
+                var(--bg);
+            overflow: hidden;
+        }
+
+        .loader-wrap {
+            width: min(92vw, 560px);
+            background: var(--panel);
+            border-radius: 16px;
+            padding: 1.45rem 1.3rem 1.05rem;
+            box-shadow: 0 16px 42px rgba(0, 0, 0, 0.42);
+            backdrop-filter: blur(8px);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            min-height: min(78vh, 500px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loader-wrap::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 0%, rgba(22, 242, 210, 0.06) 45%, transparent 90%);
+            transform: translateX(-120%);
+            animation: shine 2.8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shine {
+            0% {
+                transform: translateX(-120%);
+            }
+
+            55%,
+            100% {
+                transform: translateX(120%);
+            }
+        }
+
+        .loader-avatar {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 1rem;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+            position: relative;
+            z-index: 1;
+        }
+
+        .loader-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .title {
+            margin: 0 0 0.3rem;
+            font-size: clamp(1.25rem, 3.2vw, 1.7rem);
+            letter-spacing: 0.6px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .sub {
+            margin: 0 0 1rem;
+            color: #a6bcc8;
+            font-size: 0.95rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 460px;
+            height: 9px;
+            border-radius: 999px;
+            background: rgba(22, 242, 210, 0.15);
+            overflow: hidden;
+            border: 1px solid rgba(22, 242, 210, 0.26);
+            position: relative;
+            z-index: 1;
+        }
+
+        .bar > span {
+            display: block;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--orange));
+            box-shadow: 0 0 18px rgba(22, 242, 210, 0.55);
+            transition: width 0.2s linear;
+        }
+
+        .meta {
+            margin-top: 0.6rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.82rem;
+            color: #9fb5c2;
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 520px) {
+            .loader-avatar {
+                width: 102px;
+                height: 102px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="loader-wrap" aria-live="polite">
+        <div class="loader-avatar">
+            <img src="/log.jpg" alt="站点头像">
+        </div>
+        <h1 class="title">YanMo</h1>
+        <p class="sub">初始化页面资源与接口状态，请稍候</p>
+        <div class="bar" aria-hidden="true"><span id="load-progress"></span></div>
+        <div class="meta">
+            <span>LOADING</span>
+            <span id="load-percent">0%</span>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            var progressEl = document.getElementById('load-progress');
+            var percentEl = document.getElementById('load-percent');
+            var progress = 0;
+            var timer = window.setInterval(function () {
+                progress = Math.min(progress + 8, 100);
+                progressEl.style.width = progress + '%';
+                percentEl.textContent = progress + '%';
+
+                if (progress >= 100) {
+                    window.clearInterval(timer);
+                    window.setTimeout(function () {
+                        window.location.href = 'pages/index.html';
+                    }, 180);
+                }
+            }, 90);
+        })();
+    </script>
+</body>
+</html>

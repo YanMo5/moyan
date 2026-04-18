@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>安全文章 - YanMo的个人博客</title>
+    <meta name="description" content="YanMo的个人博客文章列表，涵盖渗透测试、人工智能安全、网络安全架构等深度技术分享。">
+    <meta name="keywords" content="安全文章, 技术博客, 渗透测试, AI安全">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/beautify.css">
+</head>
+<body class="articles-view">
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+            </div>
+            <button class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="index.html"><span class="shimmer"></span>首页</a></li>
+                    <li><a href="articles.html" class="active"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="about.html"><span class="shimmer"></span>关于我</a></li>
+                    <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
+                    <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
+                    <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="admin.html"><span class="shimmer"></span>管理</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="articles-page reveal">
+            <div class="terminal-label">INTEL_ARCHIVE // SECURE_FEED // YANMO_LABS</div>
+            <h1 class="glitch-text" data-text="安全文章 | SECURITY ARTICLES">安全文章 | SECURITY ARTICLES</h1>
+            <p class="articles-description">共享情报、渗透技巧与AI安全研究</p>
+            
+            <div class="articles-controls">
+                <div class="search-box">
+                    <input type="text" id="article-search" placeholder="搜索情报数据...">
+                </div>
+                <div class="filter-box">
+                    <select id="category-filter">
+                        <option value="all">所有类别</option>
+                        <option value="渗透测试">渗透测试</option>
+                        <option value="AI安全">AI安全</option>
+                        <option value="企业安全">企业安全</option>
+                        <option value="Python安全">Python安全</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="articles-list" id="articles-container">
+                <!-- Articles will be loaded here dynamically -->
+                <div class="loading-status">正在初始化数据流...</div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo的个人博客</h3>
+                <p>信息安全专家 | 渗透测试 | 人工智能</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="link-apply.html" class="footer-link">前往友链申请页面</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/local-api.js"></script>
+    <script src="/js/ux-enhancements.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const container = document.getElementById('articles-container');
+            const searchInput = document.getElementById('article-search');
+            const categoryFilter = document.getElementById('category-filter');
+            let allArticles = [];
+
+            function escapeHtml(value) {
+                return String(value || '').replace(/[&<>'"]/g, function (char) {
+                    return {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        "'": '&#39;',
+                        '"': '&quot;'
+                    }[char] || char;
+                });
+            }
+
+            function truncateText(value, maxLength) {
+                const text = String(value || '').replace(/\s+/g, ' ').trim();
+                if (text.length <= maxLength) {
+                    return text;
+                }
+                return text.slice(0, maxLength) + '...';
+            }
+
+            // 加载文章
+            async function loadArticles() {
+                try {
+                    const response = await fetch('/api/articles');
+                    allArticles = await response.json();
+                    renderArticles(allArticles);
+                } catch (error) {
+                    container.innerHTML = '<div class="error-status">数据同步失败：连接超时</div>';
+                }
+            }
+
+            function renderArticles(articles) {
+                if (articles.length === 0) {
+                    container.innerHTML = '<div class="no-results">未命中匹配记录</div>';
+                    return;
+                }
+
+                container.innerHTML = articles.map((article, index) => `
+                    <article class="article-item" data-category="${article.category}">
+                        <span class="file-id">[FILE_${String(article.id).padStart(3,'0')}]</span>
+                        <div class="article-meta-row">
+                            <div class="article-date">${escapeHtml(String(article.created_at || '').split(' ')[0])}</div>
+                            <span class="cyber-badge badge-magenta">${article.category}</span>
+                        </div>
+                        <h2>${escapeHtml(article.title)}</h2>
+                        <p class="article-excerpt">${escapeHtml(truncateText(article.content, 140))}</p>
+                        <a href="post.html?id=${article.id}" class="read-more">接入数据流</a>
+                    </article>
+                `).join('');
+            }
+
+            function filterArticles() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const selectedCategory = categoryFilter.value;
+
+                const filtered = allArticles.filter(article => {
+                    const matchesSearch = article.title.toLowerCase().includes(searchTerm) || 
+                                        article.content.toLowerCase().includes(searchTerm);
+                    const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
+                    return matchesSearch && matchesCategory;
+                });
+
+                renderArticles(filtered);
+            }
+
+            searchInput.addEventListener('input', filterArticles);
+            categoryFilter.addEventListener('change', filterArticles);
+
+            // 主题切换功能 (保留原有逻辑)
+            const themeToggle = document.querySelector('.theme-toggle');
+            const body = document.body;
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                themeToggle.textContent = '切换到赛博模式';
+            }
+            themeToggle.addEventListener('click', function() {
+                body.classList.toggle('light-mode');
+                if (body.classList.contains('light-mode')) {
+                    themeToggle.textContent = '切换到赛博模式';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    themeToggle.textContent = '切换到白昼模式';
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+
+            loadArticles();
+        });
+    </script>
+</body>
+</html>

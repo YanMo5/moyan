@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YanMo的个人博客 - 大学生安全学习笔记</title>
+    <meta name="description" content="YanMo的个人博客，记录大学阶段的网络安全学习过程，包含 Web 安全、CTF 复盘与 AI 安全探索笔记。">
+    <meta name="keywords" content="网络安全学习, 大学生博客, CTF, Web安全, AI安全, YanMo">
+    <meta name="author" content="YanMo">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/beautify.css">
+</head>
+<body class="homepage">
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+            </div>
+            <button class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="index.html" class="active"><span class="shimmer"></span>首页</a></li>
+                    <li><a href="articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="about.html"><span class="shimmer"></span>关于我</a></li>
+                    <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
+                    <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
+                    <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="admin.html"><span class="shimmer"></span>管理</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero reveal">
+            <div class="hero-bg-orb orb-left"></div>
+            <div class="hero-bg-orb orb-right"></div>
+            <div class="hero-corner-tl"></div>
+            <div class="hero-corner-br"></div>
+            <div class="hero-grid">
+                <div class="hero-main">
+                    <div class="terminal-label">YANMO_CAMPUS_LOG // v3.0.0 // STUDENT_MODE</div>
+                    <h1 class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</h1>
+                    <p>大学生安全学习日志 | Web 安全 | CTF 复盘 | AI 安全探索</p>
+                    <div class="typing-line">
+                        <span class="typing-prefix">本周学习:</span>
+                        <span class="typing-text" id="typing-text"></span>
+                        <span class="typing-caret" aria-hidden="true"></span>
+                    </div>
+                    <div class="hero-tags">
+                        <span class="hero-tag">WEB SECURITY</span>
+                        <span class="hero-tag">CTF NOTE</span>
+                        <span class="hero-tag">PYTHON TOOLING</span>
+                        <span class="hero-tag">AI SAFETY</span>
+                    </div>
+                </div>
+                <aside class="hero-panel">
+                    <h3>Campus Feed</h3>
+                    <ul>
+                        <li><span>TASK-01</span> 复盘一题认证绕过并整理思路</li>
+                        <li><span>TASK-02</span> 完成本周 CTF Web 方向训练</li>
+                        <li><span>TASK-03</span> 尝试用脚本自动化信息收集流程</li>
+                    </ul>
+                    <a href="articles.html" class="panel-link">查看全部学习记录 ></a>
+                </aside>
+            </div>
+            <div class="hero-info">
+                <div class="info-item">
+                    <span class="info-label">当前重点 / FOCUS</span>
+                    <span class="info-value">Web 常见漏洞原理、CTF 解题方法、Python 自动化脚本、AI 安全基础</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">学习状态 / STATUS</span>
+                    <div class="status-indicators">
+                        <span class="status-v">课程: 进行中</span>
+                        <span class="status-v">训练: 每周更新</span>
+                        <span class="status-v">目标: 持续进步</span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">写作方向 / WRITING</span>
+                    <span class="info-value">课堂知识整理、漏洞复现笔记、工具脚本记录、比赛后复盘总结</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="intel-strip reveal">
+            <article class="intel-card">
+                <div class="intel-k">学习项目</div>
+                <div class="intel-v count-up" data-value="6" data-prefix="" data-suffix="">0</div>
+                <p>课程实践和小工具同步推进</p>
+            </article>
+            <article class="intel-card">
+                <div class="intel-k">CTF 题目笔记</div>
+                <div class="intel-v count-up" data-value="48" data-prefix="" data-suffix="+">0+</div>
+                <p>以 Web 方向为主，持续积累中</p>
+            </article>
+            <article class="intel-card">
+                <div class="intel-k">最近更新</div>
+                <div class="intel-v count-up" data-value="7" data-prefix="" data-suffix="d">0d</div>
+                <p>保持一周一更的学习输出节奏</p>
+            </article>
+        </section>
+
+        <section class="latest-posts reveal">
+            <div class="section-header">
+                <h2>最新学习笔记 / LATEST NOTES</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <div class="posts-grid" id="posts-grid">
+                <article class="post-card post-skeleton">
+                    <div class="post-image"></div>
+                    <div class="post-content">
+                        <div class="skeleton-line skeleton-title"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line skeleton-short"></div>
+                        <div class="skeleton-link"></div>
+                    </div>
+                </article>
+                <article class="post-card post-skeleton">
+                    <div class="post-image"></div>
+                    <div class="post-content">
+                        <div class="skeleton-line skeleton-title"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line skeleton-short"></div>
+                        <div class="skeleton-link"></div>
+                    </div>
+                </article>
+                <article class="post-card post-skeleton">
+                    <div class="post-image"></div>
+                    <div class="post-content">
+                        <div class="skeleton-line skeleton-title"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line skeleton-short"></div>
+                        <div class="skeleton-link"></div>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="cta-section reveal">
+            <h2>把每周学习，变成看得见的成长轨迹</h2>
+            <p>从课堂知识到实战练习，我会把关键方法和踩坑过程写下来，方便自己复习，也希望能帮到同样在学习安全的你。</p>
+            <div class="cta-buttons">
+                <a href="articles.html" class="btn btn-primary">查看学习笔记</a>
+                <a href="about.html" class="btn btn-secondary">认识一下我</a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo的个人博客</h3>
+                <p>大学生安全学习记录 | Web 安全 | CTF | AI 安全探索</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="link-apply.html" class="footer-link">前往友链申请页面</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>YanMo的个人博客 © 2026 All Copyrights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/local-api.js"></script>
+    <script src="/js/ux-enhancements.js"></script>
+    <script>
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>'"]/g, function (char) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[char] || char;
+            });
+        }
+
+        function truncateText(text, maxLength) {
+            const raw = String(text || '').replace(/\s+/g, ' ').trim();
+            if (raw.length <= maxLength) {
+                return raw;
+            }
+            return raw.slice(0, maxLength) + '...';
+        }
+
+        function coverStyleByIndex(index) {
+            const presets = [
+                'linear-gradient(135deg, rgba(24,244,214,0.7), rgba(7,23,35,0.95))',
+                'linear-gradient(135deg, rgba(255,122,24,0.75), rgba(25,8,18,0.95))',
+                'linear-gradient(135deg, rgba(105,123,255,0.72), rgba(5,18,38,0.95))'
+            ];
+            return presets[index % presets.length];
+        }
+
+        function normalizeCoverUrl(value) {
+            const raw = String(value || '').trim();
+            if (!raw) {
+                return '';
+            }
+
+            if (raw.startsWith('data:image/')) {
+                return raw;
+            }
+
+            try {
+                const parsed = new URL(raw, window.location.origin);
+                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                    return parsed.href;
+                }
+            } catch (error) {
+                return '';
+            }
+
+            return '';
+        }
+
+        function resolvePostCover(post) {
+            if (!post || typeof post !== 'object') {
+                return '';
+            }
+
+            const candidates = [
+                post.cover_url,
+                post.coverUrl,
+                post.cover,
+                post.thumbnail,
+                post.image,
+                post.image_url,
+                post.banner
+            ];
+
+            for (const item of candidates) {
+                const normalized = normalizeCoverUrl(item);
+                if (normalized) {
+                    return normalized;
+                }
+            }
+
+            return '';
+        }
+
+        function escapeSvgText(value) {
+            return String(value || '').replace(/[&<>"']/g, function (char) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[char] || char;
+            });
+        }
+
+        function generateFallbackCover(post, index) {
+            const title = escapeSvgText(post && post.title ? post.title : '未命名文章');
+            const category = escapeSvgText(post && post.category ? post.category : '学习笔记');
+            const palettes = [
+                ['#18f4d6', '#071723'],
+                ['#ff7a18', '#190812'],
+                ['#697bff', '#051226']
+            ];
+            const palette = palettes[index % palettes.length];
+            const svg = [
+                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">',
+                '<defs>',
+                '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">',
+                '<stop offset="0%" stop-color="#07131f" />',
+                '<stop offset="100%" stop-color="#02050b" />',
+                '</linearGradient>',
+                '<linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">',
+                '<stop offset="0%" stop-color="' + palette[0] + '" stop-opacity="0.86" />',
+                '<stop offset="100%" stop-color="' + palette[1] + '" stop-opacity="0.96" />',
+                '</linearGradient>',
+                '<pattern id="scan" width="6" height="6" patternUnits="userSpaceOnUse">',
+                '<rect width="6" height="1.2" fill="rgba(255,255,255,0.07)" />',
+                '</pattern>',
+                '</defs>',
+                '<rect width="1200" height="675" fill="url(#bg)" />',
+                '<rect width="1200" height="675" fill="url(#accent)" opacity="0.88" />',
+                '<rect width="1200" height="675" fill="url(#scan)" opacity="0.55" />',
+                '<rect x="78" y="78" width="1044" height="519" rx="24" fill="rgba(2,8,16,0.32)" stroke="rgba(24,244,214,0.58)" stroke-width="4" />',
+                '<text x="130" y="180" fill="#d9fff7" font-size="42" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" opacity="0.88">' + category + '</text>',
+                '<text x="130" y="290" fill="#ffffff" font-size="54" font-weight="700" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">' + title + '</text>',
+                '<text x="130" y="548" fill="rgba(230,245,255,0.88)" font-size="28" letter-spacing="4" font-family="Consolas, monospace">YANMO BLOG COVER</text>',
+                '</svg>'
+            ].join('');
+
+            return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+        }
+
+        function renderPostCover(post, index, rawTitle) {
+            const coverUrl = resolvePostCover(post) || generateFallbackCover(post, index);
+
+            return [
+                '<div class="post-image">',
+                '<img src="' + escapeHtml(coverUrl) + '" alt="' + escapeHtml(rawTitle) + ' 封面" loading="lazy" decoding="async">',
+                '</div>'
+            ].join('');
+        }
+
+        function renderPosts(posts) {
+            const postsGrid = document.getElementById('posts-grid');
+            if (!postsGrid) {
+                return;
+            }
+
+            if (!Array.isArray(posts) || posts.length === 0) {
+                postsGrid.innerHTML = [
+                    '<article class="post-card post-empty">',
+                    '<div class="post-content">',
+                    '<h3>暂无笔记</h3>',
+                    '<p class="post-excerpt">正在整理本周学习内容，稍后再来看看。</p>',
+                    '<div class="empty-actions">',
+                    '<a href="admin-dashboard.html#articles" class="btn btn-primary">发布第一篇学习笔记</a>',
+                    '<a href="articles.html" class="btn btn-secondary">前往笔记页</a>',
+                    '</div>',
+                    '</div>',
+                    '</article>'
+                ].join('');
+                return;
+            }
+
+            postsGrid.innerHTML = posts.slice(0, 3).map(function (post, index) {
+                const rawTitle = String(post.title || '未命名文章');
+                const title = escapeHtml(rawTitle);
+                const excerpt = escapeHtml(truncateText(post.content || '', 78));
+                const articleId = encodeURIComponent(String(post.id || ''));
+                const category = escapeHtml(post.category || '未分类');
+                const createdAt = escapeHtml(String(post.created_at || '').split(' ')[0]);
+                const cover = renderPostCover(post, index, rawTitle);
+
+                return [
+                    '<article class="post-card">',
+                    cover,
+                    '<div class="post-content">',
+                    '<h3>' + title + '</h3>',
+                    '<p class="post-meta"><span>' + category + '</span><span>' + createdAt + '</span></p>',
+                    '<p class="post-excerpt">' + excerpt + '</p>',
+                    '<a href="post.html?id=' + articleId + '" class="read-more">阅读全文</a>',
+                    '</div>',
+                    '</article>'
+                ].join('');
+            }).join('');
+        }
+
+        async function loadLatestPosts() {
+            try {
+                const response = await fetch('/api/articles');
+                if (!response.ok) {
+                    renderPosts([]);
+                    return;
+                }
+
+                const posts = await response.json().catch(function () {
+                    return [];
+                });
+                renderPosts(posts);
+            } catch (error) {
+                renderPosts([]);
+            }
+        }
+
+        function startTypingEffect() {
+            const target = document.getElementById('typing-text');
+            if (!target) {
+                return;
+            }
+
+            const keywords = [
+                '复盘一个 Web 鉴权绕过案例',
+                '整理 CTF Web 题解方法',
+                '写一个批量信息收集脚本',
+                '记录 AI 安全基础学习笔记'
+            ];
+
+            let keywordIndex = 0;
+            let charIndex = 0;
+            let deleting = false;
+
+            function tick() {
+                const word = keywords[keywordIndex];
+
+                if (!deleting) {
+                    charIndex += 1;
+                    target.textContent = word.slice(0, charIndex);
+                    if (charIndex >= word.length) {
+                        deleting = true;
+                        setTimeout(tick, 1300);
+                        return;
+                    }
+                } else {
+                    charIndex -= 1;
+                    target.textContent = word.slice(0, Math.max(0, charIndex));
+                    if (charIndex <= 0) {
+                        deleting = false;
+                        keywordIndex = (keywordIndex + 1) % keywords.length;
+                    }
+                }
+
+                const speed = deleting ? 45 : 85;
+                setTimeout(tick, speed);
+            }
+
+            tick();
+        }
+
+        function animateCounter(el, duration) {
+            const targetValue = Number(el.dataset.value || '0');
+            const prefix = String(el.dataset.prefix || '');
+            const suffix = String(el.dataset.suffix || '');
+            const start = performance.now();
+
+            function frame(now) {
+                const progress = Math.min((now - start) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const current = Math.round(targetValue * eased);
+                el.textContent = prefix + current + suffix;
+
+                if (progress < 1) {
+                    requestAnimationFrame(frame);
+                } else {
+                    el.textContent = prefix + targetValue + suffix;
+                    el.classList.add('count-up-done');
+                }
+            }
+
+            requestAnimationFrame(frame);
+        }
+
+        function initIntelCounters() {
+            const counters = Array.from(document.querySelectorAll('.count-up'));
+            if (!counters.length) {
+                return;
+            }
+
+            let played = false;
+            const runOnce = () => {
+                if (played) {
+                    return;
+                }
+                played = true;
+                counters.forEach((el, index) => {
+                    const delay = index * 120;
+                    setTimeout(() => animateCounter(el, 1100 + index * 200), delay);
+                });
+            };
+
+            if (!('IntersectionObserver' in window)) {
+                runOnce();
+                return;
+            }
+
+            const section = document.querySelector('.intel-strip');
+            if (!section) {
+                runOnce();
+                return;
+            }
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        runOnce();
+                        observer.disconnect();
+                    }
+                });
+            }, {
+                threshold: 0.3
+            });
+
+            observer.observe(section);
+        }
+
+        // 主题切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.querySelector('.theme-toggle');
+            const body = document.body;
+            
+            // 检查本地存储中的主题偏好
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                themeToggle.textContent = '切换到赛博模式';
+            }
+            
+            // 主题切换点击事件
+            themeToggle.addEventListener('click', function() {
+                body.classList.toggle('light-mode');
+                
+                if (body.classList.contains('light-mode')) {
+                    themeToggle.textContent = '切换到赛博模式';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    themeToggle.textContent = '切换到白昼模式';
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+
+            startTypingEffect();
+            loadLatestPosts();
+            initIntelCounters();
+        });
+    </script>
+</body>
+</html>

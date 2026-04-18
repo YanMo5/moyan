@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>友链申请 - 赛博开发者</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html">YanMo的个人博客</a>
+            </div>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="articles.html">文章</a></li>
+                    <li><a href="about.html">关于我</a></li>
+                    <li><a href="contact.html">联系</a></li>
+                    <li><a href="guestbook.html">留言板</a></li>
+                    <li><a href="links.html">友链</a></li>
+                    <li><a href="admin.html">管理</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <script src="/js/local-api.js"></script>
+
+    <main>
+        <section class="links-page">
+            <h1>友链申请 | LINK APPLY</h1>
+            <p class="links-description">申请成为友情链接，共同成长</p>
+            
+            <div class="links-form">
+                <h2>申请友链</h2>
+                <form id="link-form">
+                    <div class="form-group">
+                        <label for="site-avatar">站点头像（可选）</label>
+                        <input type="file" id="site-avatar" name="site-avatar" accept="image/png,image/jpeg,image/webp,image/gif">
+                        <small class="field-tip">建议使用 1:1 图片。上传时会统一裁剪为圆形头像并压缩至 1MB 内。</small>
+                        <small id="avatar-meta" class="field-tip" style="display:none;"></small>
+                        <div id="avatar-preview" class="avatar-preview" style="display:none;">
+                            <img id="avatar-preview-img" alt="头像预览">
+                        </div>
+                        <div class="avatar-actions">
+                            <button type="button" class="btn small" id="avatar-crop-btn" disabled>调整裁剪</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="site-name">网站名称</label>
+                        <input type="text" id="site-name" name="site-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="site-url">网站链接</label>
+                        <input type="url" id="site-url" name="site-url" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="site-description">网站描述</label>
+                        <textarea id="site-description" name="site-description" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn">提交申请</button>
+                    <div id="form-message" class="form-message"></div>
+                </form>
+                <div id="avatar-crop-modal" class="avatar-crop-modal" style="display:none;">
+                    <div class="avatar-crop-dialog">
+                        <h3>头像裁剪</h3>
+                        <canvas id="avatar-crop-canvas" width="280" height="280"></canvas>
+                        <div class="avatar-crop-controls">
+                            <label>缩放 <input type="range" id="crop-zoom" min="100" max="300" step="1" value="100"></label>
+                            <label>左右 <input type="range" id="crop-x" min="-100" max="100" step="1" value="0"></label>
+                            <label>上下 <input type="range" id="crop-y" min="-100" max="100" step="1" value="0"></label>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn" id="crop-apply">应用裁剪</button>
+                            <button type="button" class="btn btn-secondary" id="crop-reset">重置</button>
+                            <button type="button" class="btn btn-secondary" id="crop-cancel">取消</button>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    let avatarBase64 = '';
+                    const avatarInput = document.getElementById('site-avatar');
+                    const avatarPreview = document.getElementById('avatar-preview');
+                    const avatarPreviewImg = document.getElementById('avatar-preview-img');
+                    const avatarMeta = document.getElementById('avatar-meta');
+                    const linkForm = document.getElementById('link-form');
+                    const submitButton = linkForm.querySelector('button[type="submit"]');
+                    const avatarCropBtn = document.getElementById('avatar-crop-btn');
+                    const avatarCropModal = document.getElementById('avatar-crop-modal');
+                    const cropCanvas = document.getElementById('avatar-crop-canvas');
+                    const cropZoom = document.getElementById('crop-zoom');
+                    const cropX = document.getElementById('crop-x');
+                    const cropY = document.getElementById('crop-y');
+                    const cropApply = document.getElementById('crop-apply');
+                    const cropReset = document.getElementById('crop-reset');
+                    const cropCancel = document.getElementById('crop-cancel');
+                    const MAX_AVATAR_PAYLOAD = 1000000;
+                    const WEBP_ATTEMPTS = [
+                        { size: 136, quality: 0.9 },
+                        { size: 120, quality: 0.86 },
+                        { size: 104, quality: 0.82 },
+                        { size: 88, quality: 0.78 },
+                        { size: 72, quality: 0.74 },
+                        { size: 56, quality: 0.7 }
+                    ];
+
+                    const avatarEditor = {
+                        image: null,
+                        crop: {
+                            zoom: 1,
+                            panX: 0,
+                            panY: 0
+                        },
+                        draft: {
+                            zoom: 1,
+                            panX: 0,
+                            panY: 0
+                        }
+                    };
+
+                    function formatKB(value) {
+                        return (value / 1024).toFixed(1) + 'KB';
+                    }
+
+                    function setAvatarMeta(text, color) {
+                        if (!text) {
+                            avatarMeta.style.display = 'none';
+                            avatarMeta.textContent = '';
+                            return;
+                        }
+
+                        avatarMeta.textContent = text;
+                        avatarMeta.style.display = 'block';
+                        avatarMeta.style.color = color || 'rgba(0, 255, 255, 0.62)';
+                    }
+
+                    function fileToDataURL(file) {
+                        return new Promise((resolve, reject) => {
+                            const reader = new FileReader();
+                            reader.onload = (event) => resolve(String(event.target.result || ''));
+                            reader.onerror = () => reject(new Error('read_failed'));
+                            reader.readAsDataURL(file);
+                        });
+                    }
+
+                    function loadImage(dataUrl) {
+                        return new Promise((resolve, reject) => {
+                            const img = new Image();
+                            img.onload = () => resolve(img);
+                            img.onerror = () => reject(new Error('image_decode_failed'));
+                            img.src = dataUrl;
+                        });
+                    }
+
+                    async function optimizeAvatar(file) {
+                        const originalDataUrl = await fileToDataURL(file);
+                        const image = await loadImage(originalDataUrl);
+
+                        avatarEditor.image = image;
+                        avatarEditor.crop = { zoom: 1, panX: 0, panY: 0 };
+                        avatarEditor.draft = { zoom: 1, panX: 0, panY: 0 };
+
+                        return exportAvatarWithCurrentCrop();
+                    }
+
+                    function getCropRect(cropState) {
+                        const image = avatarEditor.image;
+                        const sourceWidth = image.naturalWidth || image.width;
+                        const sourceHeight = image.naturalHeight || image.height;
+                        const minSide = Math.min(sourceWidth, sourceHeight);
+                        const zoom = Math.max(1, Number(cropState.zoom) || 1);
+                        const side = Math.max(16, minSide / zoom);
+
+                        const maxOffsetX = (sourceWidth - side) / 2;
+                        const maxOffsetY = (sourceHeight - side) / 2;
+                        const centerX = sourceWidth / 2 + (cropState.panX || 0) * maxOffsetX;
+                        const centerY = sourceHeight / 2 + (cropState.panY || 0) * maxOffsetY;
+                        const sx = Math.max(0, Math.min(sourceWidth - side, centerX - side / 2));
+                        const sy = Math.max(0, Math.min(sourceHeight - side, centerY - side / 2));
+
+                        return { sx, sy, side };
+                    }
+
+                    function renderCropPreview() {
+                        if (!avatarEditor.image) {
+                            return;
+                        }
+
+                        const ctx = cropCanvas.getContext('2d');
+                        const rect = getCropRect(avatarEditor.draft);
+                        const w = cropCanvas.width;
+                        const h = cropCanvas.height;
+                        const radius = Math.min(w, h) / 2 - 4;
+                        const centerX = w / 2;
+                        const centerY = h / 2;
+
+                        ctx.clearRect(0, 0, w, h);
+                        ctx.fillStyle = 'rgba(3, 10, 18, 0.9)';
+                        ctx.fillRect(0, 0, w, h);
+
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                        ctx.closePath();
+                        ctx.clip();
+                        ctx.drawImage(
+                            avatarEditor.image,
+                            rect.sx,
+                            rect.sy,
+                            rect.side,
+                            rect.side,
+                            0,
+                            0,
+                            w,
+                            h
+                        );
+                        ctx.restore();
+
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                        ctx.closePath();
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
+                        ctx.stroke();
+                    }
+
+                    function openCropModal() {
+                        avatarEditor.draft = {
+                            zoom: avatarEditor.crop.zoom,
+                            panX: avatarEditor.crop.panX,
+                            panY: avatarEditor.crop.panY
+                        };
+
+                        cropZoom.value = String(Math.round(avatarEditor.draft.zoom * 100));
+                        cropX.value = String(Math.round(avatarEditor.draft.panX * 100));
+                        cropY.value = String(Math.round(avatarEditor.draft.panY * 100));
+                        avatarCropModal.style.display = 'flex';
+                        renderCropPreview();
+                    }
+
+                    function closeCropModal() {
+                        avatarCropModal.style.display = 'none';
+                    }
+
+                    async function exportAvatarWithCurrentCrop() {
+                        if (!avatarEditor.image) {
+                            throw new Error('missing_image');
+                        }
+
+                        const rect = getCropRect(avatarEditor.crop);
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+
+                        for (const step of WEBP_ATTEMPTS) {
+                            const targetSize = Math.max(64, Math.min(step.size, Math.floor(rect.side)));
+                            canvas.width = targetSize;
+                            canvas.height = targetSize;
+                            context.clearRect(0, 0, targetSize, targetSize);
+                            context.save();
+                            context.beginPath();
+                            context.arc(targetSize / 2, targetSize / 2, targetSize / 2, 0, Math.PI * 2);
+                            context.closePath();
+                            context.clip();
+                            context.drawImage(
+                                avatarEditor.image,
+                                rect.sx,
+                                rect.sy,
+                                rect.side,
+                                rect.side,
+                                0,
+                                0,
+                                targetSize,
+                                targetSize
+                            );
+                            context.restore();
+
+                            const output = canvas.toDataURL('image/webp', step.quality);
+                            if (output.length <= MAX_AVATAR_PAYLOAD) {
+                                return {
+                                    dataUrl: output,
+                                    optimized: output.length < MAX_AVATAR_PAYLOAD,
+                                    outputType: 'image/webp'
+                                };
+                            }
+                        }
+
+                        throw new Error('avatar_too_large_after_optimize');
+                    }
+
+                    avatarInput.addEventListener('change', function () {
+                        void (async () => {
+                            const formMessage = document.getElementById('form-message');
+                            const file = avatarInput.files && avatarInput.files[0];
+                            if (!file) {
+                                avatarBase64 = '';
+                                avatarPreview.style.display = 'none';
+                                setAvatarMeta('');
+                                return;
+                            }
+
+                            const allowed = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+                            if (!allowed.includes(file.type)) {
+                                avatarInput.value = '';
+                                avatarBase64 = '';
+                                avatarPreview.style.display = 'none';
+                                setAvatarMeta('');
+                                formMessage.textContent = '头像格式仅支持 PNG/JPG/WebP/GIF';
+                                formMessage.style.color = '#ff6b6b';
+                                return;
+                            }
+
+                            formMessage.textContent = '';
+                            setAvatarMeta('正在处理头像...');
+
+                            try {
+                                const result = await optimizeAvatar(file);
+                                avatarBase64 = result.dataUrl;
+                                avatarPreviewImg.src = avatarBase64;
+                                avatarPreview.style.display = 'block';
+                                avatarCropBtn.disabled = false;
+
+                                const outputKB = formatKB(avatarBase64.length);
+                                if (result.optimized) {
+                                    setAvatarMeta('头像已自动优化：' + outputKB + '，格式 ' + result.outputType.replace('image/', '').toUpperCase(), '#00ff80');
+                                } else {
+                                    setAvatarMeta('头像已就绪：' + outputKB, 'rgba(0, 255, 255, 0.75)');
+                                }
+                            } catch (error) {
+                                avatarInput.value = '';
+                                avatarBase64 = '';
+                                avatarPreview.style.display = 'none';
+                                avatarCropBtn.disabled = true;
+                                setAvatarMeta('');
+                                formMessage.textContent = '头像文件过大，请控制在 1MB 以内';
+                                formMessage.style.color = '#ff6b6b';
+                            }
+                        })();
+                    });
+
+                    avatarCropBtn.addEventListener('click', function () {
+                        if (!avatarEditor.image) {
+                            return;
+                        }
+                        openCropModal();
+                    });
+
+                    [cropZoom, cropX, cropY].forEach(function (control) {
+                        control.addEventListener('input', function () {
+                            avatarEditor.draft.zoom = Number(cropZoom.value) / 100;
+                            avatarEditor.draft.panX = Number(cropX.value) / 100;
+                            avatarEditor.draft.panY = Number(cropY.value) / 100;
+                            renderCropPreview();
+                        });
+                    });
+
+                    cropReset.addEventListener('click', function () {
+                        avatarEditor.draft = { zoom: 1, panX: 0, panY: 0 };
+                        cropZoom.value = '100';
+                        cropX.value = '0';
+                        cropY.value = '0';
+                        renderCropPreview();
+                    });
+
+                    cropCancel.addEventListener('click', function () {
+                        closeCropModal();
+                    });
+
+                    cropApply.addEventListener('click', function () {
+                        void (async () => {
+                            const formMessage = document.getElementById('form-message');
+                            avatarEditor.crop = {
+                                zoom: avatarEditor.draft.zoom,
+                                panX: avatarEditor.draft.panX,
+                                panY: avatarEditor.draft.panY
+                            };
+
+                            setAvatarMeta('正在应用裁剪...');
+                            try {
+                                const result = await exportAvatarWithCurrentCrop();
+                                avatarBase64 = result.dataUrl;
+                                avatarPreviewImg.src = avatarBase64;
+                                avatarPreview.style.display = 'block';
+                                setAvatarMeta('头像已裁剪：' + formatKB(avatarBase64.length) + '，格式 WEBP', '#00ff80');
+                                formMessage.textContent = '';
+                                closeCropModal();
+                            } catch (error) {
+                                formMessage.textContent = '裁剪后仍超过 1MB，请继续缩放后重试';
+                                formMessage.style.color = '#ff6b6b';
+                            }
+                        })();
+                    });
+
+                    avatarCropModal.addEventListener('click', function (event) {
+                        if (event.target === avatarCropModal) {
+                            closeCropModal();
+                        }
+                    });
+
+                    document.getElementById('link-form').addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        
+                        const siteName = document.getElementById('site-name').value;
+                        const siteUrl = document.getElementById('site-url').value;
+                        const siteDescription = document.getElementById('site-description').value;
+                        const formMessage = document.getElementById('form-message');
+
+                        if (avatarBase64 && avatarBase64.length > MAX_AVATAR_PAYLOAD) {
+                            formMessage.textContent = '头像文件过大，请控制在 1MB 以内';
+                            formMessage.style.color = '#ff6b6b';
+                            return;
+                        }
+                        
+                        submitButton.disabled = true;
+                        formMessage.textContent = '提交中...';
+                        formMessage.style.color = '#0ff';
+                        
+                        try {
+                            const response = await fetch('/api/links', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ 
+                                    'site-name': siteName, 
+                                    'site-url': siteUrl, 
+                                    'site-description': siteDescription,
+                                    'site-avatar': avatarBase64
+                                })
+                            });
+                            
+                            if (response.ok) {
+                                formMessage.textContent = '友链申请提交成功！请等待审核';
+                                formMessage.style.color = '#00ff80';
+                                document.getElementById('link-form').reset();
+                                avatarBase64 = '';
+                                avatarPreview.style.display = 'none';
+                                avatarCropBtn.disabled = true;
+                                avatarEditor.image = null;
+                                avatarEditor.crop = { zoom: 1, panX: 0, panY: 0 };
+                                avatarEditor.draft = { zoom: 1, panX: 0, panY: 0 };
+                                setAvatarMeta('');
+                            } else {
+                                const error = await response.json();
+                                formMessage.textContent = '提交失败: ' + error.error;
+                                formMessage.style.color = '#ff6b6b';
+                            }
+                        } catch (error) {
+                            formMessage.textContent = '网络错误，请稍后再试';
+                            formMessage.style.color = '#ff6b6b';
+                        } finally {
+                            submitButton.disabled = false;
+                        }
+                    });
+                </script>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo的个人博客</h3>
+                <p>信息安全专家 | 渗透测试 | 人工智能</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="links.html" class="footer-link">前往友链页面申请/查看</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // 主题切换功能
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.querySelector('.theme-toggle');
+            const body = document.body;
+            
+            // 检查本地存储中的主题偏好
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                themeToggle.textContent = '切换到赛博模式';
+            }
+            
+            // 主题切换点击事件
+            themeToggle.addEventListener('click', function() {
+                body.classList.toggle('light-mode');
+                
+                if (body.classList.contains('light-mode')) {
+                    themeToggle.textContent = '切换到赛博模式';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    themeToggle.textContent = '切换到白昼模式';
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

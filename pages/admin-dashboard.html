@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员后台 - YanMo的个人博客</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/beautify.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+            </div>
+            <button class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="admin-dashboard.html" class="active"><span class="shimmer"></span>后台首页</a></li>
+                    <li><a href="#links"><span class="shimmer"></span>友链管理</a></li>
+                    <li><a href="#articles"><span class="shimmer"></span>文章管理</a></li>
+                    <li><a href="#messages"><span class="shimmer"></span>留言管理</a></li>
+                    <li><a href="#audit-logs"><span class="shimmer"></span>审计日志</a></li>
+                    <li><a href="index.html"><span class="shimmer"></span>网站首页</a></li>
+                    <li><a href="#" class="logout"><span class="shimmer"></span>退出登录</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <script src="/js/local-api.js"></script>
+    <script src="/js/ux-enhancements.js"></script>
+    <script>
+        const REAL_ADMIN_SESSION_KEY = 'yanmo.site.admin.real-session.v1';
+        const ADMIN_CSRF_TOKEN_KEY = 'yanmo.site.admin.csrf.v1';
+        const hasAdminSession = (window.SiteLocalApi && window.SiteLocalApi.isAdminLoggedIn()) || sessionStorage.getItem(REAL_ADMIN_SESSION_KEY) === '1';
+
+        if (!hasAdminSession) {
+            window.location.replace('admin.html');
+        }
+
+        function getAdminCsrfHeaders(withJson) {
+            const headers = {};
+            const token = sessionStorage.getItem(ADMIN_CSRF_TOKEN_KEY);
+            if (token) {
+                headers['X-CSRF-Token'] = token;
+            }
+            if (withJson) {
+                headers['Content-Type'] = 'application/json';
+            }
+            return headers;
+        }
+    </script>
+
+    <main>
+        <section class="admin-dashboard reveal">
+            <div class="terminal-label">ADMIN_CONSOLE // ROOT_ACCESS // SECURE_SESSION</div>
+            <div id="admin-api-mode-badge" class="admin-api-mode is-server" aria-live="polite">API: SERVER</div>
+            <h1>管理员后台</h1>
+            <div class="dashboard-stats">
+                <div class="stat-card">
+                    <h3>待审核友链</h3>
+                    <p class="stat-number" id="pending-links">加载中...</p>
+                </div>
+                <div class="stat-card">
+                    <h3>已发布文章</h3>
+                    <p class="stat-number" id="published-articles">加载中...</p>
+                </div>
+                <div class="stat-card">
+                    <h3>总访问量</h3>
+                    <p class="stat-number" id="total-views">加载中...</p>
+                </div>
+            </div>
+        </section>
+        <script>
+            function renderApiModeBadge() {
+                const badge = document.getElementById('admin-api-mode-badge');
+                if (!badge) {
+                    return;
+                }
+
+                const usingLocalApi = Boolean(
+                    window.SiteLocalApi &&
+                    typeof window.SiteLocalApi.isUsingLocalApi === 'function' &&
+                    window.SiteLocalApi.isUsingLocalApi()
+                );
+
+                badge.classList.toggle('is-local', usingLocalApi);
+                badge.classList.toggle('is-server', !usingLocalApi);
+                badge.textContent = usingLocalApi ? 'API: LOCAL' : 'API: SERVER';
+                badge.title = usingLocalApi
+                    ? '当前为浏览器本地模式，数据不会跨设备同步'
+                    : '当前为服务端模式，数据可跨设备同步';
+
+                if (!usingLocalApi) {
+                    fetch('/api/health')
+                        .then(response => response.ok ? response.json() : null)
+                        .then(health => {
+                            if (!health || typeof health !== 'object') {
+                                return;
+                            }
+
+                            const storageMode = String(health.storage_mode || 'unknown').toUpperCase();
+                            const credentialsMode = String(health.credentials_mode || 'unknown');
+                            badge.textContent = `API: SERVER (${storageMode})`;
+                            badge.title = `服务端模式，数据可跨设备同步；存储=${storageMode}；凭据来源=${credentialsMode}`;
+                        })
+                        .catch(() => {
+                            // Keep baseline badge text if health endpoint is unavailable.
+                        });
+                }
+            }
+
+            // 获取实时统计数据
+            async function getStats() {
+                try {
+                    const response = await fetch('/api/stats');
+                    if (response.ok) {
+                        const data = await response.json();
+                        document.getElementById('pending-links').textContent = data.pending_links;
+                        document.getElementById('published-articles').textContent = data.published_articles;
+                        document.getElementById('total-views').textContent = data.total_views.toLocaleString();
+                    } else {
+                        console.error('获取统计数据失败');
+                    }
+                } catch (error) {
+                    console.error('网络错误:', error);
+                }
+            }
+            
+            renderApiModeBadge();
+
+            // 初始加载数据
+            getStats();
+            
+            // 每30秒刷新一次数据
+            setInterval(getStats, 30000);
+        </script>
+
+        <section id="links" class="admin-section reveal">
+            <div class="section-header">
+                <h2>友链管理 / LINK_CONTROL</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <div class="links-audit-toolbar">
+                <div class="audit-chip-group">
+                    <span class="audit-chip">全部 <strong id="links-total-count">0</strong></span>
+                    <span class="audit-chip">待审核 <strong id="links-pending-count">0</strong></span>
+                    <span class="audit-chip">已通过 <strong id="links-approved-count">0</strong></span>
+                    <span class="audit-chip">已拒绝 <strong id="links-rejected-count">0</strong></span>
+                </div>
+                <div class="links-audit-controls">
+                    <label>
+                        状态
+                        <select id="links-status-filter">
+                            <option value="all">全部</option>
+                            <option value="pending">待审核</option>
+                            <option value="approved">已通过</option>
+                            <option value="rejected">已拒绝</option>
+                        </select>
+                    </label>
+                    <label>
+                        关键词
+                        <input id="links-keyword-filter" type="text" placeholder="名称/域名/描述">
+                    </label>
+                    <button type="button" class="btn-sm edit" id="links-refresh-btn">刷新列表</button>
+                </div>
+                <div id="links-audit-message" class="form-message" style="margin-top:0.4rem;"></div>
+            </div>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>头像</th>
+                            <th>网站名称</th>
+                            <th>网站链接</th>
+                            <th>网站描述</th>
+                            <th>提交时间</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="links-table-body">
+                        <!-- 友链数据将通过JavaScript动态加载 -->
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 2rem;">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="articles" class="admin-section reveal">
+            <div class="section-header">
+                <h2>文章管理 / ARTICLE_CONTROL</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <div class="admin-actions">
+                <button class="btn btn-primary" onclick="showAddArticleForm()">添加文章</button>
+            </div>
+            <!-- 添加文章表单 -->
+            <div id="add-article-form" class="article-form" style="display: none;">
+                <div class="terminal-label">NEW_ARTICLE_DRAFT // AUTO_SAVE: OFF</div>
+                <h3>添加新文章</h3>
+                <form id="new-article-form">
+                    <div class="form-group">
+                        <label for="article-title">标题</label>
+                        <input type="text" id="article-title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="article-content">内容</label>
+                        <textarea id="article-content" name="content" rows="10" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="article-category">分类</label>
+                        <input type="text" id="article-category" name="category" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">保存文章</button>
+                        <button type="button" class="btn btn-secondary" onclick="hideAddArticleForm()">取消</button>
+                    </div>
+                </form>
+            </div>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>标题</th>
+                            <th>发布日期</th>
+                            <th>分类</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="articles-table-body">
+                        <!-- 文章数据将通过JavaScript动态加载 -->
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 2rem;">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="messages" class="admin-section reveal">
+            <div class="section-header">
+                <h2>留言管理 / MESSAGE_CONTROL</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>邮箱</th>
+                            <th>留言内容</th>
+                            <th>留言日期</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="messages-table-body">
+                        <!-- 留言数据将通过JavaScript动态加载 -->
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 2rem;">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="audit-logs" class="admin-section reveal">
+            <div class="section-header">
+                <h2>审计日志 / AUDIT_LOGS</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <div class="links-audit-toolbar">
+                <div class="links-audit-controls">
+                    <label>
+                        动作
+                        <select id="audit-action-filter">
+                            <option value="">全部</option>
+                            <option value="admin_login">admin_login</option>
+                            <option value="admin_logout">admin_logout</option>
+                            <option value="credentials_change">credentials_change</option>
+                            <option value="credentials_reset">credentials_reset</option>
+                            <option value="article_create">article_create</option>
+                            <option value="article_update">article_update</option>
+                            <option value="article_delete">article_delete</option>
+                            <option value="link_status_update">link_status_update</option>
+                            <option value="link_delete">link_delete</option>
+                            <option value="message_delete">message_delete</option>
+                            <option value="csrf_check">csrf_check</option>
+                            <option value="session_invalidated">session_invalidated</option>
+                        </select>
+                    </label>
+                    <label>
+                        状态
+                        <select id="audit-status-filter">
+                            <option value="">全部</option>
+                            <option value="success">success</option>
+                            <option value="failed">failed</option>
+                            <option value="denied">denied</option>
+                            <option value="blocked">blocked</option>
+                        </select>
+                    </label>
+                    <label>
+                        关键词
+                        <input id="audit-keyword-filter" type="text" placeholder="用户名/IP/详情">
+                    </label>
+                    <button type="button" class="btn-sm edit" id="audit-refresh-btn">刷新</button>
+                    <button type="button" class="btn-sm approve" id="audit-export-btn">导出 CSV</button>
+                </div>
+                <div id="audit-message" class="form-message" style="margin-top:0.4rem;"></div>
+            </div>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>动作</th>
+                            <th>状态</th>
+                            <th>账号</th>
+                            <th>来源 IP</th>
+                            <th>详情</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-table-body">
+                        <tr>
+                            <td colspan="6" style="text-align:center;padding:2rem;">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="links-audit-toolbar" style="margin-top:0.8rem;">
+                <div class="audit-chip-group">
+                    <span class="audit-chip">总数 <strong id="audit-total-count">0</strong></span>
+                    <span class="audit-chip">当前页 <strong id="audit-page-current">1</strong>/<strong id="audit-page-total">1</strong></span>
+                </div>
+                <div class="links-audit-controls">
+                    <button type="button" class="btn-sm edit" id="audit-prev-btn">上一页</button>
+                    <button type="button" class="btn-sm edit" id="audit-next-btn">下一页</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="settings" class="admin-section reveal">
+            <div class="section-header">
+                <h2>账户设置 / SYSTEM_CONFIG</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <div class="admin-actions">
+                <button class="btn primary" onclick="showChangePasswordForm()">修改账号与密码</button>
+            </div>
+            <!-- 修改账号与密码表单 -->
+            <div id="change-password-form" class="article-form" style="display: none;">
+                <h3>修改管理员账号信息</h3>
+                <form id="password-form">
+                    <div class="form-group">
+                        <label for="current-password">当前密码</label>
+                        <input type="password" id="current-password" name="current-password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="new-username">新账号（可选）</label>
+                        <input type="text" id="new-username" name="new-username" placeholder="留空表示不修改账号">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-password">新密码（可选）</label>
+                        <input type="password" id="new-password" name="new-password" placeholder="留空表示不修改密码">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn">保存修改</button>
+                        <button type="button" class="btn" onclick="hideChangePasswordForm()">取消</button>
+                    </div>
+                    <div id="password-message" class="form-message"></div>
+                </form>
+            </div>
+
+            <div class="article-form" style="margin-top: 1rem;">
+                <h3>紧急恢复</h3>
+                <p style="margin-bottom: 1rem; color: #bbb;">忘记当前密码时，可在本机将账号重置为默认值（admin / admin）。</p>
+                <button type="button" class="btn btn-secondary" id="reset-admin-btn">一键重置为默认账号</button>
+                <div id="reset-admin-message" class="form-message"></div>
+            </div>
+        </section>
+        <script>
+            let allLinks = [];
+            const auditState = {
+                page: 1,
+                pageSize: 20,
+                totalPages: 1,
+                total: 0
+            };
+
+            function escapeHtml(value) {
+                return String(value || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function sanitizeHttpUrl(value) {
+                const raw = String(value || '').trim();
+                if (!raw) {
+                    return '#';
+                }
+
+                try {
+                    const parsed = new URL(raw, window.location.origin);
+                    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                        return parsed.href;
+                    }
+                } catch (error) {
+                    return '#';
+                }
+
+                return '#';
+            }
+
+            function statusLabel(status) {
+                if (status === 'approved') return '已通过';
+                if (status === 'rejected') return '已拒绝';
+                return '待审核';
+            }
+
+            function statusBadgeClass(status) {
+                if (status === 'approved') return 'badge-green';
+                if (status === 'rejected') return 'badge-cyan';
+                return 'badge-magenta';
+            }
+
+            function formatAdminDateTime(value) {
+                if (!value) return '--';
+                const date = new Date(String(value).replace(' ', 'T'));
+                if (Number.isNaN(date.getTime())) return String(value);
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+
+            function setLinksAuditMessage(text, isError = false) {
+                const messageEl = document.getElementById('links-audit-message');
+                messageEl.textContent = text || '';
+                messageEl.style.color = isError ? '#ff6b6b' : '#00ff80';
+            }
+
+            function updateLinksCounters(links) {
+                const pending = links.filter(item => item.status === 'pending').length;
+                const approved = links.filter(item => item.status === 'approved').length;
+                const rejected = links.filter(item => item.status === 'rejected').length;
+
+                document.getElementById('links-total-count').textContent = String(links.length);
+                document.getElementById('links-pending-count').textContent = String(pending);
+                document.getElementById('links-approved-count').textContent = String(approved);
+                document.getElementById('links-rejected-count').textContent = String(rejected);
+            }
+
+            function renderLinksTable(list) {
+                const tbody = document.getElementById('links-table-body');
+                tbody.innerHTML = '';
+
+                if (!list.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">当前筛选条件下暂无友链记录</td></tr>';
+                    return;
+                }
+
+                list.forEach(link => {
+                    const avatar = (link.site_avatar || '').trim();
+                    const safeName = String(link.site_name || '站').trim();
+                    const fallback = escapeHtml((safeName[0] || '站').toUpperCase());
+                    const safeDisplayName = escapeHtml(safeName || '未命名站点');
+                    const safeHref = sanitizeHttpUrl(link.site_url || '');
+                    const safeUrlText = escapeHtml(link.site_url || '');
+                    const safeDesc = escapeHtml(link.site_description || '');
+                    const readableTime = formatAdminDateTime(link.created_at);
+                    const badgeClass = statusBadgeClass(link.status);
+                    const badgeLabel = statusLabel(link.status);
+
+                    const avatarHtml = avatar.startsWith('data:image/')
+                        ? `<img class="admin-link-avatar" src="${avatar}" alt="${safeDisplayName} 头像">`
+                        : `<span class="admin-link-avatar admin-link-avatar-fallback">${fallback}</span>`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${avatarHtml}</td>
+                        <td>
+                            <div class="admin-link-meta">
+                                <span class="admin-link-name">${safeDisplayName}</span>
+                            </div>
+                        </td>
+                        <td class="admin-link-url"><a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeUrlText}</a></td>
+                        <td><p class="admin-link-desc">${safeDesc}</p></td>
+                        <td class="admin-link-time">${escapeHtml(readableTime)}</td>
+                        <td><span class="cyber-badge ${badgeClass}">${badgeLabel}</span></td>
+                        <td>
+                            <div class="admin-link-actions">
+                                ${link.status === 'pending' ? `
+                                    <button class="btn-sm approve" onclick="approveLink(${link.id}, this)">通过</button>
+                                    <button class="btn-sm reject" onclick="rejectLink(${link.id}, this)">拒绝</button>
+                                ` : `
+                                    <button class="btn-sm delete" onclick="deleteLink(${link.id}, this)">删除</button>
+                                `}
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            function applyLinksFilters() {
+                const statusFilter = document.getElementById('links-status-filter').value;
+                const keyword = document.getElementById('links-keyword-filter').value.trim().toLowerCase();
+
+                let filtered = allLinks.slice();
+
+                if (statusFilter !== 'all') {
+                    filtered = filtered.filter(link => String(link.status) === statusFilter);
+                }
+
+                if (keyword) {
+                    filtered = filtered.filter(link => {
+                        const haystack = [link.site_name, link.site_url, link.site_description]
+                            .join(' ')
+                            .toLowerCase();
+                        return haystack.includes(keyword);
+                    });
+                }
+
+                renderLinksTable(filtered);
+            }
+
+            function setAuditMessage(text, isError = false) {
+                const messageEl = document.getElementById('audit-message');
+                messageEl.textContent = text || '';
+                messageEl.style.color = isError ? '#ff6b6b' : '#00ff80';
+            }
+
+            function getAuditQueryString(includePage) {
+                const action = document.getElementById('audit-action-filter').value;
+                const status = document.getElementById('audit-status-filter').value;
+                const keyword = document.getElementById('audit-keyword-filter').value.trim();
+
+                const params = new URLSearchParams();
+                if (action) params.set('action', action);
+                if (status) params.set('status', status);
+                if (keyword) params.set('keyword', keyword);
+
+                if (includePage) {
+                    params.set('page', String(auditState.page));
+                    params.set('page_size', String(auditState.pageSize));
+                }
+
+                return params.toString();
+            }
+
+            function renderAuditLogs(items) {
+                const tbody = document.getElementById('audit-table-body');
+                tbody.innerHTML = '';
+
+                if (!Array.isArray(items) || !items.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">当前筛选条件下暂无审计记录</td></tr>';
+                    return;
+                }
+
+                items.forEach(item => {
+                    const createdAt = escapeHtml(formatAdminDateTime(item.created_at));
+                    const action = escapeHtml(item.action || '');
+                    const status = escapeHtml(item.status || '');
+                    const username = escapeHtml(item.username || '--');
+                    const clientIp = escapeHtml(item.client_ip || '--');
+                    const detail = escapeHtml(item.detail || '--');
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${createdAt}</td>
+                        <td>${action}</td>
+                        <td><span class="cyber-badge ${status === 'success' ? 'badge-green' : 'badge-magenta'}">${status}</span></td>
+                        <td>${username}</td>
+                        <td>${clientIp}</td>
+                        <td>${detail}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            async function loadAuditLogs() {
+                try {
+                    const query = getAuditQueryString(true);
+                    const response = await fetch(`/api/admin-audit-logs${query ? `?${query}` : ''}`);
+                    if (!response.ok) {
+                        setAuditMessage('审计日志加载失败，请稍后重试', true);
+                        return;
+                    }
+
+                    const payload = await response.json();
+                    auditState.total = Number(payload.total || 0);
+                    auditState.totalPages = Number(payload.total_pages || 1);
+                    auditState.page = Number(payload.page || 1);
+
+                    document.getElementById('audit-total-count').textContent = String(auditState.total);
+                    document.getElementById('audit-page-current').textContent = String(auditState.page);
+                    document.getElementById('audit-page-total').textContent = String(auditState.totalPages);
+
+                    renderAuditLogs(payload.items || []);
+                    setAuditMessage('审计日志已更新');
+                } catch (error) {
+                    console.error('加载审计日志失败:', error);
+                    setAuditMessage('网络错误，审计日志加载失败', true);
+                }
+            }
+
+            async function exportAuditLogsCsv() {
+                try {
+                    const query = getAuditQueryString(false);
+                    const response = await fetch(`/api/admin-audit-logs/export${query ? `?${query}` : ''}`);
+                    if (!response.ok) {
+                        setAuditMessage('导出失败，请稍后重试', true);
+                        return;
+                    }
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `admin-audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    window.URL.revokeObjectURL(url);
+                    setAuditMessage('导出成功');
+                } catch (error) {
+                    console.error('导出审计日志失败:', error);
+                    setAuditMessage('网络错误，导出失败', true);
+                }
+            }
+
+            // 加载友链数据
+            async function loadLinks() {
+                try {
+                    const response = await fetch('/api/links');
+                    if (response.ok) {
+                        allLinks = await response.json();
+                        updateLinksCounters(allLinks);
+                        applyLinksFilters();
+                        setLinksAuditMessage('友链列表已更新');
+                    } else {
+                        setLinksAuditMessage('加载友链失败，请稍后重试', true);
+                    }
+                } catch (error) {
+                    console.error('加载友链失败:', error);
+                    setLinksAuditMessage('网络错误，友链数据加载失败', true);
+                }
+            }
+            
+            // 加载文章数据
+            async function loadArticles() {
+                try {
+                    const response = await fetch('/api/articles');
+                    if (response.ok) {
+                        const articles = await response.json();
+                        const tbody = document.getElementById('articles-table-body');
+                        tbody.innerHTML = '';
+                        
+                        articles.forEach(article => {
+                            const safeTitle = escapeHtml(article.title || '');
+                            const safeCreatedAt = escapeHtml(article.created_at || '');
+                            const safeCategory = escapeHtml(article.category || '');
+                            const safeId = Number(article.id) || 0;
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${safeTitle}</td>
+                                <td>${safeCreatedAt}</td>
+                                <td>${safeCategory}</td>
+                                <td>
+                                    <button class="btn small edit" onclick="editArticle(${safeId})">编辑</button>
+                                    <button class="btn small delete" onclick="deleteArticle(${safeId})">删除</button>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                } catch (error) {
+                    console.error('加载文章失败:', error);
+                }
+            }
+            
+            // 加载留言数据
+            async function loadMessages() {
+                try {
+                    const response = await fetch('/api/messages');
+                    if (response.ok) {
+                        const messages = await response.json();
+                        const tbody = document.getElementById('messages-table-body');
+                        tbody.innerHTML = '';
+                        
+                        messages.forEach(message => {
+                            const safeName = escapeHtml(message.name || '');
+                            const safeEmail = escapeHtml(message.email || '');
+                            const safeMessage = escapeHtml(message.message || '');
+                            const safeCreatedAt = escapeHtml(message.created_at || '');
+                            const safeId = Number(message.id) || 0;
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${safeName}</td>
+                                <td>${safeEmail}</td>
+                                <td>${safeMessage}</td>
+                                <td>${safeCreatedAt}</td>
+                                <td>
+                                    <button class="btn small delete" onclick="deleteMessage(${safeId})">删除</button>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    }
+                } catch (error) {
+                    console.error('加载留言失败:', error);
+                }
+            }
+            
+            // 审核友链
+            async function approveLink(id, triggerButton) {
+                try {
+                    if (triggerButton) {
+                        triggerButton.disabled = true;
+                        triggerButton.textContent = '处理中...';
+                    }
+
+                    const response = await fetch(`/api/links/${id}`, {
+                        method: 'PUT',
+                        headers: getAdminCsrfHeaders(true),
+                        body: JSON.stringify({ status: 'approved' })
+                    });
+                    if (response.ok) {
+                        setLinksAuditMessage('友链审核通过');
+                        await loadLinks();
+                        await getStats();
+                    } else {
+                        setLinksAuditMessage('审核失败，请稍后重试', true);
+                    }
+                } catch (error) {
+                    console.error('审核友链失败:', error);
+                    setLinksAuditMessage('网络错误，审核操作失败', true);
+                }
+            }
+            
+            // 拒绝友链
+            async function rejectLink(id, triggerButton) {
+                try {
+                    if (triggerButton) {
+                        triggerButton.disabled = true;
+                        triggerButton.textContent = '处理中...';
+                    }
+
+                    const response = await fetch(`/api/links/${id}`, {
+                        method: 'PUT',
+                        headers: getAdminCsrfHeaders(true),
+                        body: JSON.stringify({ status: 'rejected' })
+                    });
+                    if (response.ok) {
+                        setLinksAuditMessage('友链已拒绝');
+                        await loadLinks();
+                        await getStats();
+                    } else {
+                        setLinksAuditMessage('拒绝失败，请稍后重试', true);
+                    }
+                } catch (error) {
+                    console.error('拒绝友链失败:', error);
+                    setLinksAuditMessage('网络错误，拒绝操作失败', true);
+                }
+            }
+            
+            // 删除友链
+            async function deleteLink(id, triggerButton) {
+                if (confirm('确定要删除这条友链吗？')) {
+                    try {
+                        if (triggerButton) {
+                            triggerButton.disabled = true;
+                            triggerButton.textContent = '删除中...';
+                        }
+
+                        const response = await fetch(`/api/links/${id}`, {
+                            method: 'DELETE',
+                            headers: getAdminCsrfHeaders(false)
+                        });
+                        if (response.ok) {
+                            setLinksAuditMessage('友链已删除');
+                            await loadLinks();
+                            await getStats();
+                        } else {
+                            setLinksAuditMessage('删除失败，请稍后重试', true);
+                        }
+                    } catch (error) {
+                        console.error('删除友链失败:', error);
+                        setLinksAuditMessage('网络错误，删除操作失败', true);
+                    }
+                }
+            }
+            
+            // 删除留言
+            async function deleteMessage(id) {
+                if (confirm('确定要删除这条留言吗？')) {
+                    try {
+                        const response = await fetch(`/api/messages/${id}`, {
+                            method: 'DELETE',
+                            headers: getAdminCsrfHeaders(false)
+                        });
+                        if (response.ok) {
+                            loadMessages();
+                        }
+                    } catch (error) {
+                        console.error('删除留言失败:', error);
+                    }
+                }
+            }
+            
+            // 删除文章
+            async function deleteArticle(id) {
+                if (confirm('确定要删除这篇文章吗？')) {
+                    try {
+                        const response = await fetch(`/api/articles/${id}`, {
+                            method: 'DELETE',
+                            headers: getAdminCsrfHeaders(false)
+                        });
+                        if (response.ok) {
+                            loadArticles();
+                            getStats();
+                        }
+                    } catch (error) {
+                        console.error('删除文章失败:', error);
+                    }
+                }
+            }
+            
+            // 显示添加文章表单
+            function showAddArticleForm() {
+                document.getElementById('add-article-form').style.display = 'block';
+            }
+            
+            // 隐藏添加文章表单
+            function hideAddArticleForm() {
+                document.getElementById('add-article-form').style.display = 'none';
+                document.getElementById('new-article-form').reset();
+            }
+            
+            // 提交新文章
+            document.getElementById('new-article-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const title = document.getElementById('article-title').value;
+                const content = document.getElementById('article-content').value;
+                const category = document.getElementById('article-category').value;
+                
+                try {
+                    const response = await fetch('/api/articles', {
+                        method: 'POST',
+                        headers: getAdminCsrfHeaders(true),
+                        body: JSON.stringify({ title, content, category })
+                    });
+                    if (response.ok) {
+                        hideAddArticleForm();
+                        loadArticles();
+                        getStats();
+                    }
+                } catch (error) {
+                    console.error('添加文章失败:', error);
+                }
+            });
+            
+            // 编辑文章
+            function editArticle(id) {
+                alert('编辑功能正在开发中');
+            }
+            
+            // 初始加载数据
+            document.getElementById('links-status-filter').addEventListener('change', applyLinksFilters);
+            document.getElementById('links-keyword-filter').addEventListener('input', applyLinksFilters);
+            document.getElementById('links-refresh-btn').addEventListener('click', () => {
+                setLinksAuditMessage('正在刷新友链列表...');
+                loadLinks();
+            });
+
+            document.getElementById('audit-action-filter').addEventListener('change', () => {
+                auditState.page = 1;
+                loadAuditLogs();
+            });
+            document.getElementById('audit-status-filter').addEventListener('change', () => {
+                auditState.page = 1;
+                loadAuditLogs();
+            });
+            document.getElementById('audit-keyword-filter').addEventListener('input', () => {
+                auditState.page = 1;
+                loadAuditLogs();
+            });
+            document.getElementById('audit-refresh-btn').addEventListener('click', () => {
+                setAuditMessage('正在刷新审计日志...');
+                loadAuditLogs();
+            });
+            document.getElementById('audit-export-btn').addEventListener('click', exportAuditLogsCsv);
+            document.getElementById('audit-prev-btn').addEventListener('click', () => {
+                if (auditState.page > 1) {
+                    auditState.page -= 1;
+                    loadAuditLogs();
+                }
+            });
+            document.getElementById('audit-next-btn').addEventListener('click', () => {
+                if (auditState.page < auditState.totalPages) {
+                    auditState.page += 1;
+                    loadAuditLogs();
+                }
+            });
+
+            loadLinks();
+            loadArticles();
+            loadMessages();
+            loadAuditLogs();
+            
+            // 每30秒刷新一次数据
+            setInterval(() => {
+                loadLinks();
+                loadArticles();
+                loadMessages();
+                loadAuditLogs();
+                getStats();
+            }, 30000);
+        
+            // 显示修改密码表单
+            function showChangePasswordForm() {
+                document.getElementById('change-password-form').style.display = 'block';
+            }
+            
+            // 隐藏修改密码表单
+            function hideChangePasswordForm() {
+                document.getElementById('change-password-form').style.display = 'none';
+                document.getElementById('password-form').reset();
+                document.getElementById('password-message').textContent = '';
+            }
+            
+            // 提交修改密码表单
+            document.getElementById('password-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const currentPassword = document.getElementById('current-password').value.trim();
+                const newUsername = document.getElementById('new-username').value.trim();
+                const newPassword = document.getElementById('new-password').value.trim();
+                const passwordMessage = document.getElementById('password-message');
+
+                if (!currentPassword) {
+                    passwordMessage.textContent = '请输入当前密码';
+                    passwordMessage.style.color = '#ff6b6b';
+                    return;
+                }
+
+                if (!newUsername && !newPassword) {
+                    passwordMessage.textContent = '请至少填写新账号或新密码';
+                    passwordMessage.style.color = '#ff6b6b';
+                    return;
+                }
+                
+                passwordMessage.textContent = '修改中...';
+                passwordMessage.style.color = '#0ff';
+                
+                try {
+                    const payload = {
+                        current_password: currentPassword
+                    };
+                    if (newUsername) {
+                        payload.new_username = newUsername;
+                    }
+                    if (newPassword) {
+                        payload.new_password = newPassword;
+                    }
+
+                    const response = await fetch('/api/change-password', {
+                        method: 'POST',
+                        headers: getAdminCsrfHeaders(true),
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            passwordMessage.textContent = '账号信息修改成功！下次登录请使用新信息。';
+                            passwordMessage.style.color = '#00ff80';
+                            setTimeout(() => {
+                                hideChangePasswordForm();
+                            }, 1500);
+                        } else {
+                            passwordMessage.textContent = '修改失败: ' + result.message;
+                            passwordMessage.style.color = '#ff6b6b';
+                        }
+                    } else {
+                        const error = await response.json();
+                        const errorMessage = error.message || error.error || '请求失败';
+                        passwordMessage.textContent = '修改失败: ' + errorMessage;
+                        passwordMessage.style.color = '#ff6b6b';
+                    }
+                } catch (error) {
+                    passwordMessage.textContent = '网络错误，请稍后再试';
+                    passwordMessage.style.color = '#ff6b6b';
+                }
+            });
+
+            document.getElementById('reset-admin-btn').addEventListener('click', async () => {
+                const resetMessage = document.getElementById('reset-admin-message');
+                const secondConfirm = prompt('请输入 RESET_ADMIN 确认重置：');
+                if (secondConfirm === null) {
+                    return;
+                }
+
+                if (secondConfirm.trim() !== 'RESET_ADMIN') {
+                    resetMessage.textContent = '重置已取消：确认口令不正确';
+                    resetMessage.style.color = '#ff6b6b';
+                    return;
+                }
+
+                resetMessage.textContent = '重置中...';
+                resetMessage.style.color = '#0ff';
+
+                try {
+                    const response = await fetch('/api/reset-admin-credentials', {
+                        method: 'POST',
+                        headers: getAdminCsrfHeaders(true),
+                        body: JSON.stringify({ confirm_text: 'RESET_ADMIN' })
+                    });
+
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        sessionStorage.removeItem(REAL_ADMIN_SESSION_KEY);
+                        if (window.SiteLocalApi) {
+                            window.SiteLocalApi.logout();
+                        }
+                        resetMessage.textContent = '已重置为 admin / admin，正在返回登录页...';
+                        resetMessage.style.color = '#00ff80';
+                        setTimeout(() => {
+                            window.location.href = 'admin.html';
+                        }, 1200);
+                    } else {
+                        resetMessage.textContent = '重置失败: ' + (result.message || '请稍后再试');
+                        resetMessage.style.color = '#ff6b6b';
+                    }
+                } catch (error) {
+                    resetMessage.textContent = '网络错误，请稍后再试';
+                    resetMessage.style.color = '#ff6b6b';
+                }
+            });
+        </script>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>赛博开发者</h3>
+                <p>全栈开发者 | 赛博朋克爱好者</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

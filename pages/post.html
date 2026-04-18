@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情 - YanMo的个人博客</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/beautify.css">
+</head>
+<body class="post-view">
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+            </div>
+            <button class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="index.html"><span class="shimmer"></span>首页</a></li>
+                    <li><a href="articles.html" class="active"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="about.html"><span class="shimmer"></span>关于我</a></li>
+                    <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
+                    <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
+                    <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="admin.html"><span class="shimmer"></span>管理</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <article class="post-detail reveal">
+            <div class="reading-progress" aria-hidden="true">
+                <span id="reading-progress-bar"></span>
+            </div>
+            <div id="post-loading" class="loading-status">正在接入数据流...</div>
+            <div id="post-error" class="error-status" style="display: none;">数据流异常：目标节点不可达</div>
+            <div id="post-container" style="display: none;">
+                <div id="post-fallback-notice" class="post-fallback-notice" style="display: none;" role="status" aria-live="polite"></div>
+                <div class="post-cover" id="article-cover">
+                    <!-- Image will be loaded here -->
+                </div>
+                <header class="post-header">
+                    <div class="post-meta">
+                        <span class="post-date" id="article-date"></span>
+                        <span class="post-category" id="article-category"></span>
+                    </div>
+                    <h1 id="article-title" class="glitch-text"></h1>
+                    <div class="post-author">研究员：YanMo</div>
+                </header>
+
+                <div class="post-layout">
+                    <aside class="post-toc" id="post-toc" style="display: none;">
+                        <div class="toc-header">
+                            <h3>阅读导航</h3>
+                            <button type="button" id="toc-toggle" class="toc-toggle" aria-expanded="false">展开目录</button>
+                        </div>
+                        <div class="toc-list" id="toc-list"></div>
+                    </aside>
+
+                    <div class="post-content" id="article-content">
+                        <!-- Content will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="post-footer">
+                <a href="articles.html" class="btn">返回任务列表</a>
+            </div>
+        </article>
+
+        <button type="button" id="toc-fab" class="toc-fab" aria-label="打开目录">目录</button>
+        <div id="toc-backdrop" class="toc-backdrop" aria-hidden="true"></div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo的个人博客</h3>
+                <p>信息安全专家 | 渗透测试 | 人工智能</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="link-apply.html" class="footer-link">前往友链申请页面</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/js/local-api.js"></script>
+    <script src="/js/ux-enhancements.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const loading = document.getElementById('post-loading');
+            const error = document.getElementById('post-error');
+            const container = document.getElementById('post-container');
+            const title = document.getElementById('article-title');
+            const date = document.getElementById('article-date');
+            const category = document.getElementById('article-category');
+            const content = document.getElementById('article-content');
+            const cover = document.getElementById('article-cover');
+            const toc = document.getElementById('post-toc');
+            const tocList = document.getElementById('toc-list');
+            const tocToggle = document.getElementById('toc-toggle');
+            const tocFab = document.getElementById('toc-fab');
+            const tocBackdrop = document.getElementById('toc-backdrop');
+            const progressBar = document.getElementById('reading-progress-bar');
+            const fallbackNotice = document.getElementById('post-fallback-notice');
+            let fallbackNoticeTimer = null;
+            let sectionNodes = [];
+            let tocNodes = [];
+
+            function hideFallbackNotice() {
+                if (!fallbackNotice) {
+                    return;
+                }
+
+                if (fallbackNoticeTimer) {
+                    window.clearTimeout(fallbackNoticeTimer);
+                    fallbackNoticeTimer = null;
+                }
+
+                fallbackNotice.classList.add('is-hiding');
+                window.setTimeout(function () {
+                    fallbackNotice.style.display = 'none';
+                    fallbackNotice.classList.remove('is-hiding');
+                    fallbackNotice.innerHTML = '';
+                }, 260);
+            }
+
+            function showFallbackNotice(message, autoHide) {
+                if (!fallbackNotice || !message) {
+                    return;
+                }
+
+                if (fallbackNoticeTimer) {
+                    window.clearTimeout(fallbackNoticeTimer);
+                    fallbackNoticeTimer = null;
+                }
+
+                fallbackNotice.innerHTML = '<span>' + escapeHtml(message) + '</span><button type="button" class="notice-close" aria-label="关闭提示">关闭</button>';
+                fallbackNotice.classList.remove('is-hiding');
+                fallbackNotice.style.display = 'flex';
+
+                if (autoHide) {
+                    fallbackNoticeTimer = window.setTimeout(function () {
+                        hideFallbackNotice();
+                    }, 3000);
+                }
+            }
+
+            function isMobileViewport() {
+                return window.innerWidth <= 900;
+            }
+
+            function setTocDrawerOpen(open) {
+                const mobile = isMobileViewport();
+                toc.classList.toggle('drawer-open', mobile && open);
+                if (tocBackdrop) {
+                    tocBackdrop.classList.toggle('active', mobile && open);
+                }
+
+                if (tocFab) {
+                    tocFab.classList.toggle('active', mobile && open);
+                }
+
+                if (tocToggle) {
+                    tocToggle.setAttribute('aria-expanded', String(open));
+                    tocToggle.textContent = mobile ? (open ? '关闭目录' : '展开目录') : '目录';
+                }
+            }
+
+            function escapeHtml(value) {
+                return String(value || '').replace(/[&<>'"]/g, function (char) {
+                    return {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        "'": '&#39;',
+                        '"': '&quot;'
+                    }[char] || char;
+                });
+            }
+
+            function parseBlocks(rawText) {
+                return String(rawText || '')
+                    .split(/\n{2,}/)
+                    .map(function (chunk) {
+                        return chunk.trim();
+                    })
+                    .filter(Boolean);
+            }
+
+            function buildArticleContent(rawText) {
+                const blocks = parseBlocks(rawText);
+                if (!blocks.length) {
+                    content.innerHTML = '<p>暂无正文内容</p>';
+                    sectionNodes = [];
+                    tocNodes = [];
+                    return;
+                }
+
+                let sectionIndex = 0;
+                content.innerHTML = blocks.map(function (block) {
+                    const headingMatch = block.match(/^(#{1,3})\s+(.+)$/);
+                    sectionIndex += 1;
+                    const sectionId = 'sec-' + sectionIndex;
+
+                    if (headingMatch) {
+                        const level = Math.min(headingMatch[1].length, 3);
+                        const headingText = headingMatch[2].trim();
+                        const tagName = level === 1 ? 'h2' : (level === 2 ? 'h2' : 'h3');
+                        return '<' + tagName + ' id="' + sectionId + '" data-type="heading" data-level="' + level + '">' + escapeHtml(headingText) + '</' + tagName + '>';
+                    }
+
+                    return '<p id="' + sectionId + '" data-type="paragraph" data-level="0">' + escapeHtml(block.replace(/\n+/g, ' ')) + '</p>';
+                }).join('');
+
+                sectionNodes = Array.from(content.querySelectorAll('[id^="sec-"]'));
+            }
+
+            function buildToc() {
+                if (!sectionNodes.length) {
+                    toc.style.display = 'none';
+                    tocNodes = [];
+                    return;
+                }
+
+                const headingNodes = sectionNodes.filter(function (node) {
+                    return node.dataset.type === 'heading';
+                });
+
+                if (headingNodes.length) {
+                    tocNodes = headingNodes;
+                } else {
+                    tocNodes = sectionNodes.filter(function (node, index) {
+                        return index === 0 || index === sectionNodes.length - 1 || index % 2 === 0;
+                    });
+                }
+
+                tocList.innerHTML = tocNodes.map(function (node, index) {
+                    const label = (node.textContent || '').slice(0, 26) || ('段落 ' + (index + 1));
+                    const level = Number(node.dataset.level || 0);
+                    const levelClass = level >= 3 ? 'toc-level-3' : (level === 2 ? 'toc-level-2' : (level === 1 ? 'toc-level-1' : 'toc-level-0'));
+                    return '<a href="#' + node.id + '" class="' + levelClass + '" data-target="' + node.id + '">' + (index + 1) + '. ' + escapeHtml(label) + '</a>';
+                }).join('');
+
+                toc.style.display = 'block';
+                setTocDrawerOpen(false);
+            }
+
+            function updateReadingProgress() {
+                const articleRect = content.getBoundingClientRect();
+                const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+                const totalScrollable = Math.max(content.scrollHeight - viewportHeight * 0.45, 1);
+                const progressed = Math.min(Math.max((viewportHeight * 0.2 - articleRect.top) / totalScrollable, 0), 1);
+                progressBar.style.width = (progressed * 100).toFixed(2) + '%';
+
+                const trackingNodes = tocNodes.length ? tocNodes : sectionNodes;
+                let currentId = null;
+                for (let i = 0; i < trackingNodes.length; i += 1) {
+                    if (trackingNodes[i].getBoundingClientRect().top <= viewportHeight * 0.3) {
+                        currentId = trackingNodes[i].id;
+                    }
+                }
+
+                const links = tocList.querySelectorAll('a[data-target]');
+                links.forEach(function (link) {
+                    const isActive = link.getAttribute('data-target') === currentId;
+                    link.classList.toggle('active', isActive);
+                });
+            }
+
+            async function fetchArticleById(id) {
+                const response = await fetch(`/api/articles/${id}`);
+                if (!response.ok) {
+                    throw new Error('ARTICLE_NOT_FOUND');
+                }
+                return response.json();
+            }
+
+            async function fetchLatestArticle() {
+                const response = await fetch('/api/articles');
+                if (!response.ok) {
+                    throw new Error('ARTICLE_LIST_FAILED');
+                }
+
+                const articles = await response.json();
+                if (!Array.isArray(articles) || articles.length === 0) {
+                    throw new Error('NO_ARTICLES');
+                }
+
+                return articles[0];
+            }
+
+            async function resolveArticle(requestedId) {
+                if (requestedId) {
+                    try {
+                        const article = await fetchArticleById(requestedId);
+                        return { article: article, source: 'requested' };
+                    } catch (err) {
+                        const fallbackArticle = await fetchLatestArticle();
+                        return { article: fallbackArticle, source: 'fallback' };
+                    }
+                }
+
+                const latestArticle = await fetchLatestArticle();
+                return { article: latestArticle, source: 'fallback' };
+            }
+
+            // 获取 URL 参数中的 ID
+            const urlParams = new URLSearchParams(window.location.search);
+            const articleId = urlParams.get('id');
+
+            try {
+                const resolved = await resolveArticle(articleId);
+                const article = resolved.article;
+                const targetId = String(article.id || '');
+
+                if (fallbackNotice) {
+                    if (resolved.source === 'fallback' && articleId) {
+                        showFallbackNotice('目标文章不存在，已自动切换到最新文章。', true);
+                    } else if (resolved.source === 'fallback' && !articleId) {
+                        showFallbackNotice('未指定文章编号，已为你加载最新文章。', true);
+                    } else {
+                        fallbackNotice.style.display = 'none';
+                    }
+                }
+
+                if (targetId && String(articleId || '') !== targetId) {
+                    const targetUrl = `${window.location.pathname}?id=${encodeURIComponent(targetId)}`;
+                    window.history.replaceState({}, '', targetUrl);
+                }
+                
+                // 填充内容
+                document.title = `${article.title} - YanMo的个人博客`;
+                title.textContent = article.title;
+                title.setAttribute('data-text', article.title);
+                date.textContent = article.created_at.split(' ')[0];
+                category.textContent = article.category;
+                
+                // 处理换行符为段落并构建目录锚点
+                buildArticleContent(article.content);
+                buildToc();
+                
+                // 生成封面图
+                cover.textContent = '';
+                const coverImg = document.createElement('img');
+                coverImg.src = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(article.title + ' cyber security high tech digital art')}&image_size=landscape_16_9`;
+                coverImg.alt = String(article.title || '文章封面');
+                cover.appendChild(coverImg);
+
+                loading.style.display = 'none';
+                container.style.display = 'block';
+
+                updateReadingProgress();
+                document.addEventListener('scroll', updateReadingProgress, { passive: true });
+                window.addEventListener('resize', updateReadingProgress);
+
+                if (tocToggle) {
+                    tocToggle.addEventListener('click', function () {
+                        if (!isMobileViewport()) {
+                            return;
+                        }
+                        const opened = toc.classList.contains('drawer-open');
+                        setTocDrawerOpen(!opened);
+                    });
+                }
+
+                if (tocFab) {
+                    tocFab.addEventListener('click', function () {
+                        setTocDrawerOpen(true);
+                    });
+                }
+
+                if (tocBackdrop) {
+                    tocBackdrop.addEventListener('click', function () {
+                        setTocDrawerOpen(false);
+                    });
+                }
+
+                tocList.addEventListener('click', function (event) {
+                    const link = event.target.closest('a[data-target]');
+                    if (!link) {
+                        return;
+                    }
+
+                    if (isMobileViewport()) {
+                        setTocDrawerOpen(false);
+                    }
+                });
+
+                window.addEventListener('resize', function () {
+                    if (!toc || toc.style.display === 'none') {
+                        return;
+                    }
+
+                    setTocDrawerOpen(false);
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key === 'Escape' && isMobileViewport()) {
+                        setTocDrawerOpen(false);
+                    }
+                });
+
+                if (fallbackNotice) {
+                    fallbackNotice.addEventListener('click', function (event) {
+                        const closeButton = event.target.closest('.notice-close');
+                        if (!closeButton) {
+                            return;
+                        }
+
+                        hideFallbackNotice();
+                    });
+                }
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+            }
+
+            // 主题切换功能
+            const themeToggle = document.querySelector('.theme-toggle');
+            const body = document.body;
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                body.classList.add('light-mode');
+                themeToggle.textContent = '切换到赛博模式';
+            }
+            themeToggle.addEventListener('click', function() {
+                body.classList.toggle('light-mode');
+                if (body.classList.contains('light-mode')) {
+                    themeToggle.textContent = '切换到赛博模式';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    themeToggle.textContent = '切换到白昼模式';
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
