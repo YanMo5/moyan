@@ -205,6 +205,96 @@
                 });
             }
 
+            function normalizeCoverUrl(value) {
+                const raw = String(value || '').trim();
+                if (!raw) {
+                    return '';
+                }
+
+                if (raw.startsWith('data:image/')) {
+                    return raw;
+                }
+
+                try {
+                    const parsed = new URL(raw, window.location.origin);
+                    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                        return parsed.href;
+                    }
+                } catch (error) {
+                    return '';
+                }
+
+                return '';
+            }
+
+            function resolveArticleCover(article) {
+                if (!article || typeof article !== 'object') {
+                    return '';
+                }
+
+                const candidates = [
+                    article.cover_url,
+                    article.coverUrl,
+                    article.cover,
+                    article.thumbnail,
+                    article.image,
+                    article.image_url,
+                    article.banner
+                ];
+
+                for (const item of candidates) {
+                    const normalized = normalizeCoverUrl(item);
+                    if (normalized) {
+                        return normalized;
+                    }
+                }
+
+                return '';
+            }
+
+            function escapeSvgText(value) {
+                return String(value || '').replace(/[&<>"']/g, function (char) {
+                    return {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#39;'
+                    }[char] || char;
+                });
+            }
+
+            function generateFallbackCover(article) {
+                const titleText = escapeSvgText(article && article.title ? article.title : '未命名文章');
+                const categoryText = escapeSvgText(article && article.category ? article.category : '学习笔记');
+                const svg = [
+                    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">',
+                    '<defs>',
+                    '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">',
+                    '<stop offset="0%" stop-color="#07131f" />',
+                    '<stop offset="100%" stop-color="#02050b" />',
+                    '</linearGradient>',
+                    '<linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">',
+                    '<stop offset="0%" stop-color="#18f4d6" stop-opacity="0.86" />',
+                    '<stop offset="100%" stop-color="#071723" stop-opacity="0.96" />',
+                    '</linearGradient>',
+                    '<pattern id="scan" width="6" height="6" patternUnits="userSpaceOnUse">',
+                    '<rect width="6" height="1.2" fill="rgba(255,255,255,0.07)" />',
+                    '</pattern>',
+                    '</defs>',
+                    '<rect width="1200" height="675" fill="url(#bg)" />',
+                    '<rect width="1200" height="675" fill="url(#accent)" opacity="0.88" />',
+                    '<rect width="1200" height="675" fill="url(#scan)" opacity="0.55" />',
+                    '<rect x="78" y="78" width="1044" height="519" rx="24" fill="rgba(2,8,16,0.32)" stroke="rgba(24,244,214,0.58)" stroke-width="4" />',
+                    '<text x="130" y="180" fill="#d9fff7" font-size="42" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" opacity="0.88">' + categoryText + '</text>',
+                    '<text x="130" y="290" fill="#ffffff" font-size="54" font-weight="700" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">' + titleText + '</text>',
+                    '<text x="130" y="548" fill="rgba(230,245,255,0.88)" font-size="28" letter-spacing="4" font-family="Consolas, monospace">YANMO BLOG COVER</text>',
+                    '</svg>'
+                ].join('');
+
+                return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+            }
+
             function parseBlocks(rawText) {
                 return String(rawText || '')
                     .split(/\n{2,}/)
@@ -366,11 +456,13 @@
                 buildArticleContent(article.content);
                 buildToc();
                 
-                // 生成封面图
+                // 使用文章自带封面；若缺失则回退本地 SVG 封面，避免依赖外部生图服务
                 cover.textContent = '';
                 const coverImg = document.createElement('img');
-                coverImg.src = `https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=${encodeURIComponent(article.title + ' cyber security high tech digital art')}&image_size=landscape_16_9`;
+                coverImg.src = resolveArticleCover(article) || generateFallbackCover(article);
                 coverImg.alt = String(article.title || '文章封面');
+                coverImg.loading = 'lazy';
+                coverImg.decoding = 'async';
                 cover.appendChild(coverImg);
 
                 loading.style.display = 'none';
