@@ -472,6 +472,15 @@ module.exports = function handler(req, res) {
     }
 
     if (routePath === '/health' && method === 'GET') {
+            if (routePath === '/debug') {
+                return res.status(200).json({
+                    req_url: req.url,
+                    req_query_route: req.query && req.query.route,
+                    route_path: routePath,
+                    method: method
+                });
+            }
+
         return res.status(200).json({
             ok: true,
             mode: 'server-api',
