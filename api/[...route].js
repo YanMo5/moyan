@@ -584,7 +584,7 @@ function requireAdminCsrf(req, res, session) {
     const provided = toSafeText(req.headers[CSRF_HEADER_NAME]);
     const expected = toSafeText(session && session.csrf);
     if (!expected || !provided || provided !== expected) {
-        res.status(403).json({ error: 'CSRF token 鏃犳晥鎴栫己澶? });
+        res.status(403).json({ error: 'CSRF token 无效或缺失' });
         return false;
     }
     return true;
@@ -709,7 +709,7 @@ module.exports = async function handler(req, res) {
         const message = toSafeText(body.message);
 
         if (!name || !email || !message) {
-            return res.status(400).json({ error: '璇峰畬鏁村～鍐欑暀瑷€淇℃伅' });
+            return res.status(400).json({ error: '请完整填写留言信息' });
         }
 
         const item = {
@@ -735,19 +735,19 @@ module.exports = async function handler(req, res) {
         const siteAvatar = toSafeText(body['site-avatar'] || body.site_avatar || body.siteAvatar);
 
         if (!siteName || !siteUrl || !siteDescription) {
-            return res.status(400).json({ error: '璇峰畬鏁村～鍐欏弸閾句俊鎭? });
+            return res.status(400).json({ error: '请完整填写友链信息' });
         }
 
         if (!isValidHttpUrl(siteUrl)) {
-            return res.status(400).json({ error: '璇疯緭鍏ユ湁鏁堢殑缃戠珯閾炬帴' });
+            return res.status(400).json({ error: '请输入有效的网站链接' });
         }
 
         if (siteAvatar && !siteAvatar.startsWith('data:image/')) {
-            return res.status(400).json({ error: '澶村儚鏍煎紡涓嶅悎娉? });
+            return res.status(400).json({ error: '头像格式不合法' });
         }
 
         if (siteAvatar && siteAvatar.length > 1000000) {
-            return res.status(400).json({ error: '澶村儚鏂囦欢杩囧ぇ锛岃鎺у埗鍦?1MB 浠ュ唴' });
+            return res.status(400).json({ error: '头像文件过大，请控制在 1MB 以内' });
         }
 
         const item = {
@@ -782,7 +782,7 @@ module.exports = async function handler(req, res) {
         const category = toSafeText(body.category);
 
         if (!title || !content || !category) {
-            return res.status(400).json({ error: '璇峰畬鏁村～鍐欐枃绔犱俊鎭? });
+            return res.status(400).json({ error: '请完整填写文章信息' });
         }
 
         const item = {
@@ -954,7 +954,7 @@ module.exports = async function handler(req, res) {
         const message = toSafeText(body.message);
 
         if (!name || !email || !subject || !message) {
-            return res.status(400).json({ error: '璇峰畬鏁村～鍐欒仈绯昏〃鍗? });
+            return res.status(400).json({ error: '请完整填写联系表单' });
         }
 
         data.contact_messages.unshift({
@@ -966,7 +966,7 @@ module.exports = async function handler(req, res) {
             created_at: now()
         });
         await saveData(data);
-        return res.status(201).json({ success: true, message: '娑堟伅宸插彂閫? });
+        return res.status(201).json({ success: true, message: '消息已发送' });
     }
 
     if (routePath === '/contact' && method === 'GET') {
