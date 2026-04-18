@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { Pool } = require('pg');
+
+let Pool = null;
 
 const SESSION_COOKIE_NAME = 'yanmo_admin_session';
 const CSRF_HEADER_NAME = 'x-csrf-token';
@@ -81,6 +82,14 @@ function getDbPool() {
     const connectionString = toSafeText(process.env.DATABASE_URL);
     if (!connectionString) {
         return null;
+    }
+
+    if (!Pool) {
+        try {
+            ({ Pool } = require('pg'));
+        } catch (error) {
+            return null;
+        }
     }
 
     if (!dbPool) {
