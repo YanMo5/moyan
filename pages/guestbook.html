@@ -29,6 +29,7 @@
                     <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
                     <li><a href="guestbook.html" class="active"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="admin.html"><span class="shimmer"></span>管理</a></li>
                 </ul>
                 <div class="nav-actions">
                     <button class="theme-toggle">切换到白昼模式</button>
@@ -91,9 +92,10 @@
 
                 function writeMessageCache(messages) {
                     try {
-                        if (Array.isArray(messages) && messages.length > 0) {
-                            localStorage.setItem(MESSAGE_CACHE_KEY, JSON.stringify(messages.slice(0, 100)));
+                        if (!Array.isArray(messages)) {
+                            return;
                         }
+                        localStorage.setItem(MESSAGE_CACHE_KEY, JSON.stringify(messages.slice(0, 100)));
                     } catch (error) {
                         // Ignore storage failures.
                     }
@@ -147,23 +149,27 @@
                 // 加载留言数据
                 async function loadMessages() {
                     try {
-                        const response = await fetch('/api/messages');
+                        const response = await fetch('/api/messages', {
+                            cache: 'no-store',
+                            headers: {
+                                'Cache-Control': 'no-cache'
+                            }
+                        });
                         if (response.ok) {
                             const messages = await response.json();
-                            if (Array.isArray(messages) && messages.length > 0) {
-                                writeMessageCache(messages);
-                                renderMessages(messages, false);
-                                return;
-                            }
-
-                            const cachedMessages = readMessageCache();
-                            if (cachedMessages.length > 0) {
-                                renderMessages(cachedMessages, true);
-                                return;
-                            }
-
-                            renderMessages([], false);
+                            const safeMessages = Array.isArray(messages) ? messages : [];
+                            writeMessageCache(safeMessages);
+                            renderMessages(safeMessages, false);
+                            return;
                         }
+
+                        const cachedMessages = readMessageCache();
+                        if (cachedMessages.length > 0) {
+                            renderMessages(cachedMessages, true);
+                            return;
+                        }
+
+                        renderMessages([], false);
                     } catch (error) {
                         console.error('加载留言失败:', error);
                         const cachedMessages = readMessageCache();
