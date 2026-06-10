@@ -11,11 +11,19 @@
       "dest": "/api/[...route].js"
     },
     {
+      "src": "/pages/(.*)",
+      "dest": "/pages/$1"
+    },
+    {
       "handle": "filesystem"
     },
     {
-      "src": "/(.*)",
+      "src": "/(.*\\.html)",
       "dest": "/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
