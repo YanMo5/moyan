@@ -13,7 +13,15 @@
 
     function isLocalDevHost() {
         var host = String(window.location.hostname || '').toLowerCase();
-        return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+        // Check for localhost addresses
+        if (host === 'localhost' || host === '127.0.0.1' || host === '::1') {
+            return true;
+        }
+        // Check for file:// protocol (direct file access)
+        if (window.location.protocol === 'file:') {
+            return true;
+        }
+        return false;
     }
 
     function getApiMode() {
@@ -31,7 +39,12 @@
             return 'server';
         }
 
-        // Default to real backend in both local and cloud environments.
+        // Default to local mode in local development environment for better offline experience.
+        // In cloud environment, use server mode by default.
+        if (isLocalDevHost()) {
+            return 'local';
+        }
+
         return 'server';
     }
 
