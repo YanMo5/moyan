@@ -225,3 +225,175 @@ document.addEventListener('DOMContentLoaded', () => {
         backToTop.style.color = '#0ff';
     });
 });
+
+         / /   - - -   T h e m e   T o g g l e   - - - 
+         c o n s t   t h e m e T o g g l e B t n   =   d o c u m e n t . q u e r y S e l e c t o r ( ' . t h e m e - t o g g l e ' ) ; 
+         i f   ( t h e m e T o g g l e B t n )   { 
+                 / /   L o a d   s a v e d   t h e m e 
+                 i f   ( l o c a l S t o r a g e . g e t I t e m ( ' t h e m e ' )   = = =   ' l i g h t ' )   { 
+                         d o c u m e n t . d o c u m e n t E l e m e n t . c l a s s L i s t . a d d ( ' l i g h t - t h e m e ' ) ; 
+                         d o c u m e n t . b o d y . c l a s s L i s t . a d d ( ' l i g h t - t h e m e ' ) ; 
+                         t h e m e T o g g l e B t n . t e x t C o n t e n t   =   ' Rbc0RfY!j_' ; 
+                 } 
+ 
+                 t h e m e T o g g l e B t n . a d d E v e n t L i s t e n e r ( ' c l i c k ' ,   ( )   = >   { 
+                         d o c u m e n t . d o c u m e n t E l e m e n t . c l a s s L i s t . t o g g l e ( ' l i g h t - t h e m e ' ) ; 
+                         d o c u m e n t . b o d y . c l a s s L i s t . t o g g l e ( ' l i g h t - t h e m e ' ) ; 
+                         
+                         i f   ( d o c u m e n t . b o d y . c l a s s L i s t . c o n t a i n s ( ' l i g h t - t h e m e ' ) )   { 
+                                 l o c a l S t o r a g e . s e t I t e m ( ' t h e m e ' ,   ' l i g h t ' ) ; 
+                                 t h e m e T o g g l e B t n . t e x t C o n t e n t   =   ' Rbc0RfY!j_' ; 
+                         }   e l s e   { 
+                                 l o c a l S t o r a g e . s e t I t e m ( ' t h e m e ' ,   ' d a r k ' ) ; 
+                                 t h e m e T o g g l e B t n . t e x t C o n t e n t   =   ' Rbc0R}v<f!j_' ; 
+                         } 
+                 } ) ; 
+         } 
+  
+    });
+
+    // --- Theme Toggle ---
+    const themeToggleBtn = document.querySelector('.theme-toggle');
+    if (themeToggleBtn) {
+        // Load saved theme
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-theme');
+            document.body.classList.add('light-theme');
+            themeToggleBtn.textContent = '切换到暗夜模式';
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('light-theme');
+            document.body.classList.toggle('light-theme');
+            
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggleBtn.textContent = '切换到暗夜模式';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggleBtn.textContent = '切换到白昼模式';
+            }
+        });
+    }
+});// ==========================================
+// 1. Matrix Digital Rain Background (Option 3)
+// ==========================================
+function initMatrixRain() {
+    if (document.getElementById('matrix-canvas')) return;
+    const canvas = document.createElement('canvas');
+    canvas.id = 'matrix-canvas';
+    canvas.style.position = 'fixed';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
+    canvas.style.zIndex = '-1';
+    canvas.style.opacity = '0.08';
+    canvas.style.pointerEvents = 'none';
+    document.body.prepend(canvas);
+
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()?'.split('');
+    const fontSize = 14;
+    let columns = width / fontSize;
+    let drops = [];
+    for (let i = 0; i < columns; i++) drops[i] = 1;
+
+    window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        columns = width / fontSize;
+        drops = [];
+        for (let i = 0; i < columns; i++) drops[i] = 1;
+    });
+
+    function draw() {
+        ctx.fillStyle = 'rgba(5, 5, 10, 0.05)';
+        ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = document.body.classList.contains('light-theme') ? '#006400' : '#0f0';
+        ctx.font = fontSize + 'px monospace';
+
+        for (let i = 0; i < drops.length; i++) {
+            const text = chars[Math.floor(Math.random() * chars.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > height && Math.random() > 0.975) drops[i] = 0;
+            drops[i]++;
+        }
+    }
+    setInterval(draw, 50);
+}
+
+// ==========================================
+// 2. Global Page Transition Effect (Option 1)
+// ==========================================
+function initPageTransitions() {
+    const overlay = document.createElement('div');
+    overlay.className = 'page-transition-overlay';
+    document.body.appendChild(overlay);
+
+    document.querySelectorAll(:not([target='_blank']):not([href^='#']):not([href^='javascript'])).forEach(link => {
+        link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+            if (!href) return;
+            e.preventDefault();
+            overlay.classList.add('active');
+            setTimeout(() => {
+                window.location.href = href;
+            }, 600);
+        });
+    });
+
+    window.addEventListener('pageshow', () => {
+        overlay.classList.remove('active');
+    });
+}
+
+// ==========================================
+// 3. Prism.js & Code Block Enhancements (Option 2)
+// ==========================================
+function initCodeEnhancements() {
+    const preBlocks = document.querySelectorAll('pre');
+    if (preBlocks.length === 0) return;
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-dark.min.css';
+    document.head.appendChild(link);
+
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js';
+    script.onload = () => {
+        const autoloader = document.createElement('script');
+        autoloader.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js';
+        document.head.appendChild(autoloader);
+        
+        preBlocks.forEach(pre => {
+            pre.classList.add('line-numbers');
+            
+            const btn = document.createElement('button');
+            btn.className = 'cyber-copy-btn';
+            btn.textContent = '</ Copy >';
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(pre.innerText.replace('</ Copy >', ''));
+                btn.textContent = 'COPIED!';
+                btn.style.color = '#0f0';
+                setTimeout(() => {
+                    btn.textContent = '</ Copy >';
+                    btn.style.color = '#0ff';
+                }, 2000);
+            });
+            pre.style.position = 'relative';
+            pre.appendChild(btn);
+        });
+    };
+    document.head.appendChild(script);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initMatrixRain();
+    initPageTransitions();
+    initCodeEnhancements();
+});

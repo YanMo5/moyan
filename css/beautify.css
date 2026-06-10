@@ -2519,3 +2519,83 @@ body.light-mode.post-view .post-category {
         border-color: rgba(30, 123, 140, 0.34);
     }
 }
+:root.light-theme {
+    --cyber-cyan: #008b8b;
+    --cyber-magenta: #8b008b;
+    --cyber-green: #006400;
+    --cyber-yellow: #b8860b;
+    --cyber-dark: #f0f4f8;
+    --cyber-card-bg: rgba(255, 255, 255, 0.9);
+    --cyber-border: rgba(0, 139, 139, 0.4);
+    --grid-pattern: repeating-linear-gradient(
+        0deg, transparent, transparent 39px, rgba(0, 0, 0, 0.04) 39px, rgba(0, 0, 0, 0.04) 40px
+    ), repeating-linear-gradient(
+        90deg, transparent, transparent 39px, rgba(0, 0, 0, 0.04) 39px, rgba(0, 0, 0, 0.04) 40px
+    );
+}
+body.light-theme {
+    color: #333;
+    background-color: var(--cyber-dark);
+}
+body.light-theme::before {
+    opacity: 0.1;
+}
+
+/* Custom Cyber cursor */
+body {
+    cursor: crosshair;
+}
+a, button, input, .glitch-text, .nav-links a {
+    cursor: pointer;
+}
+
+
+/* Transition Overlay */
+.page-transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: var(--cyber-dark);
+    z-index: 99999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.page-transition-overlay::after {
+    content: 'SYSTEM_BOOTING...';
+    color: var(--cyber-cyan);
+    font-family: 'Orbitron', monospace;
+    font-size: 2rem;
+    animation: glitch 1s infinite;
+}
+.page-transition-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Copy Button for Code Blocks */
+.cyber-copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid var(--cyber-cyan);
+    color: var(--cyber-cyan);
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+    z-index: 10;
+}
+.cyber-copy-btn:hover {
+    background: var(--cyber-cyan);
+    color: var(--cyber-dark);
+}
+
