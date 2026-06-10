@@ -140,7 +140,7 @@ function normalizeData(raw) {
 }
 
 function getDbPool() {
-    const connectionString = toSafeText(process.env.DATABASE_URL);
+    let connectionString = toSafeText(process.env.DATABASE_URL);
     if (!connectionString) {
         return null;
     }
@@ -154,9 +154,15 @@ function getDbPool() {
     }
 
     if (!dbPool) {
+        const parsedUrl = new URL(connectionString);
+        if (!parsedUrl.searchParams.has('sslmode')) {
+            parsedUrl.searchParams.set('sslmode', 'verify-full');
+            connectionString = parsedUrl.toString();
+        }
+        
         dbPool = new Pool({
             connectionString,
-            ssl: { rejectUnauthorized: false }
+            ssl: { rejectUnauthorized: true }
         });
     }
 
