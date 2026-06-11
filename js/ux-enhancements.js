@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
             navLinks.classList.toggle('active');
             hamburger.classList.toggle('open');
             
-            // Hamburger animation
             const spans = hamburger.querySelectorAll('span');
             if (hamburger.classList.contains('open')) {
                 spans[0].style.transform = 'rotate(45deg)';
@@ -21,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Close menu when link is clicked
         navLinks.querySelectorAll('a').forEach(link => {
             link.addEventListener('click', () => {
                 navLinks.classList.remove('active');
@@ -51,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const revealElements = document.querySelectorAll('.reveal');
     revealElements.forEach(el => revealObserver.observe(el));
 
-    // --- Top Nav Scroll Effects (Breadcrumb-like enhancement) ---
+    // --- Top Nav Scroll Effects ---
     const pageHeader = document.querySelector('header');
     const navItems = document.querySelectorAll('.nav-links a');
     const activeNavItem = document.querySelector('.nav-links a.active');
@@ -69,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let navHidden = false;
     let accumulatedDelta = 0;
     let ticking = false;
+
     const updateNavOnScroll = () => {
         const y = window.scrollY || window.pageYOffset || 0;
         const scrollDelta = y - lastScrollY;
@@ -137,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
 
-    // --- Dynamic System Status (Personalized Nav) ---
+    // --- Dynamic System Status ---
     const navActions = document.querySelector('.nav-actions');
     if (navActions) {
         const statusEl = document.createElement('div');
@@ -175,13 +174,13 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         updateStatus();
-        setInterval(updateStatus, 1000); // 1s sync for the clock
+        setInterval(updateStatus, 1000);
     }
 
     // --- Back to Top Button ---
     const backToTop = document.createElement('button');
     backToTop.className = 'back-to-top';
-    backToTop.innerHTML = '&#8679;'; // Up arrow
+    backToTop.innerHTML = '&#8679;';
     backToTop.style.cssText = `
         position: fixed;
         bottom: 30px;
@@ -202,11 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.appendChild(backToTop);
 
     window.addEventListener('scroll', () => {
-        if (window.pageYOffset > 300) {
-            backToTop.style.display = 'block';
-        } else {
-            backToTop.style.display = 'none';
-        }
+        backToTop.style.display = window.pageYOffset > 300 ? 'block' : 'none';
     });
 
     backToTop.addEventListener('click', () => {
@@ -226,70 +221,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-         / /   - - -   T h e m e   T o g g l e   - - - 
-         c o n s t   t h e m e T o g g l e B t n   =   d o c u m e n t . q u e r y S e l e c t o r ( ' . t h e m e - t o g g l e ' ) ; 
-         i f   ( t h e m e T o g g l e B t n )   { 
-                 / /   L o a d   s a v e d   t h e m e 
-                 i f   ( l o c a l S t o r a g e . g e t I t e m ( ' t h e m e ' )   = = =   ' l i g h t ' )   { 
-                         d o c u m e n t . d o c u m e n t E l e m e n t . c l a s s L i s t . a d d ( ' l i g h t - t h e m e ' ) ; 
-                         d o c u m e n t . b o d y . c l a s s L i s t . a d d ( ' l i g h t - t h e m e ' ) ; 
-                         t h e m e T o g g l e B t n . t e x t C o n t e n t   =   ' Rbc0RfY!j_' ; 
-                 } 
- 
-                 t h e m e T o g g l e B t n . a d d E v e n t L i s t e n e r ( ' c l i c k ' ,   ( )   = >   { 
-                         d o c u m e n t . d o c u m e n t E l e m e n t . c l a s s L i s t . t o g g l e ( ' l i g h t - t h e m e ' ) ; 
-                         d o c u m e n t . b o d y . c l a s s L i s t . t o g g l e ( ' l i g h t - t h e m e ' ) ; 
-                         
-                         i f   ( d o c u m e n t . b o d y . c l a s s L i s t . c o n t a i n s ( ' l i g h t - t h e m e ' ) )   { 
-                                 l o c a l S t o r a g e . s e t I t e m ( ' t h e m e ' ,   ' l i g h t ' ) ; 
-                                 t h e m e T o g g l e B t n . t e x t C o n t e n t   =   ' Rbc0RfY!j_' ; 
-                         }   e l s e   { 
-                                 l o c a l S t o r a g e . s e t I t e m ( ' t h e m e ' ,   ' d a r k ' ) ; 
-                                 t h e m e T o g g l e B t n . t e x t C o n t e n t   =   ' Rbc0R}v<f!j_' ; 
-                         } 
-                 } ) ; 
-         } 
-  
-    });
-
-    // --- Theme Toggle ---
-    const themeToggleBtn = document.querySelector('.theme-toggle');
-    if (themeToggleBtn) {
-        // Load saved theme
-        if (localStorage.getItem('theme') === 'light') {
-            document.documentElement.classList.add('light-theme');
-            document.body.classList.add('light-theme');
-            themeToggleBtn.textContent = '切换到暗夜模式';
-        }
-
-        themeToggleBtn.addEventListener('click', () => {
-            document.documentElement.classList.toggle('light-theme');
-            document.body.classList.toggle('light-theme');
-            
-            if (document.body.classList.contains('light-theme')) {
-                localStorage.setItem('theme', 'light');
-                themeToggleBtn.textContent = '切换到暗夜模式';
-            } else {
-                localStorage.setItem('theme', 'dark');
-                themeToggleBtn.textContent = '切换到白昼模式';
-            }
-        });
-    }
-});// ==========================================
-// 1. Matrix Digital Rain Background (Option 3)
+// ==========================================
+// Matrix Digital Rain Background
 // ==========================================
 function initMatrixRain() {
     if (document.getElementById('matrix-canvas')) return;
+    
     const canvas = document.createElement('canvas');
     canvas.id = 'matrix-canvas';
-    canvas.style.position = 'fixed';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
-    canvas.style.zIndex = '-1';
-    canvas.style.opacity = '0.08';
-    canvas.style.pointerEvents = 'none';
+    canvas.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -1;
+        opacity: 0.08;
+        pointer-events: none;
+    `;
     document.body.prepend(canvas);
 
     const ctx = canvas.getContext('2d');
@@ -299,18 +248,16 @@ function initMatrixRain() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()?'.split('');
     const fontSize = 14;
     let columns = width / fontSize;
-    let drops = [];
-    for (let i = 0; i < columns; i++) drops[i] = 1;
+    let drops = Array(Math.floor(columns)).fill(1);
 
     window.addEventListener('resize', () => {
         width = canvas.width = window.innerWidth;
         height = canvas.height = window.innerHeight;
         columns = width / fontSize;
-        drops = [];
-        for (let i = 0; i < columns; i++) drops[i] = 1;
+        drops = Array(Math.floor(columns)).fill(1);
     });
 
-    function draw() {
+    const draw = () => {
         ctx.fillStyle = 'rgba(5, 5, 10, 0.05)';
         ctx.fillRect(0, 0, width, height);
         ctx.fillStyle = document.body.classList.contains('light-theme') ? '#006400' : '#0f0';
@@ -319,27 +266,42 @@ function initMatrixRain() {
         for (let i = 0; i < drops.length; i++) {
             const text = chars[Math.floor(Math.random() * chars.length)];
             ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-            if (drops[i] * fontSize > height && Math.random() > 0.975) drops[i] = 0;
+            if (drops[i] * fontSize > height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
             drops[i]++;
         }
-    }
+    };
+
     setInterval(draw, 50);
 }
 
 // ==========================================
-// 2. Global Page Transition Effect (Option 1)
+// Global Page Transition Effect
 // ==========================================
 function initPageTransitions() {
     const overlay = document.createElement('div');
     overlay.className = 'page-transition-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: #05050a;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.6s ease;
+    `;
     document.body.appendChild(overlay);
 
-    document.querySelectorAll(:not([target='_blank']):not([href^='#']):not([href^='javascript'])).forEach(link => {
+    document.querySelectorAll('a:not([target="_blank"]):not([href^="#"]):not([href^="javascript"])').forEach(link => {
         link.addEventListener('click', (e) => {
             const href = link.getAttribute('href');
-            if (!href) return;
+            if (!href || href === '#') return;
+            
             e.preventDefault();
-            overlay.classList.add('active');
+            overlay.style.pointerEvents = 'auto';
+            overlay.style.opacity = '1';
+            
             setTimeout(() => {
                 window.location.href = href;
             }, 600);
@@ -347,12 +309,13 @@ function initPageTransitions() {
     });
 
     window.addEventListener('pageshow', () => {
-        overlay.classList.remove('active');
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
     });
 }
 
 // ==========================================
-// 3. Prism.js & Code Block Enhancements (Option 2)
+// Code Block Enhancements
 // ==========================================
 function initCodeEnhancements() {
     const preBlocks = document.querySelectorAll('pre');
@@ -360,7 +323,7 @@ function initCodeEnhancements() {
 
     const link = document.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-dark.min.css';
+    link.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css';
     document.head.appendChild(link);
 
     const script = document.createElement('script');
@@ -376,8 +339,22 @@ function initCodeEnhancements() {
             const btn = document.createElement('button');
             btn.className = 'cyber-copy-btn';
             btn.textContent = '</ Copy >';
+            btn.style.cssText = `
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                padding: 4px 12px;
+                background: rgba(0, 255, 255, 0.1);
+                border: 1px solid #0ff;
+                color: #0ff;
+                border-radius: 4px;
+                cursor: pointer;
+                font-family: monospace;
+                font-size: 0.8rem;
+                transition: all 0.3s;
+            `;
             btn.addEventListener('click', () => {
-                navigator.clipboard.writeText(pre.innerText.replace('</ Copy >', ''));
+                navigator.clipboard.writeText(pre.textContent);
                 btn.textContent = 'COPIED!';
                 btn.style.color = '#0f0';
                 setTimeout(() => {
@@ -392,6 +369,7 @@ function initCodeEnhancements() {
     document.head.appendChild(script);
 }
 
+// Initialize all enhancements
 document.addEventListener('DOMContentLoaded', () => {
     initMatrixRain();
     initPageTransitions();

@@ -947,8 +947,8 @@ section {
 }
 
 .article-item:hover {
-    transform: translateX(10px);
-    box-shadow: 0 8px 16px rgba(0, 255, 255, 0.2);
+    transform: translateX(10px) scale(1.01);
+    box-shadow: 0 8px 24px rgba(0, 255, 255, 0.3), 0 0 40px rgba(255, 0, 255, 0.15);
     border-left-color: #f0f;
 }
 
@@ -1128,12 +1128,12 @@ nav {
 }
 
 .nav-links a:hover {
-    background: rgba(0, 255, 255, 0.12);
-    border-color: rgba(0, 255, 255, 0.5);
-    box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+    background: rgba(0, 255, 255, 0.15);
+    border-color: rgba(0, 255, 255, 0.6);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3), inset 0 0 15px rgba(0, 255, 255, 0.1);
     color: #fff;
-    text-shadow: 0 0 8px #0ff;
-    transform: translateY(-2px);
+    text-shadow: 0 0 12px #0ff;
+    transform: translateY(-3px) scale(1.05);
 }
 
 .nav-links a:hover::before,
@@ -1278,6 +1278,27 @@ nav {
     100% { left: 100%; }
 }
 
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 5px currentColor, 0 0 10px currentColor; }
+    50% { box-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor; }
+}
+
+@keyframes scan {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
 /* Scroll Reveal Base */
 .reveal {
     position: relative;
@@ -1362,7 +1383,7 @@ main {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.3), transparent);
+    background: linear-gradient(90deg, transparent 0%, rgba(0, 255, 255, 0.3) 50%, transparent 100%);
     animation: scan 3s linear infinite;
 }
 
@@ -1408,8 +1429,8 @@ main {
 }
 
 .info-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 255, 255, 0.3);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 0 25px rgba(0, 255, 255, 0.4), 0 0 50px rgba(255, 0, 255, 0.2);
     border-color: #f0f;
 }
 
@@ -1581,9 +1602,10 @@ main {
 }
 
 .post-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 12px rgba(0, 255, 255, 0.3);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), 0 0 60px rgba(255, 0, 255, 0.2);
     border-color: #f0f;
+    background: rgba(20, 20, 35, 0.9);
 }
 
 .post-card::before {
@@ -1594,6 +1616,7 @@ main {
     width: 100%;
     height: 2px;
     background: linear-gradient(90deg, #0ff, #f0f, #0ff);
+    background-size: 200% 100%;
     animation: gradient-shift 3s linear infinite;
 }
 
@@ -1731,9 +1754,9 @@ main {
 
 .btn:hover {
     color: #05050a;
-    background: #0ff;
-    box-shadow: 0 0 30px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4);
-    transform: translateY(-3px);
+    background: linear-gradient(135deg, #0ff, #00ffffaa);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.3);
+    transform: translateY(-3px) scale(1.05);
 }
 
 footer {
@@ -1797,10 +1820,10 @@ footer {
 }
 
 .social-link:hover {
-    background: rgba(0, 255, 255, 0.1);
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    background: rgba(0, 255, 255, 0.15);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.4), 0 0 30px rgba(255, 0, 255, 0.2);
     border-color: #f0f;
-    transform: translateY(-2px);
+    transform: translateY(-3px) scale(1.1);
 }
 
 .social-link .qq-tooltip {
