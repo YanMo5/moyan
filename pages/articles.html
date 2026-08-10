@@ -2,13 +2,14 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <script>!function(){document.documentElement.classList.add('cyber-mode');var s=document.documentElement.style;function mc(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');var c;if(typeof v==='string')c=v;else if(v&&typeof v==='object')c=v.cyber||v.dark||v.light||null;else c=null;if(c&&k==='yanmo.site.text-color'&&c.toLowerCase()==='#e0e8f0'){localStorage.removeItem(k);return d;}return c||d;}catch(e){return d;}}try{var bg=mc('yanmo.site.bg-color','#05050a');var tx=mc('yanmo.site.text-color','#00ffff');s.setProperty('--bg-color',bg);var br=parseInt(bg.slice(1,3),16),bn=parseInt(bg.slice(3,5),16),bb=parseInt(bg.slice(5,7),16);s.setProperty('--bg-color-r',br);s.setProperty('--bg-color-g',bn);s.setProperty('--bg-color-b',bb);s.setProperty('--text-color',tx);var tr=parseInt(tx.slice(1,3),16),tn=parseInt(tx.slice(3,5),16),tb=parseInt(tx.slice(5,7),16);s.setProperty('--text-color-r',tr);s.setProperty('--text-color-g',tn);s.setProperty('--text-color-b',tb);}catch(e){}if(localStorage.getItem('yanmo.site.font-mode')==='cyberpunk')document.documentElement.classList.add('cyberpunk-mode');}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>安全文章 - YanMo的个人博客</title>
     <meta name="description" content="YanMo的个人博客文章列表，涵盖渗透测试、人工智能安全、网络安全架构等深度技术分享。">
     <meta name="keywords" content="安全文章, 技术博客, 渗透测试, AI安全">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/beautify.css">
 </head>
@@ -18,7 +19,7 @@
             <div class="logo">
                 <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
             </div>
-            <button class="hamburger">
+            <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -31,10 +32,8 @@
                     <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
                     <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
-                <div class="nav-actions">
-                    <button class="theme-toggle">切换到白昼模式</button>
-                </div>
             </div>
         </nav>
     </header>
@@ -45,25 +44,70 @@
             <h1 class="glitch-text" data-text="安全文章 | SECURITY ARTICLES">安全文章 | SECURITY ARTICLES</h1>
             <p class="articles-description">共享情报、渗透技巧与AI安全研究</p>
             
+            <!-- ── Taxonomy Filter Bar ──────────────────────── -->
             <div class="articles-controls">
                 <div class="search-box">
-                    <input type="text" id="article-search" placeholder="搜索情报数据...">
+                    <span class="search-icon">></span>
+                    <input type="text" id="article-search" placeholder="grep -r 'keyword' ./archives">
                 </div>
                 <div class="filter-box">
-                    <select id="category-filter">
-                        <option value="all">所有类别</option>
-                        <option value="渗透测试">渗透测试</option>
-                        <option value="AI安全">AI安全</option>
-                        <option value="企业安全">企业安全</option>
-                        <option value="Python安全">Python安全</option>
+                    <select id="category-filter" aria-label="按分类筛选文章">
+                        <option value="all">[ALL_SECTORS]</option>
+                        <option value="0x01_WebExploit">[0x01] WebExploit</option>
+                        <option value="0x02_ReverseEngineering">[0x02] ReverseEngineering</option>
+                        <option value="0x03_RedTeamOps">[0x03] RedTeamOps</option>
+                        <option value="0x04_BinaryPwn">[0x04] BinaryPwn</option>
+                        <option value="0x05_CryptoBreak">[0x05] CryptoBreak</option>
+                        <option value="0x06_MalwareForensics">[0x06] MalwareForensics</option>
+                        <option value="0x07_AISecOps">[0x07] AISecOps</option>
+                        <option value="0x08_CTF_WriteUp">[0x08] CTF_WriteUp</option>
+                        <option value="0x09_NetRecon">[0x09] NetRecon</option>
+                        <option value="0x0A_CloudAbuse">[0x0A] CloudAbuse</option>
+                        <option value="0x0B_HardwareSec">[0x0B] HardwareSec</option>
+                        <option value="0x0C_ThreatIntel">[0x0C] ThreatIntel</option>
                     </select>
                 </div>
+            </div>
+
+            <!-- ── Tag Cloud ────────────────────────────────── -->
+            <div class="tag-cloud" id="tag-cloud" aria-label="Tag filters">
+                <span class="tag-cloud-label">// TAGS:</span>
+                <button type="button" class="tag-btn active" data-tag="all">ALL</button>
+                <button type="button" class="tag-btn" data-tag="SQLi">SQLi</button>
+                <button type="button" class="tag-btn" data-tag="XSS">XSS</button>
+                <button type="button" class="tag-btn" data-tag="SSRF">SSRF</button>
+                <button type="button" class="tag-btn" data-tag="RCE">RCE</button>
+                <button type="button" class="tag-btn" data-tag="LFI">LFI</button>
+                <button type="button" class="tag-btn" data-tag="Deserialization">Deserialization</button>
+                <button type="button" class="tag-btn" data-tag="BufferOverflow">BufferOverflow</button>
+                <button type="button" class="tag-btn" data-tag="PrivEsc">PrivEsc</button>
+                <button type="button" class="tag-btn" data-tag="OSINT">OSINT</button>
+                <button type="button" class="tag-btn" data-tag="Phishing">Phishing</button>
+                <button type="button" class="tag-btn" data-tag="ReverseShell">ReverseShell</button>
+                <button type="button" class="tag-btn" data-tag="CVE">CVE</button>
+                <button type="button" class="tag-btn" data-tag="0day">0day</button>
+                <button type="button" class="tag-btn" data-tag="CTF">CTF</button>
+                <button type="button" class="tag-btn" data-tag="LLM_Jailbreak">LLM_Jailbreak</button>
+                <button type="button" class="tag-btn" data-tag="PromptInjection">PromptInjection</button>
+                <button type="button" class="tag-btn" data-tag="Mermaid">Mermaid</button>
+                <button type="button" class="tag-btn" data-tag="CloudMisconfig">CloudMisconfig</button>
+                <button type="button" class="tag-btn" data-tag="IAM_Escalation">IAM_Escalation</button>
+                <button type="button" class="tag-btn" data-tag="SideChannel">SideChannel</button>
+                <button type="button" class="tag-btn" data-tag="OSINT">OSINT</button>
+                <button type="button" class="tag-btn" data-tag="APT">APT</button>
+                <button type="button" class="tag-btn" data-tag="KillChain">KillChain</button>
             </div>
 
             <div class="articles-list" id="articles-container">
                 <!-- Articles will be loaded here dynamically -->
                 <div class="loading-status">正在初始化数据流...</div>
             </div>
+            <div class="pagination-controls" id="pagination-container" style="display: none;">
+                <button id="prev-page" class="pagination-btn" disabled>上一页</button>
+                <span class="pagination-info" id="pagination-info"></span>
+                <button id="next-page" class="pagination-btn">下一页</button>
+            </div>
+            <div class="scroll-trigger" id="scroll-trigger"></div>
         </section>
     </main>
 
@@ -79,7 +123,7 @@
                 <div class="social-links">
                     <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
                     <a href="#" class="social-link">Bilibili</a>
-                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer" class="social-link">GitHub</a>
                     <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
                     <a href="#" class="social-link">Discord</a>
                 </div>
@@ -95,100 +139,191 @@
     </footer>
 
     <script src="/js/local-api.js"></script>
+    <script src="/js/palette-manager.js"></script>
     <script src="/js/ux-enhancements.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
-            const container = document.getElementById('articles-container');
-            const searchInput = document.getElementById('article-search');
+            const container      = document.getElementById('articles-container');
+            const searchInput    = document.getElementById('article-search');
             const categoryFilter = document.getElementById('category-filter');
-            let allArticles = [];
+            const paginationContainer = document.getElementById('pagination-container');
+            const paginationInfo = document.getElementById('pagination-info');
+            const prevPageBtn    = document.getElementById('prev-page');
+            const nextPageBtn    = document.getElementById('next-page');
+            const scrollTrigger  = document.getElementById('scroll-trigger');
+            const tagCloud       = document.getElementById('tag-cloud');
 
-            function escapeHtml(value) {
-                return String(value || '').replace(/[&<>'"]/g, function (char) {
-                    return {
-                        '&': '&amp;',
-                        '<': '&lt;',
-                        '>': '&gt;',
-                        "'": '&#39;',
-                        '"': '&quot;'
-                    }[char] || char;
-                });
+            let currentPage   = 1;
+            let totalPages    = 1;
+            let totalArticles = 0;
+            let isLoading     = false;
+            let debounceTimer = null;
+            let activeTag     = 'all';
+
+            /* ── Taxonomy helpers ─────────────────────────────────── */
+            const CATEGORY_META = {
+                '0x01_WebExploit':       { label: '[0x01] WebExploit',       cls: 'badge-red'    },
+                '0x02_ReverseEngineering':{ label: '[0x02] RevEng',           cls: 'badge-orange' },
+                '0x03_RedTeamOps':       { label: '[0x03] RedTeam',          cls: 'badge-pink'   },
+                '0x04_BinaryPwn':        { label: '[0x04] BinaryPwn',        cls: 'badge-purple' },
+                '0x05_CryptoBreak':      { label: '[0x05] CryptoBreak',      cls: 'badge-yellow' },
+                '0x06_MalwareForensics': { label: '[0x06] Forensics',        cls: 'badge-amber'  },
+                '0x07_AISecOps':         { label: '[0x07] AISecOps',         cls: 'badge-cyan'   },
+                '0x08_CTF_WriteUp':      { label: '[0x08] CTF_WriteUp',      cls: 'badge-green'  },
+                '0x09_NetRecon':         { label: '[0x09] NetRecon',          cls: 'badge-teal'   },
+                '0x0A_CloudAbuse':       { label: '[0x0A] CloudAbuse',        cls: 'badge-sky'    },
+                '0x0B_HardwareSec':      { label: '[0x0B] HardwareSec',       cls: 'badge-lime'   },
+                '0x0C_ThreatIntel':      { label: '[0x0C] ThreatIntel',       cls: 'badge-rose'   },
+            };
+
+            function categoryBadge(cat) {
+                const meta = CATEGORY_META[cat];
+                if (meta) {
+                    return `<span class="cyber-badge ${meta.cls}">${meta.label}</span>`;
+                }
+                return `<span class="cyber-badge badge-magenta">${escapeHtml(cat)}</span>`;
             }
 
-            function truncateText(value, maxLength) {
-                const text = String(value || '').replace(/\s+/g, ' ').trim();
-                if (text.length <= maxLength) {
-                    return text;
-                }
-                return text.slice(0, maxLength) + '...';
+            function renderTags(tagsField) {
+                const tags = String(tagsField || '').split(',').map(t => t.trim()).filter(Boolean);
+                if (!tags.length) return '';
+                return tags.map(t => `<button type="button" class="article-tag-btn" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('');
             }
 
-            // 加载文章
-            async function loadArticles() {
-                try {
-                    const response = await fetch('/api/articles');
-                    allArticles = await response.json();
-                    renderArticles(allArticles);
-                } catch (error) {
-                    container.innerHTML = '<div class="error-status">数据同步失败：连接超时</div>';
-                }
+            /* ── Render ───────────────────────────────────────────── */
+            function escapeHtml(v) {
+                return String(v || '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]||c));
+            }
+            function truncateText(v, n) {
+                const t = String(v || '').replace(/\s+/g,' ').trim();
+                return t.length <= n ? t : t.slice(0, n) + '...';
             }
 
-            function renderArticles(articles) {
-                if (articles.length === 0) {
-                    container.innerHTML = '<div class="no-results">暂无已发布文章，请先在后台发布文章后查看。</div>';
-                    return;
-                }
-
-                container.innerHTML = articles.map((article, index) => `
-                    <article class="article-item" data-category="${article.category}">
-                        <span class="file-id">[FILE_${String(article.id).padStart(3,'0')}]</span>
+            function renderArticleItem(article) {
+                const isPinned = article.is_pinned || article.pinned;
+                const dateStr  = escapeHtml(formatLocalDate(article.created_at));
+                const excerpt  = escapeHtml(truncateText(article.content, 140));
+                const fileId   = String(article.id).padStart(3, '0');
+                const tagHtml  = renderTags(article.tags);
+                return `
+                    <article class="article-item fade-in" data-category="${escapeHtml(article.category)}" data-tags="${escapeHtml(article.tags || '')}">
+                        <span class="file-id">[FILE_${fileId}]</span>
                         <div class="article-meta-row">
-                            <div class="article-date">${escapeHtml(String(article.created_at || '').split(' ')[0])}</div>
-                            <span class="cyber-badge badge-magenta">${article.category}</span>
+                            <span class="article-date">${dateStr}</span>
+                            ${categoryBadge(article.category)}
+                            ${isPinned ? '<span class="cyber-badge badge-yellow">PIN</span>' : ''}
                         </div>
                         <h2>${escapeHtml(article.title)}</h2>
-                        <p class="article-excerpt">${escapeHtml(truncateText(article.content, 140))}</p>
-                        <a href="post.html?id=${article.id}" class="read-more">接入数据流</a>
-                    </article>
-                `).join('');
+                        <p class="article-excerpt">${excerpt}</p>
+                        ${tagHtml ? `<div class="article-tags">${tagHtml}</div>` : ''}
+                        <a href="post.html?id=${article.id}" class="read-more">READ_MORE →</a>
+                    </article>`;
             }
 
-            function filterArticles() {
-                const searchTerm = searchInput.value.toLowerCase();
-                const selectedCategory = categoryFilter.value;
+            /* ── Load ─────────────────────────────────────────────── */
+            async function loadArticles(page = 1, searchTerm = '', category = 'all', append = false) {
+                if (isLoading) return;
+                isLoading = true;
+                try {
+                    const params = new URLSearchParams({ page, limit: 10, search: searchTerm, category });
+                    const response = await fetch('/api/articles?' + params.toString());
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const result = await response.json();
+                    const articles = result.data || result;
+                    totalPages    = result.total_pages || 1;
+                    totalArticles = result.total || articles.length;
+                    currentPage   = page;
 
-                const filtered = allArticles.filter(article => {
-                    const matchesSearch = article.title.toLowerCase().includes(searchTerm) || 
-                                        article.content.toLowerCase().includes(searchTerm);
-                    const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory;
-                    return matchesSearch && matchesCategory;
-                });
+                    let filtered = articles;
+                    if (activeTag && activeTag !== 'all') {
+                        filtered = articles.filter(a => String(a.tags || '').split(',').map(t => t.trim()).includes(activeTag));
+                    }
 
-                renderArticles(filtered);
+                    const html = filtered.map(renderArticleItem).join('') ||
+                        '<div class="no-results">[ NO_MATCH ] — Adjust filters or search query.</div>';
+
+                    if (append) container.innerHTML += html;
+                    else container.innerHTML = html;
+
+                    updatePagination();
+                    checkScrollTrigger();
+
+                    // bubble tag-btn clicks up from article cards
+                    container.querySelectorAll('.article-tag-btn').forEach(btn => {
+                        btn.addEventListener('click', e => {
+                            e.preventDefault();
+                            setActiveTag(btn.dataset.tag);
+                        });
+                    });
+                } catch (err) {
+                    if (!append) container.innerHTML = `<div class="error-status">[ ERROR ] ${escapeHtml(err.message)}</div>`;
+                } finally {
+                    isLoading = false;
+                }
             }
 
-            searchInput.addEventListener('input', filterArticles);
-            categoryFilter.addEventListener('change', filterArticles);
-
-            // 主题切换功能 (保留原有逻辑)
-            const themeToggle = document.querySelector('.theme-toggle');
-            const body = document.body;
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                body.classList.add('light-mode');
-                themeToggle.textContent = '切换到赛博模式';
+            /* ── Tag cloud ────────────────────────────────────────── */
+            function setActiveTag(tag) {
+                activeTag = tag || 'all';
+                tagCloud.querySelectorAll('.tag-btn').forEach(b => b.classList.toggle('active', b.dataset.tag === activeTag));
+                currentPage = 1;
+                loadArticles(1, searchInput.value.trim(), categoryFilter.value);
             }
-            themeToggle.addEventListener('click', function() {
-                body.classList.toggle('light-mode');
-                if (body.classList.contains('light-mode')) {
-                    themeToggle.textContent = '切换到赛博模式';
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    themeToggle.textContent = '切换到白昼模式';
-                    localStorage.setItem('theme', 'dark');
+
+            tagCloud.addEventListener('click', e => {
+                const btn = e.target.closest('.tag-btn');
+                if (!btn) return;
+                setActiveTag(btn.dataset.tag);
+            });
+
+            /* ── Pagination ───────────────────────────────────────── */
+            function updatePagination() {
+                if (totalPages <= 1) { paginationContainer.style.display = 'none'; return; }
+                paginationContainer.style.display = 'flex';
+                paginationInfo.textContent = `PAGE ${currentPage} / ${totalPages}  |  TOTAL: ${totalArticles}`;
+                prevPageBtn.disabled = currentPage <= 1;
+                nextPageBtn.disabled = currentPage >= totalPages;
+            }
+
+            function checkScrollTrigger() {
+                scrollTrigger.style.display = (currentPage < totalPages) ? 'block' : 'none';
+            }
+
+            /* ── Events ───────────────────────────────────────────── */
+            searchInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    currentPage = 1;
+                    loadArticles(1, searchInput.value.trim(), categoryFilter.value);
+                }, 300);
+            });
+
+            categoryFilter.addEventListener('change', () => {
+                currentPage = 1;
+                loadArticles(1, searchInput.value.trim(), categoryFilter.value);
+            });
+
+            prevPageBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    loadArticles(currentPage - 1, searchInput.value.trim(), categoryFilter.value);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
             });
+
+            nextPageBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    loadArticles(currentPage + 1, searchInput.value.trim(), categoryFilter.value);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            });
+
+            window.addEventListener('scroll', () => {
+                if (isLoading || currentPage >= totalPages) return;
+                const rect = scrollTrigger.getBoundingClientRect();
+                if (rect.top <= window.innerHeight + 200) {
+                    loadArticles(currentPage + 1, searchInput.value.trim(), categoryFilter.value, true);
+                }
+            }, { passive: true });
 
             loadArticles();
         });

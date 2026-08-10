@@ -2,11 +2,12 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <script>!function(){document.documentElement.classList.add('cyber-mode');var s=document.documentElement.style;function mc(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');var c;if(typeof v==='string')c=v;else if(v&&typeof v==='object')c=v.cyber||v.dark||v.light||null;else c=null;if(c&&k==='yanmo.site.text-color'&&c.toLowerCase()==='#e0e8f0'){localStorage.removeItem(k);return d;}return c||d;}catch(e){return d;}}try{var bg=mc('yanmo.site.bg-color','#05050a');var tx=mc('yanmo.site.text-color','#00ffff');s.setProperty('--bg-color',bg);var br=parseInt(bg.slice(1,3),16),bn=parseInt(bg.slice(3,5),16),bb=parseInt(bg.slice(5,7),16);s.setProperty('--bg-color-r',br);s.setProperty('--bg-color-g',bn);s.setProperty('--bg-color-b',bb);s.setProperty('--text-color',tx);var tr=parseInt(tx.slice(1,3),16),tn=parseInt(tx.slice(3,5),16),tb=parseInt(tx.slice(5,7),16);s.setProperty('--text-color-r',tr);s.setProperty('--text-color-g',tn);s.setProperty('--text-color-b',tb);}catch(e){}if(localStorage.getItem('yanmo.site.font-mode')==='cyberpunk')document.documentElement.classList.add('cyberpunk-mode');}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>留言板 - YanMo的个人博客</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/beautify.css">
 </head>
@@ -16,7 +17,7 @@
             <div class="logo">
                 <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
             </div>
-            <button class="hamburger">
+            <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -29,15 +30,14 @@
                     <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
                     <li><a href="guestbook.html" class="active"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
-                <div class="nav-actions">
-                    <button class="theme-toggle">切换到白昼模式</button>
-                </div>
             </div>
         </nav>
     </header>
 
     <script src="/js/local-api.js"></script>
+    <script src="/js/palette-manager.js"></script>
     <script src="/js/ux-enhancements.js"></script>
 
     <main>
@@ -46,26 +46,49 @@
             <h1 class="glitch-text" data-text="留言板 / GUESTBOOK">留言板 / GUESTBOOK</h1>
             <p class="guestbook-description">留下你的访问脚印，或者分享你的安全见解</p>
             
-            <div class="guestbook-actions">
-                <a href="message-apply.html" class="btn btn-primary">写留言</a>
+            <div class="guestbook-form-section">
+                <div class="section-header">
+                    <h2>发表留言 / LEAVE_MESSAGE</h2>
+                    <div class="section-header-bar"></div>
+                </div>
+                <form id="guestbook-form" class="guestbook-form">
+                    <div class="form-group">
+                        <label for="guest-name">你的名字</label>
+                        <input type="text" id="guest-name" name="name" placeholder="输入你的名字或昵称" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="guest-email">电子邮箱（选填）</label>
+                        <input type="email" id="guest-email" name="email" placeholder="输入你的邮箱（不会公开）">
+                    </div>
+                    <div class="form-group">
+                        <label for="guest-message">留言内容</label>
+                        <textarea id="guest-message" name="message" placeholder="分享你的想法或见解..." rows="4" required></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">发送留言</button>
+                        <span class="form-hint">留言将在审核后显示</span>
+                    </div>
+                    <div id="form-feedback" class="form-feedback"></div>
+                </form>
             </div>
 
             <div class="guestbook-messages">
                 <div class="section-header">
                     <h2>访客日志 / VISITOR_LOG</h2>
                     <div class="section-header-bar"></div>
+                    <span class="message-count" id="message-count"></span>
                 </div>
                 <div class="message-list" id="message-list">
-                    <!-- 留言数据将通过JavaScript动态加载 -->
-                    <div class="message-item">
-                        <div class="message-content" style="text-align: center; padding: 2rem;">
-                            <p>加载中...</p>
-                        </div>
+                    <div class="loading-message">
+                        <span class="loading-spinner"></span>
+                        <span>正在获取访客日志...</span>
                     </div>
                 </div>
             </div>
             <script>
                 const MESSAGE_CACHE_KEY = 'yanmo.site.messages.cache.v1';
+                const MESSAGE_TIMESTAMP_KEY = 'yanmo.site.messages.timestamp.v1';
+                const CACHE_TTL = 5 * 60 * 1000;
 
                 function escapeHtml(value) {
                     return String(value || '').replace(/[&<>'"]/g, function (char) {
@@ -77,6 +100,14 @@
                             '"': '&quot;'
                         }[char] || char;
                     });
+                }
+                // 数据库存储 UTC 时间，转为本地日期字符串
+                function formatLocalDate(value) {
+                    if (!value) return '--';
+                    var s = String(value).replace(' ', 'T').replace(/\.\d+$/, '');
+                    var d = /([Zz]|[+-]\d{2}:?\d{2})$/.test(s) ? new Date(s) : new Date(s + 'Z');
+                    if (isNaN(d.getTime())) return String(value).split(' ')[0] || '--';
+                    return d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
                 }
 
                 function readMessageCache() {
@@ -95,65 +126,182 @@
                             return;
                         }
                         localStorage.setItem(MESSAGE_CACHE_KEY, JSON.stringify(messages.slice(0, 100)));
+                        localStorage.setItem(MESSAGE_TIMESTAMP_KEY, Date.now().toString());
                     } catch (error) {
                         // Ignore storage failures.
                     }
                 }
 
+                function isCacheValid() {
+                    try {
+                        const timestamp = localStorage.getItem(MESSAGE_TIMESTAMP_KEY);
+                        if (!timestamp) return false;
+                        const age = Date.now() - parseInt(timestamp, 10);
+                        return age < CACHE_TTL;
+                    } catch {
+                        return false;
+                    }
+                }
+
                 function renderMessages(messages, fromCache) {
                     const messageList = document.getElementById('message-list');
+                    const messageCount = document.getElementById('message-count');
                     messageList.innerHTML = '';
 
                     if (!Array.isArray(messages) || messages.length === 0) {
                         messageList.innerHTML = `
-                            <div class="message-item">
-                                <div class="message-content" style="text-align: center; padding: 2rem;">
-                                    <p>暂无留言</p>
-                                </div>
+                            <div class="message-empty">
+                                <div class="empty-icon">📭</div>
+                                <p>暂无访客留言</p>
+                                <p class="empty-hint">成为第一个留言的访客吧！</p>
                             </div>
                         `;
+                        messageCount.textContent = '';
                         return;
                     }
 
                     if (fromCache) {
                         const cacheNotice = document.createElement('div');
-                        cacheNotice.className = 'message-item';
-                        cacheNotice.innerHTML = `
-                            <div class="message-content" style="text-align:center;padding:0.8rem 1rem;color:#9ad3ff;">
-                                当前节点暂无数据，已展示最近缓存留言。
-                            </div>
-                        `;
+                        cacheNotice.className = 'cache-notice';
+                        cacheNotice.innerHTML = '📡 当前显示缓存数据，离线模式已启用';
                         messageList.appendChild(cacheNotice);
                     }
 
-                    messages.forEach(message => {
-                        const messageItem = document.createElement('div');
-                        messageItem.className = 'guestbook-item';
+                    messageCount.textContent = `共 ${messages.length} 条留言`;
+
+                    messages.forEach((message, index) => {
+                        const messageItem = document.createElement('article');
+                        messageItem.className = 'guestbook-item fade-in';
+                        messageItem.style.animationDelay = `${index * 0.1}s`;
+                        
                         const safeName = escapeHtml(message.name || '匿名用户');
                         const safeContent = escapeHtml(message.message || '');
-                        const dateText = escapeHtml(String(message.created_at || '').split(' ')[0] || '--');
+                        const dateText = escapeHtml(formatLocalDate(message.created_at));
+                        const replies = message.replies || [];
+
+                        let repliesHtml = '';
+                        if (replies.length > 0) {
+                            repliesHtml = `
+                                <div class="message-replies">
+                                    <div class="replies-header">回复 (${replies.length})</div>
+                                    ${replies.map(reply => `
+                                        <div class="reply-item">
+                                            <span class="reply-author">${escapeHtml(reply.name || '管理员')}</span>
+                                            <span class="reply-content">${escapeHtml(reply.content || '')}</span>
+                                            <span class="reply-date">${escapeHtml(formatLocalDate(reply.created_at))}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `;
+                        }
+
                         messageItem.innerHTML = `
-                            <div class="message-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.8rem;">
-                                <span class="message-author" style="color:#0ff;font-family:'Orbitron',sans-serif;font-size:0.9rem;font-weight:700;">&#9658; ${safeName}</span>
-                                <span class="cyber-badge badge-cyan">${dateText}</span>
+                            <div class="message-header">
+                                <span class="message-author">${safeName}</span>
+                                <span class="message-date">${dateText}</span>
                             </div>
                             <div class="message-content">
-                                <p style="color:#c0c0c0;line-height:1.7;">${safeContent}</p>
+                                <p>${safeContent}</p>
+                            </div>
+                            ${repliesHtml}
+                            <div class="message-actions">
+                                <button class="reply-btn" data-message-id="${message.id}">回复</button>
+                            </div>
+                            <div class="reply-form" id="reply-form-${message.id}" style="display: none;">
+                                <textarea class="reply-textarea" placeholder="写下你的回复..."></textarea>
+                                <div class="reply-actions">
+                                    <button class="submit-reply-btn" data-message-id="${message.id}">发送回复</button>
+                                    <button class="cancel-reply-btn" data-message-id="${message.id}">取消</button>
+                                </div>
                             </div>
                         `;
                         messageList.appendChild(messageItem);
                     });
+
+                    bindReplyEvents();
                 }
 
-                // 加载留言数据
-                async function loadMessages() {
-                    try {
-                        const response = await fetch('/api/messages', {
-                            cache: 'no-store',
-                            headers: {
-                                'Cache-Control': 'no-cache'
+                function bindReplyEvents() {
+                    document.querySelectorAll('.reply-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const messageId = this.dataset.messageId;
+                            const replyForm = document.getElementById(`reply-form-${messageId}`);
+                            replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
+                        });
+                    });
+
+                    document.querySelectorAll('.cancel-reply-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const messageId = this.dataset.messageId;
+                            const replyForm = document.getElementById(`reply-form-${messageId}`);
+                            replyForm.style.display = 'none';
+                            replyForm.querySelector('.reply-textarea').value = '';
+                        });
+                    });
+
+                    document.querySelectorAll('.submit-reply-btn').forEach(btn => {
+                        btn.addEventListener('click', async function() {
+                            const messageId = this.dataset.messageId;
+                            const replyForm = document.getElementById(`reply-form-${messageId}`);
+                            const textarea = replyForm.querySelector('.reply-textarea');
+                            const content = textarea.value.trim();
+                            
+                            if (!content) return;
+
+                            try {
+                                const response = await fetch(`/api/messages/${messageId}/reply`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ content })
+                                });
+
+                                if (response.ok) {
+                                    showFormFeedback('回复成功！', 'success');
+                                    textarea.value = '';
+                                    replyForm.style.display = 'none';
+                                    setTimeout(loadMessages, 500);
+                                } else {
+                                    showFormFeedback('回复失败，请稍后重试', 'error');
+                                }
+                            } catch (error) {
+                                showFormFeedback('网络错误，请检查连接', 'error');
                             }
                         });
+                    });
+                }
+
+                function showFormFeedback(message, type) {
+                    const feedback = document.getElementById('form-feedback');
+                    feedback.textContent = message;
+                    feedback.className = `form-feedback form-feedback-${type}`;
+                    feedback.style.display = 'block';
+                    setTimeout(() => {
+                        feedback.style.display = 'none';
+                    }, 3000);
+                }
+
+                async function loadMessages(forceRefresh = false) {
+                    const messageList = document.getElementById('message-list');
+                    messageList.innerHTML = `
+                        <div class="loading-message">
+                            <span class="loading-spinner"></span>
+                            <span>正在获取访客日志...</span>
+                        </div>
+                    `;
+
+                    try {
+                        const useCache = !forceRefresh && isCacheValid();
+                        const cachedMessages = readMessageCache();
+
+                        if (useCache && cachedMessages.length > 0) {
+                            renderMessages(cachedMessages, true);
+                        }
+
+                        const response = await fetch('/api/messages', {
+                            cache: 'no-store',
+                            headers: { 'Cache-Control': 'no-cache' }
+                        });
+
                         if (response.ok) {
                             const messages = await response.json();
                             const safeMessages = Array.isArray(messages) ? messages : [];
@@ -162,7 +310,6 @@
                             return;
                         }
 
-                        const cachedMessages = readMessageCache();
                         if (cachedMessages.length > 0) {
                             renderMessages(cachedMessages, true);
                             return;
@@ -176,23 +323,47 @@
                             renderMessages(cachedMessages, true);
                             return;
                         }
-
-                        const messageList = document.getElementById('message-list');
-                        messageList.innerHTML = `
-                            <div class="message-item">
-                                <div class="message-content" style="text-align: center; padding: 2rem;">
-                                    <p>加载失败</p>
-                                </div>
-                            </div>
-                        `;
+                        renderMessages([], false);
                     }
                 }
-                
-                // 初始加载留言
+
+                document.getElementById('guestbook-form').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    const name = formData.get('name').trim();
+                    const email = formData.get('email').trim();
+                    const message = formData.get('message').trim();
+
+                    if (!name || !message) return;
+
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '发送中...';
+
+                    try {
+                        const response = await fetch('/api/messages', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name, email, message })
+                        });
+
+                        if (response.ok) {
+                            showFormFeedback('留言提交成功！等待审核后显示', 'success');
+                            this.reset();
+                            setTimeout(() => loadMessages(true), 1000);
+                        } else {
+                            showFormFeedback('提交失败，请稍后重试', 'error');
+                        }
+                    } catch (error) {
+                        showFormFeedback('网络错误，请检查连接', 'error');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '发送留言';
+                    }
+                });
+
                 loadMessages();
-                
-                // 每30秒刷新一次
-                setInterval(loadMessages, 30000);
+                setInterval(() => loadMessages(), 60000);
             </script>
         </section>
     </main>
@@ -209,7 +380,7 @@
                 <div class="social-links">
                     <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
                     <a href="#" class="social-link">Bilibili</a>
-                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer" class="social-link">GitHub</a>
                     <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
                     <a href="#" class="social-link">Discord</a>
                 </div>
@@ -224,32 +395,5 @@
         </div>
     </footer>
 
-    <script>
-        // 主题切换功能
-        document.addEventListener('DOMContentLoaded', function() {
-            const themeToggle = document.querySelector('.theme-toggle');
-            const body = document.body;
-            
-            // 检查本地存储中的主题偏好
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                body.classList.add('light-mode');
-                themeToggle.textContent = '切换到赛博模式';
-            }
-            
-            // 主题切换点击事件
-            themeToggle.addEventListener('click', function() {
-                body.classList.toggle('light-mode');
-                
-                if (body.classList.contains('light-mode')) {
-                    themeToggle.textContent = '切换到赛博模式';
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    themeToggle.textContent = '切换到白昼模式';
-                    localStorage.setItem('theme', 'dark');
-                }
-            });
-        });
-    </script>
 </body>
 </html>

@@ -1,14 +1,25 @@
-(function () {
+(function (window) {
+    'use strict';
+
     if (typeof window === 'undefined' || typeof window.fetch !== 'function') {
         return;
     }
 
-    var STORAGE_KEY = 'yanmo.site.data.v1';
-    var SESSION_KEY = 'yanmo.site.admin.session.v1';
-    var REAL_SESSION_KEY = 'yanmo.site.admin.real-session.v1';
-    var ADMIN_CSRF_TOKEN_KEY = 'yanmo.site.admin.csrf.v1';
-    var API_MODE_KEY = 'yanmo.site.api.mode.v1';
-    var VISIT_KEY_PREFIX = 'yanmo.site.visit.';
+    var CONFIG = {
+        STORAGE_KEY: 'yanmo.site.data.v1',
+        SESSION_KEY: 'yanmo.site.admin.session.v1',
+        REAL_SESSION_KEY: 'yanmo.site.admin.real-session.v1',
+        ADMIN_CSRF_TOKEN_KEY: 'yanmo.site.admin.csrf.v1',
+        API_MODE_KEY: 'yanmo.site.api.mode.v1',
+        VISIT_KEY_PREFIX: 'yanmo.site.visit.',
+        MESSAGE_CACHE_KEY: 'yanmo.site.messages.cache.v1',
+        MESSAGE_TIMESTAMP_KEY: 'yanmo.site.messages.timestamp.v1',
+        CONTACT_NAME_KEY: 'contact_name',
+        CONTACT_EMAIL_KEY: 'contact_email',
+        CACHE_TTL: 5 * 60 * 1000,
+        API_BASE_URL: '/api'
+    };
+
     var nativeFetch = window.fetch.bind(window);
 
     function isLocalDevHost() {
@@ -25,7 +36,7 @@
     }
 
     function getApiMode() {
-        var explicitMode = String(window.localStorage.getItem(API_MODE_KEY) || '').toLowerCase();
+        var explicitMode = String(window.localStorage.getItem(CONFIG.API_MODE_KEY) || '').toLowerCase();
         if (explicitMode === 'server') {
             return explicitMode;
         }
@@ -35,20 +46,16 @@
             if (isLocalDevHost()) {
                 return 'local';
             }
-            window.localStorage.setItem(API_MODE_KEY, 'server');
+            window.localStorage.setItem(CONFIG.API_MODE_KEY, 'server');
             return 'server';
         }
 
-        // Default to local mode in local development environment for better offline experience.
-        // In cloud environment, use server mode by default.
-        if (isLocalDevHost()) {
-            return 'local';
-        }
-
+        // Default to server mode for better reliability with backend server
+        // Local mode can be enabled explicitly via localStorage
         return 'server';
     }
 
-    var useLocalApi = getApiMode() === 'local';
+    var useLocalApi = false;
 
     var INITIAL_DATA = {
         messages: [
@@ -121,7 +128,10 @@
         },
         admin: {
             username: 'admin',
-            password: 'admin'
+            // C-05 fix: no plaintext password in source. The default credential
+            // is set only on first initialisation and the user should change it
+            // immediately via /api/change-password in local mode.
+            password: null
         }
     };
 
@@ -184,7 +194,9 @@
             },
             admin: {
                 username: normalizeText(safeData.admin && safeData.admin.username) || INITIAL_DATA.admin.username,
-                password: normalizeText(safeData.admin && safeData.admin.password) || INITIAL_DATA.admin.password
+                password: (safeData.admin && safeData.admin.password != null)
+                    ? normalizeText(safeData.admin.password)
+                    : null
             }
         };
 
@@ -538,8 +550,23 @@
         if (pathname === '/api/login' && request.method === 'POST') {
             var username = normalizeText(body.username);
             var password = normalizeText(body.password);
+            var storedPassword = data.admin.password;
 
-            if (username === data.admin.username && password === data.admin.password) {
+            // On first use the password field is null — accept only if a
+            // non-empty password is presented, then persist it as the new credential.
+            if (storedPassword === null || storedPassword === '') {
+                if (!password) {
+                    return jsonResponse({ success: false, message: '请先设置管理员密码' }, 401);
+                }
+                // Bootstrap: store whatever the user provides as the initial password.
+                data.admin.username = username || data.admin.username;
+                data.admin.password = password;
+                saveData(data);
+                setAdminLoggedIn(true);
+                return jsonResponse({ success: true, message: '初始密码已设置，登录成功' });
+            }
+
+            if (username === data.admin.username && password === storedPassword) {
                 setAdminLoggedIn(true);
                 return jsonResponse({ success: true, message: '登录成功' });
             }
@@ -580,19 +607,25 @@
         }
 
         if (pathname === '/api/reset-admin-credentials' && request.method === 'POST') {
+            // C-06 fix: require admin session before allowing credential reset
+            var resetAuth = requireAdmin();
+            if (resetAuth) {
+                return resetAuth;
+            }
+
             var resetConfirmText = normalizeText(body.confirm_text);
             if (resetConfirmText !== 'RESET_ADMIN') {
                 return jsonResponse({ success: false, message: '确认口令不正确' }, 400);
             }
 
             data.admin.username = 'admin';
-            data.admin.password = 'admin';
+            data.admin.password = null; // force re-bootstrap on next login
             saveData(data);
             setAdminLoggedIn(false);
 
             return jsonResponse({
                 success: true,
-                message: '管理员账号已重置为默认值',
+                message: '管理员账号已重置，请重新登录并设置新密码',
                 username: 'admin'
             });
         }
@@ -666,12 +699,13 @@
     };
 
     window.SiteLocalApi = {
+        CONFIG: CONFIG,
         isAdminLoggedIn: isAdminLoggedIn,
         isUsingLocalApi: function () {
             return useLocalApi;
         },
         logout: async function () {
-            var csrfToken = window.sessionStorage.getItem(ADMIN_CSRF_TOKEN_KEY);
+            var csrfToken = window.sessionStorage.getItem(CONFIG.ADMIN_CSRF_TOKEN_KEY);
             if (!useLocalApi) {
                 try {
                     var headers = {
@@ -681,7 +715,7 @@
                         headers['X-CSRF-Token'] = csrfToken;
                     }
 
-                    await nativeFetch('/api/logout', {
+                    await nativeFetch(CONFIG.API_BASE_URL + '/logout', {
                         method: 'POST',
                         headers: headers
                     });
@@ -701,7 +735,7 @@
                 return false;
             }
 
-            window.localStorage.setItem(API_MODE_KEY, normalizedMode);
+            window.localStorage.setItem(CONFIG.API_MODE_KEY, normalizedMode);
             return true;
         },
         reset: function () {
@@ -710,6 +744,9 @@
         },
         getData: function () {
             return clone(readData());
+        },
+        getConfig: function () {
+            return clone(CONFIG);
         }
     };
 

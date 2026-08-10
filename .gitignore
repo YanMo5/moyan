@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Databases (SQLite)
+*.db
+*.sqlite
+*.sqlite3
+server/blog.db
+
+# Logs
+*.log
+debug.log
+
+# Temp / scratch files
+1.txt
+2.txt
+*.tmp
+*.bak
+
+# Test artifacts (keep test source, ignore test dbs)
+tests/*.db
+
+# Temporary test page
+pages/test.html
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Build output
+dist/
+.cache/

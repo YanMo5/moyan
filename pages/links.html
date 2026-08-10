@@ -2,11 +2,12 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <script>!function(){document.documentElement.classList.add('cyber-mode');var s=document.documentElement.style;function mc(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');var c;if(typeof v==='string')c=v;else if(v&&typeof v==='object')c=v.cyber||v.dark||v.light||null;else c=null;if(c&&k==='yanmo.site.text-color'&&c.toLowerCase()==='#e0e8f0'){localStorage.removeItem(k);return d;}return c||d;}catch(e){return d;}}try{var bg=mc('yanmo.site.bg-color','#05050a');var tx=mc('yanmo.site.text-color','#00ffff');s.setProperty('--bg-color',bg);var br=parseInt(bg.slice(1,3),16),bn=parseInt(bg.slice(3,5),16),bb=parseInt(bg.slice(5,7),16);s.setProperty('--bg-color-r',br);s.setProperty('--bg-color-g',bn);s.setProperty('--bg-color-b',bb);s.setProperty('--text-color',tx);var tr=parseInt(tx.slice(1,3),16),tn=parseInt(tx.slice(3,5),16),tb=parseInt(tx.slice(5,7),16);s.setProperty('--text-color-r',tr);s.setProperty('--text-color-g',tn);s.setProperty('--text-color-b',tb);}catch(e){}if(localStorage.getItem('yanmo.site.font-mode')==='cyberpunk')document.documentElement.classList.add('cyberpunk-mode');}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>友情链接 - YanMo的个人博客</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/beautify.css">
 </head>
@@ -16,7 +17,7 @@
             <div class="logo">
                 <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
             </div>
-            <button class="hamburger">
+            <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -29,15 +30,14 @@
                     <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
                     <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="links.html" class="active"><span class="shimmer"></span>友链</a></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
-                <div class="nav-actions">
-                    <button class="theme-toggle">切换到白昼模式</button>
-                </div>
             </div>
         </nav>
     </header>
 
     <script src="/js/local-api.js"></script>
+    <script src="/js/palette-manager.js"></script>
     <script src="/js/ux-enhancements.js"></script>
 
     <main>
@@ -45,23 +45,89 @@
             <div class="terminal-label">TRUSTED_NODES // PEER_NETWORK // VETTED_SOURCES</div>
             <h1 class="glitch-text" data-text="友情链接 / LINKS">友情链接 / LINKS</h1>
             <p class="links-description">汇集各路安全大牛，交换赛博空间情报</p>
-            
+
+            <!-- ── HANDSHAKE PROTOCOL ────────────────────────────── -->
+            <details class="handshake-proto" id="handshake-proto">
+                <summary class="handshake-summary">
+                    <span class="hs-icon">⟁</span>
+                    <span class="hs-title">THREE-WAY HANDSHAKE PROTOCOL</span>
+                    <span class="hs-sub">// Link exchange rules — read before SYN</span>
+                    <span class="hs-chevron">▸</span>
+                </summary>
+                <div class="handshake-body">
+                    <div class="hs-header-bar">
+                        <span>// PROTOCOL v2.1 — FRIEND_LINK_HANDSHAKE — MANDATORY_COMPLIANCE</span>
+                    </div>
+
+                    <div class="hs-step">
+                        <span class="hs-step-num">SYN</span>
+                        <div class="hs-step-content">
+                            <div class="hs-step-title">Your node initiates contact</div>
+                            <div class="hs-step-desc">You found this page. You're either a legitimate peer or a scanner. If you're a scanner, the WAF says hello. If you're a peer — proceed to ACK.</div>
+                        </div>
+                    </div>
+
+                    <div class="hs-step">
+                        <span class="hs-step-num">SYN-ACK</span>
+                        <div class="hs-step-content">
+                            <div class="hs-step-title">We assess your node against the compliance matrix</div>
+                            <div class="hs-step-desc">Your site must pass all of the following checks before the handshake completes. Non-compliance causes an RST packet.</div>
+                            <ul class="hs-rules">
+                                <li class="hs-rule hs-rule--pass">
+                                    <span class="hs-rule-flag">[TLS_1.3]</span>
+                                    <span>Transport Layer: TLS 1.3 minimum. TLS 1.2 with deprecated cipher suites fails the handshake. SSLv3 triggers an immediate blacklist with reason <code>ANCIENT_CRYPTO</code>. Run <code>nmap --script ssl-enum-ciphers</code> on yourself before applying.</span>
+                                </li>
+                                <li class="hs-rule hs-rule--pass">
+                                    <span class="hs-rule-flag">[SIGNAL_INTEGRITY]</span>
+                                    <span>Content must be original technical work: vulnerability research, tool builds, CTF write-ups, or security engineering. Reposts without analysis, SEO keyword spam, and "Top 10 Tools You Must Know" listicles fail the integrity check with <code>LOW_SNR</code>.</span>
+                                </li>
+                                <li class="hs-rule hs-rule--pass">
+                                    <span class="hs-rule-flag">[LIVENESS]</span>
+                                    <span>Node must respond within 5 seconds. Cold nodes (last post &gt;12 months, or HTTP 5xx on root URL) are classified <code>ZOMBIE</code> and rotated to offline status automatically. A zombie that returns to life gets re-promoted without ceremony.</span>
+                                </li>
+                                <li class="hs-rule hs-rule--warn">
+                                    <span class="hs-rule-flag">[CLEAN_PAYLOAD]</span>
+                                    <span>Your site must contain zero malicious payloads, drive-by exploits, cryptominers, hidden iframes, or affiliate redirect chains. We run periodic passive scans. Detection triggers immediate removal, zero appeals — this is a blog, not a bug bounty.</span>
+                                </li>
+                                <li class="hs-rule hs-rule--warn">
+                                    <span class="hs-rule-flag">[NO_DARK_PATTERN]</span>
+                                    <span>No deceptive UI, fake download buttons, pop-under ads, or browser notification spam. If your monetization strategy degrades user experience below a C-grade in Lighthouse, you're not a peer, you're ad inventory.</span>
+                                </li>
+                                <li class="hs-rule hs-rule--info">
+                                    <span class="hs-rule-flag">[RECIPROCITY]</span>
+                                    <span>You must link back to this node first. We verify. One-way links are not friendship — they're just bookmarks. Put us anywhere visible: sidebar, footer, links page. An <code>&lt;a&gt;</code> buried in a comment doesn't count.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="hs-step">
+                        <span class="hs-step-num">ACK</span>
+                        <div class="hs-step-content">
+                            <div class="hs-step-title">Handshake complete — session established</div>
+                            <div class="hs-step-desc">Submit via the application form. Include your site URL, RSS feed URL, and a one-line description of what you actually do. Our RSS poller will confirm liveness within 15 minutes of approval. Welcome to the network.</div>
+                            <a href="link-apply.html" class="hs-cta">SUBMIT_APPLICATION →</a>
+                        </div>
+                    </div>
+
+                    <div class="hs-footer">// DISCLAIMER: All peer links are external nodes. Traffic is your problem. Exploits you find on their sites are between you and them.</div>
+                </div>
+            </details>
+            <!-- ── END HANDSHAKE ──────────────────────────────────── -->
+
             <div class="links-actions">
                 <a href="link-apply.html" class="btn btn-primary">申请友链接入</a>
             </div>
 
             <div class="links-summary" id="links-summary">
-                <span class="summary-item">总数 <strong id="links-count-all">0</strong></span>
-                <span class="summary-item">已通过 <strong id="links-count-approved">0</strong></span>
+                <span class="summary-item">TOTAL <strong id="links-count-all">0</strong></span>
+                <span class="summary-item">APPROVED <strong id="links-count-approved">0</strong></span>
+                <span class="summary-item">ONLINE <strong id="links-count-online">—</strong></span>
             </div>
 
             <div class="links-list">
-                <div class="section-header">
-                    <h2>已认证 / CERTIFIED_NODES</h2>
-                    <div class="section-header-bar"></div>
-                </div>
-                <div class="links-grid" id="links-grid">
-                    <!-- 友链数据将通过JavaScript动态加载 -->
+                <div id="links-groups-container">
+                    <!-- 分组由JavaScript动态渲染 -->
                     <div class="link-card link-state-card">
                         <div class="link-state-title">加载中...</div>
                     </div>
@@ -69,137 +135,237 @@
             </div>
             <script>
                 let allLinks = [];
+                // probeCache: { [url]: { online, latestPostTitle, latestPostUrl, checkedAt } }
+                let probeCache = {};
+
+                const CATEGORY_META = {
+                    ROOT_NODE: {
+                        label:  'ROOT_NODES // ELITE_PEERS',
+                        badge:  'ROOT',
+                        desc:   'Tier-0 operators. Personal blogs from researchers who have shipped CVEs, DEFCON/BlackHat presentations, or tooling with >1k stars.',
+                        color:  '#f92672',
+                        order:  0
+                    },
+                    PEER_CLUSTER: {
+                        label:  'PEER_CLUSTERS // TRUSTED_OPERATORS',
+                        badge:  'PEER',
+                        desc:   'Active practitioners — CTF competitors, bug bounty hunters, student researchers, and security engineers keeping public lab notebooks.',
+                        color:  '#0ff',
+                        order:  1
+                    },
+                    ORG_COLLECTIVE: {
+                        label:  'ORG_COLLECTIVES // VETTED_ENTITIES',
+                        badge:  'ORG',
+                        desc:   'Teams, labs, and collectives: university security clubs, open-source security projects, and research groups with public output.',
+                        color:  '#fd971f',
+                        order:  2
+                    },
+                    INTEL_FEED: {
+                        label:  'INTEL_FEEDS // SIGNAL_SOURCES',
+                        badge:  'FEED',
+                        desc:   'High-signal threat intel, CVE aggregators, and security news sources worth following in the background without noise.',
+                        color:  '#ae81ff',
+                        order:  3
+                    },
+                    TOOL_REPO: {
+                        label:  'TOOL_REPOS // ARSENAL_LINKS',
+                        badge:  'TOOL',
+                        desc:   'Reference repositories, framework docs, and tooling hubs that get opened at least once per engagement.',
+                        color:  '#a6e22e',
+                        order:  4
+                    },
+                };
+                const DEFAULT_CATEGORY = 'PEER_CLUSTER';
 
                 function escapeHtml(value) {
                     return String(value || '').replace(/[&<>'"]/g, function (char) {
-                        return {
-                            '&': '&amp;',
-                            '<': '&lt;',
-                            '>': '&gt;',
-                            "'": '&#39;',
-                            '"': '&quot;'
-                        }[char] || char;
+                        return { '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;' }[char] || char;
                     });
                 }
 
                 function safeUrl(url) {
-                    const value = String(url || '').trim();
-                    if (/^https?:\/\//i.test(value)) {
-                        return value;
-                    }
-                    return '#';
+                    const v = String(url || '').trim();
+                    return /^https?:\/\//i.test(v) ? v : '#';
                 }
 
                 function avatarBlock(link) {
                     const avatar = String(link.site_avatar || '').trim();
-                    const name = String(link.site_name || '站点').trim();
+                    const name   = String(link.site_name || '站点').trim();
                     const initial = escapeHtml((name[0] || '站').toUpperCase());
-
-                    const avatarUsable =
-                        avatar.startsWith('data:image/') ||
-                        /^https?:\/\//i.test(avatar) ||
-                        avatar.startsWith('/');
-
-                    if (avatar && avatarUsable) {
-                        return `<img class="link-avatar" src="${avatar}" alt="${escapeHtml(name)} 头像">`;
-                    }
-
+                    const usable  = avatar.startsWith('data:image/') || /^https?:\/\//i.test(avatar) || avatar.startsWith('/');
+                    if (avatar && usable) return `<img class="link-avatar" src="${avatar}" alt="${escapeHtml(name)} 头像">`;
                     return `<div class="link-avatar fallback">${initial}</div>`;
                 }
 
                 function updateSummary(links) {
-                    const allCount = links.length;
-                    const approvedCount = links.filter(link => link.status === 'approved').length;
-
-                    document.getElementById('links-count-all').textContent = String(allCount);
-                    document.getElementById('links-count-approved').textContent = String(approvedCount);
+                    document.getElementById('links-count-all').textContent      = String(links.length);
+                    document.getElementById('links-count-approved').textContent = String(links.filter(l => l.status === 'approved').length);
                 }
-
                 function showLinksState(title, description) {
-                    const linksGrid = document.getElementById('links-grid');
-                    linksGrid.innerHTML = `
+                    document.getElementById('links-groups-container').innerHTML = `
                         <div class="link-card link-state-card">
                             <div class="link-state-title">${escapeHtml(title)}</div>
                             ${description ? `<p class="link-state-desc">${escapeHtml(description)}</p>` : ''}
-                        </div>
-                    `;
+                        </div>`;
                 }
 
-                function getVisibleLinks(links) {
-                    const keywordInput = document.getElementById('links-keyword');
-                    const keyword = String((keywordInput && keywordInput.value) || '').trim().toLowerCase();
+                // B: fire a live HEAD probe per card via /api/check-links result
+                function applyProbeResult(linkId, result) {
+                    const dot = document.getElementById('dot-' + linkId);
+                    const postEl = document.getElementById('post-' + linkId);
+                    const metaEl = document.getElementById('meta-' + linkId);
+                    if (!dot) return;
 
-                    let visible = links.slice();
-
-                    if (keyword) {
-                        visible = visible.filter(link => {
-                            const haystack = [link.site_name, link.site_description, link.site_url]
-                                .join(' ')
-                                .toLowerCase();
-                            return haystack.includes(keyword);
-                        });
+                    if (result.online) {
+                        dot.classList.remove('dot-unknown', 'dot-offline');
+                        dot.classList.add('dot-online');
+                        dot.title = 'ONLINE';
+                    } else {
+                        dot.classList.remove('dot-unknown', 'dot-online');
+                        dot.classList.add('dot-offline');
+                        dot.title = result.error ? ('OFFLINE: ' + result.error) : 'OFFLINE';
                     }
 
-                    return visible.sort((a, b) => {
-                        if (a.status !== b.status) {
-                            return a.status === 'approved' ? -1 : 1;
-                        }
-                        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-                    });
+                    if (postEl && result.latestPostTitle && result.latestPostUrl) {
+                        const safe = escapeHtml(result.latestPostUrl);
+                        const title = result.latestPostTitle;
+                        const short = title.length > 50 ? title.slice(0, 50) + '…' : title;
+                        postEl.innerHTML = `<a class="link-latest-post" href="${safe}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(title)}">▸ ${escapeHtml(short)}</a>`;
+                    }
+
+                    if (metaEl && result.checkedAt) {
+                        const d = new Date(result.checkedAt);
+                        metaEl.textContent = 'Probed: ' + d.toLocaleTimeString();
+                    }
                 }
 
                 function renderLinks() {
-                    const linksGrid = document.getElementById('links-grid');
-                    linksGrid.innerHTML = '';
+                    const container = document.getElementById('links-groups-container');
+                    const keyword = String((document.getElementById('links-keyword') || {}).value || '').trim().toLowerCase();
 
-                    if (!allLinks.length) {
-                        showLinksState('暂无友情链接', '当前还没有可展示的友链，欢迎先提交申请。');
+                    let approved = allLinks.filter(l => l.status === 'approved');
+                    if (keyword) {
+                        approved = approved.filter(l =>
+                            [l.site_name, l.site_description, l.site_url].join(' ').toLowerCase().includes(keyword));
+                    }
+
+                    if (!approved.length) {
+                        showLinksState(keyword ? '无匹配结果' : '暂无友情链接', keyword ? '请调整筛选条件后重试。' : '当前还没有可展示的友链，欢迎先提交申请。');
                         return;
                     }
 
-                    const visibleLinks = getVisibleLinks(allLinks);
+                    // Group by category
+                    const groups = {};
+                    approved.forEach(link => {
+                        const cat = (link.category && CATEGORY_META[link.category]) ? link.category : DEFAULT_CATEGORY;
+                        if (!groups[cat]) groups[cat] = [];
+                        groups[cat].push(link);
+                    });
 
-                    if (!visibleLinks.length) {
-                        showLinksState('无匹配结果', '请调整筛选条件后重试。');
-                        return;
-                    }
+                    const sortedCats = Object.keys(groups).sort((a, b) =>
+                        (CATEGORY_META[a] || { order: 99 }).order - (CATEGORY_META[b] || { order: 99 }).order);
 
-                    visibleLinks.forEach(link => {
-                        const safeName = escapeHtml(link.site_name);
-                        const safeSiteUrl = safeUrl(link.site_url);
-                        const isApproved = link.status === 'approved';
-                        const statusText = isApproved ? '已通过' : (link.status === 'rejected' ? '已拒绝' : '审核中');
-                        const statusClass = isApproved ? 'badge-green' : (link.status === 'rejected' ? 'badge-cyan' : 'badge-magenta');
-                        const safeDesc = escapeHtml(link.site_description || '');
-                        const href = isApproved ? safeSiteUrl : '#';
+                    container.innerHTML = '';
 
-                        const linkCard = document.createElement('a');
-                        linkCard.href = href;
-                        linkCard.target = '_blank';
-                        linkCard.rel = 'noopener noreferrer';
-                        linkCard.className = isApproved ? 'link-card link-card-compact' : 'link-card link-card-compact link-card-pending';
-
-                        if (!isApproved) {
-                            linkCard.target = '';
-                            linkCard.rel = '';
-                        }
-
-                        linkCard.innerHTML = `
-                            <div class="link-main">
-                                ${avatarBlock(link)}
-                                <div>
-                                    <div class="link-name">${safeName}</div>
-                                    <div style="margin-top:0.35rem;"><span class="cyber-badge ${statusClass}">${statusText}</span></div>
-                                    ${safeDesc ? `<div style="margin-top:0.5rem;color:#b8b8b8;font-size:0.86rem;line-height:1.4;">${safeDesc}</div>` : ''}
+                    sortedCats.forEach(cat => {
+                        const meta  = CATEGORY_META[cat] || { label: cat, badge: '?', desc: '', color: '#0ff' };
+                        const group = document.createElement('div');
+                        group.className = 'links-list';
+                        group.innerHTML = `
+                            <div class="section-header">
+                                <div class="section-header-top">
+                                    <span class="section-cat-badge section-cat-badge--${escapeHtml(cat.toLowerCase())}">${escapeHtml(meta.badge || cat)}</span>
+                                    <h2>${escapeHtml(meta.label)}</h2>
                                 </div>
-                            </div>
-                        `;
+                                ${meta.desc ? `<p class="section-cat-desc">${escapeHtml(meta.desc)}</p>` : ''}
+                                <div class="section-header-bar"></div>
+                            </div>`;
 
-                        linksGrid.appendChild(linkCard);
+                        const grid = document.createElement('div');
+                        grid.className = 'links-grid';
+
+                        groups[cat].forEach(link => {
+                            const safeName    = escapeHtml(link.site_name);
+                            const safeSiteUrl = safeUrl(link.site_url);
+                            const safeDesc    = escapeHtml(link.site_description || '');
+
+                            // use probeCache if available, otherwise fall back to DB values
+                            const cached   = probeCache[link.site_url];
+                            const isOnline = cached ? cached.online : !!link.is_online;
+                            const dotState = isOnline ? 'dot-online' : 'dot-unknown';
+                            const dotLabel = cached ? (isOnline ? 'ONLINE' : 'OFFLINE') : 'PROBING…';
+
+                            const checkedAt = cached
+                                ? 'Probed: ' + new Date(cached.checkedAt).toLocaleTimeString()
+                                : (link.last_checked ? 'DB sync: ' + new Date(link.last_checked).toLocaleString() : 'Probing…');
+
+                            const postTitle = (cached && cached.latestPostTitle) || link.latest_post_title || '';
+                            const postUrl   = (cached && cached.latestPostUrl)   || link.latest_post_url   || '';
+                            const latestPostHtml = (postTitle && postUrl)
+                                ? `<a class="link-latest-post" href="${escapeHtml(safeUrl(postUrl))}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(postTitle)}">▸ ${escapeHtml(postTitle.length > 50 ? postTitle.slice(0, 50) + '…' : postTitle)}</a>`
+                                : '<span class="link-latest-post link-latest-post--none">▸ fetching latest post…</span>';
+
+                            const card = document.createElement('a');
+                            card.href      = safeSiteUrl;
+                            card.target    = '_blank';
+                            card.rel       = 'noopener noreferrer';
+                            card.className = 'link-card link-card-compact';
+                            card.innerHTML = `
+                                <div class="link-main">
+                                    ${avatarBlock(link)}
+                                    <div class="link-body">
+                                        <div class="link-name-row">
+                                            <span class="link-name">${safeName}</span>
+                                            <span class="link-status-dot ${dotState}" id="dot-${link.id}" title="${dotLabel}"></span>
+                                        </div>
+                                        <div class="link-meta" id="meta-${link.id}">${escapeHtml(checkedAt)}</div>
+                                        ${safeDesc ? `<div class="link-desc">${safeDesc}</div>` : ''}
+                                        <div id="post-${link.id}">${latestPostHtml}</div>
+                                    </div>
+                                </div>`;
+                            grid.appendChild(card);
+                        });
+
+                        group.appendChild(grid);
+                        container.appendChild(group);
                     });
                 }
 
-                // 加载已通过的友链
+                // Fetch fresh probe results from /api/check-links, then re-apply to rendered cards
+                async function pollLinkStatus() {
+                    try {
+                        const urls = allLinks
+                            .filter(l => l.status === 'approved' && l.site_url)
+                            .map(l => l.site_url);
+                        if (!urls.length) return;
+
+                        const res = await fetch('/api/check-links', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ urls }),
+                        });
+                        if (!res.ok) return;
+                        const results = await res.json(); // { [url]: { online, latestPostTitle, latestPostUrl, checkedAt, error? } }
+
+                        // Update cache
+                        Object.assign(probeCache, results);
+
+                        // Apply to each rendered card
+                        allLinks.forEach(link => {
+                            if (link.status !== 'approved' || !link.site_url) return;
+                            const result = results[link.site_url];
+                            if (result) applyProbeResult(link.id, result);
+                        });
+
+                        // Update online count in summary
+                        const onlineCount = Object.values(probeCache).filter(r => r.online).length;
+                        const summaryOnline = document.getElementById('links-count-online');
+                        if (summaryOnline) summaryOnline.textContent = String(onlineCount);
+                    } catch (err) {
+                        console.warn('[check-links] probe failed:', err.message);
+                    }
+                }
+
                 async function loadApprovedLinks() {
                     try {
                         const response = await fetch('/api/links');
@@ -207,6 +373,8 @@
                             allLinks = await response.json();
                             updateSummary(allLinks);
                             renderLinks();
+                            // fire probe immediately after first render
+                            pollLinkStatus();
                         }
                     } catch (error) {
                         console.error('加载友链失败:', error);
@@ -215,19 +383,12 @@
                 }
 
                 const keywordInputEl = document.getElementById('links-keyword');
-                const approvedOnlyEl = document.getElementById('links-approved-only');
-                if (keywordInputEl) {
-                    keywordInputEl.addEventListener('input', renderLinks);
-                }
-                if (approvedOnlyEl) {
-                    approvedOnlyEl.addEventListener('change', renderLinks);
-                }
-                
-                // 初始加载友链
+                if (keywordInputEl) keywordInputEl.addEventListener('input', renderLinks);
+
                 loadApprovedLinks();
-                
-                // 每30秒刷新一次
-                setInterval(loadApprovedLinks, 30000);
+                // Reload DB data every 5 minutes; re-probe every 3 minutes independently
+                setInterval(loadApprovedLinks, 5 * 60 * 1000);
+                setInterval(pollLinkStatus,    3 * 60 * 1000);
             </script>
         </section>
     </main>
@@ -244,7 +405,7 @@
                 <div class="social-links">
                     <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
                     <a href="#" class="social-link">Bilibili</a>
-                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer" class="social-link">GitHub</a>
                     <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
                     <a href="#" class="social-link">Discord</a>
                 </div>
@@ -259,32 +420,5 @@
         </div>
     </footer>
 
-    <script>
-        // 主题切换功能
-        document.addEventListener('DOMContentLoaded', function() {
-            const themeToggle = document.querySelector('.theme-toggle');
-            const body = document.body;
-            
-            // 检查本地存储中的主题偏好
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                body.classList.add('light-mode');
-                themeToggle.textContent = '切换到赛博模式';
-            }
-            
-            // 主题切换点击事件
-            themeToggle.addEventListener('click', function() {
-                body.classList.toggle('light-mode');
-                
-                if (body.classList.contains('light-mode')) {
-                    themeToggle.textContent = '切换到赛博模式';
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    themeToggle.textContent = '切换到白昼模式';
-                    localStorage.setItem('theme', 'dark');
-                }
-            });
-        });
-    </script>
 </body>
 </html>

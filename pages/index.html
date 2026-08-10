@@ -2,28 +2,405 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <script>!function(){document.documentElement.classList.add('cyber-mode');var s=document.documentElement.style;function mc(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');var c;if(typeof v==='string')c=v;else if(v&&typeof v==='object')c=v.cyber||v.dark||v.light||null;else c=null;if(c&&k==='yanmo.site.text-color'&&c.toLowerCase()==='#e0e8f0'){localStorage.removeItem(k);return d;}return c||d;}catch(e){return d;}}try{var bg=mc('yanmo.site.bg-color','#05050a');var tx=mc('yanmo.site.text-color','#00ffff');s.setProperty('--bg-color',bg);var br=parseInt(bg.slice(1,3),16),bn=parseInt(bg.slice(3,5),16),bb=parseInt(bg.slice(5,7),16);s.setProperty('--bg-color-r',br);s.setProperty('--bg-color-g',bn);s.setProperty('--bg-color-b',bb);s.setProperty('--text-color',tx);var tr=parseInt(tx.slice(1,3),16),tn=parseInt(tx.slice(3,5),16),tb=parseInt(tx.slice(5,7),16);s.setProperty('--text-color-r',tr);s.setProperty('--text-color-g',tn);s.setProperty('--text-color-b',tb);}catch(e){}if(localStorage.getItem('yanmo.site.font-mode')==='cyberpunk')document.documentElement.classList.add('cyberpunk-mode');}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YanMo的个人博客 - 大学生安全学习笔记</title>
-    <meta name="description" content="YanMo的个人博客，记录大学阶段的网络安全学习过程，包含 Web 安全、CTF 复盘与 AI 安全探索笔记。">
-    <meta name="keywords" content="网络安全学习, 大学生博客, CTF, Web安全, AI安全, YanMo">
-    <meta name="author" content="YanMo">
+    <title>YanMo // Cyber Gateway</title>
+    <meta name="description" content="YanMo — Cybersecurity student, CTF learner, web security researcher.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/beautify.css">
+    <style>
+        /* ── Canvas BG ─────────────────────────────────────── */
+        #cyber-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ── Layout skeleton ────────────────────────────────── */
+        body.cyber-mode { background: var(--bg-color); color: var(--text-color); }
+        body { overflow-x: hidden; }
+        main  { position: relative; z-index: 1; }
+
+        .section-wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 clamp(1rem, 4vw, 2.5rem);
+        }
+
+        /* ── Hero ───────────────────────────────────────────── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: clamp(5rem, 12vh, 9rem) clamp(1.5rem, 6vw, 4rem);
+            position: relative;
+            z-index: 1;
+        }
+        .hero-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            letter-spacing: 0.25em;
+            color: var(--theme-tertiary);
+            margin-bottom: 1.2rem;
+            opacity: 0.8;
+        }
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.4rem, 6vw, 5rem);
+            font-weight: 700;
+            line-height: 1.08;
+            text-shadow: 0 0 30px rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.45);
+            margin-bottom: 1.6rem;
+        }
+        .hero-slogan-wrap {
+            font-family: var(--font-mono);
+            font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+            color: var(--theme-primary);
+            min-height: 1.8em;
+            margin-bottom: 2.8rem;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        #hero-slogan   { white-space: nowrap; overflow: hidden; }
+        #hero-cursor   { display: inline-block; width: 10px; height: 1.1em; background: var(--theme-primary); opacity: 1; animation: blink-cur 0.75s step-end infinite; vertical-align: text-bottom; }
+        @keyframes blink-cur { 0%,100%{opacity:1} 50%{opacity:0} }
+
+        .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .btn-primary {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            letter-spacing: 0.1em;
+            padding: 0.65rem 1.6rem;
+            border: 1px solid var(--theme-primary);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.07);
+            color: var(--theme-primary);
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, box-shadow 0.2s;
+            display: inline-block;
+        }
+        .btn-primary:hover { background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.18); box-shadow: 0 0 14px rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.35); }
+        .btn-ghost {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            letter-spacing: 0.1em;
+            padding: 0.65rem 1.6rem;
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.25);
+            background: transparent;
+            color: var(--theme-primary);
+            cursor: pointer;
+            text-decoration: none;
+            transition: border-color 0.2s, color 0.2s;
+            display: inline-block;
+        }
+        .btn-ghost:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
+
+        /* ── Section common ─────────────────────────────────── */
+        .cyber-section {
+            padding: clamp(3rem, 8vh, 5.5rem) 0;
+            border-top: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.07);
+        }
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.25em;
+            color: var(--theme-tertiary);
+            opacity: 0.7;
+        }
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1rem, 2.2vw, 1.45rem);
+            font-weight: 700;
+            color: var(--theme-primary);
+        }
+
+        /* ── Recent Posts ────────────────────────────────────── */
+        #posts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.2rem;
+        }
+        .post-card {
+            display: block;
+            text-decoration: none;
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.15);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.03);
+            padding: 1.4rem;
+            transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+        .post-card:hover {
+            border-color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.45);
+            box-shadow: 0 0 18px rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.12);
+            transform: translateY(-2px);
+        }
+        .post-card-meta { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.75rem; }
+        .post-date      { font-family: var(--font-mono); font-size: 0.7rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.45); }
+        .post-card h3   { font-family: var(--font-mono); font-size: 0.9rem; color: var(--theme-primary); margin-bottom: 0.5rem; }
+        .post-excerpt   { font-size: 0.78rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.55); line-height: 1.6; margin-bottom: 0.8rem; }
+        .read-more      { font-family: var(--font-mono); font-size: 0.72rem; color: var(--theme-tertiary); letter-spacing: 0.1em; }
+
+        .cyber-badge {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 2px;
+            letter-spacing: 0.08em;
+        }
+        .badge-cyan   { background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.12); color: var(--theme-primary); border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.25); }
+        .badge-green  { background: rgba(0,255,128,0.12); color: var(--theme-tertiary); border: 1px solid rgba(0,255,128,0.25); }
+        .badge-purple { background: rgba(var(--p-secondary-r),var(--p-secondary-g),var(--p-secondary-b),0.12); color: var(--p-secondary); border: 1px solid rgba(var(--p-secondary-r),var(--p-secondary-g),var(--p-secondary-b),0.25); }
+
+        #posts-status { font-family: var(--font-mono); font-size: 0.8rem; color: var(--theme-primary); animation: blink-cur 1s infinite; margin-bottom: 1rem; }
+        .no-posts     { font-family: var(--font-mono); font-size: 0.8rem; color: #ff4c4c; }
+
+        /* ── Cyber Grid layout (3-col) ──────────────────────── */
+        .cyber-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.4rem;
+        }
+        @media (max-width: 900px) { .cyber-grid-3 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 580px) { .cyber-grid-3 { grid-template-columns: 1fr; } }
+
+        .cyber-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.4rem;
+            max-width: 1200px;
+        }
+        @media (max-width: 720px) { .cyber-grid-2 { grid-template-columns: 1fr; } }
+
+        /* ── GitHub Arsenal ─────────────────────────────────── */
+        .widget-panel {
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.12);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.02);
+            padding: 1.4rem;
+        }
+        .widget-title {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.18em;
+            color: var(--theme-tertiary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.08);
+        }
+        .widget-loading { font-family: var(--font-mono); font-size: 0.75rem; color: var(--theme-primary); opacity: 0.5; }
+
+        #github-arsenal { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+        @media (max-width: 700px) { #github-arsenal { grid-template-columns: 1fr; } }
+
+        .repo-card {
+            display: block;
+            text-decoration: none;
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.1);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.025);
+            padding: 0.9rem;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .repo-card:hover { border-color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.4); background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.07); }
+        .repo-name { font-family: var(--font-mono); font-size: 0.8rem; color: var(--theme-primary); margin-bottom: 0.3rem; }
+        .repo-icon { margin-right: 0.3rem; color: var(--theme-tertiary); }
+        .repo-desc { font-size: 0.72rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.5); margin-bottom: 0.5rem; line-height: 1.5; }
+        .repo-meta { display: flex; gap: 0.7rem; font-family: var(--font-mono); font-size: 0.67rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.45); }
+
+        /* ── Zero-Day Alert Widget ──────────────────────────── */
+        #zeroday-feed { display: flex; flex-direction: column; gap: 0.6rem; }
+        .alert-item {
+            padding: 0.7rem 0.9rem;
+            border-left: 3px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.2);
+            background: rgba(var(--bg-color-r),var(--bg-color-g),var(--bg-color-b),0.2);
+            font-family: var(--font-mono);
+        }
+        .alert-item.sev-crit { border-left-color: #ff4c4c; }
+        .alert-item.sev-high { border-left-color: #ff9900; }
+        .alert-item.sev-med  { border-left-color: #ffdd00; }
+        .alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem; }
+        .alert-id    { font-size: 0.75rem; color: var(--theme-primary); }
+        .alert-desc  { font-size: 0.68rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.55); line-height: 1.5; }
+        .sev-badge-crit { color: #ff4c4c; font-size: 0.75rem; font-weight: 700; }
+        .sev-badge-high { color: #ff9900; font-size: 0.75rem; font-weight: 700; }
+        .sev-badge-med  { color: #ffdd00; font-size: 0.75rem; font-weight: 700; }
+
+        /* ── CVE Wall of Fame ───────────────────────────────── */
+        #cve-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.8rem; }
+        .cve-entry {
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.1);
+            background: rgba(var(--bg-color-r),var(--bg-color-g),var(--bg-color-b),0.25);
+            padding: 1rem;
+            transition: border-color 0.2s;
+        }
+        .cve-entry:hover { border-color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.4); }
+        .cve-top    { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.25rem; }
+        .cve-name   { font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: var(--theme-primary); }
+        .score-red    { color: #ff4c4c; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; }
+        .score-orange { color: #ff9900; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; }
+        .score-yellow { color: #ffdd00; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; }
+        .cve-id   { font-family: var(--font-mono); font-size: 0.68rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.4); margin-bottom: 0.4rem; }
+        .cve-note { font-size: 0.72rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.55); line-height: 1.5; }
+
+        /* ── CLI Terminal Overlay ───────────────────────────── */
+        #cli-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.82);
+            z-index: 9000;
+            align-items: center;
+            justify-content: center;
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+        }
+        #cli-overlay.active { display: flex; }
+        #cli-terminal {
+            width: min(700px, 96vw);
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.35);
+            background: rgba(var(--bg-color-r),var(--bg-color-g),var(--bg-color-b),0.97);
+            box-shadow: 0 0 60px rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.15);
+            display: flex;
+            flex-direction: column;
+            max-height: 70vh;
+        }
+        .cli-titlebar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.12);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.04);
+        }
+        .cli-titlebar-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.18em;
+            color: var(--theme-tertiary);
+        }
+        #cli-close-btn {
+            background: none;
+            border: 1px solid rgba(255,76,76,0.4);
+            color: #ff4c4c;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            cursor: pointer;
+        }
+        #cli-output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.9rem 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            line-height: 1.7;
+        }
+        .cli-input-row {
+            display: flex;
+            align-items: center;
+            padding: 0.55rem 1rem;
+            border-top: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.1);
+            gap: 0.5rem;
+        }
+        .cli-ps { font-family: var(--font-mono); font-size: 0.78rem; color: var(--theme-tertiary); white-space: nowrap; }
+        #cli-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--theme-primary);
+            caret-color: var(--theme-primary);
+        }
+        .cli-comment { color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.35); }
+        .cli-key     { color: var(--theme-tertiary); }
+        .cli-val     { color: var(--theme-primary); }
+        .cli-ok      { color: var(--theme-tertiary); }
+        .cli-err     { color: #ff4c4c; }
+        .cli-muted   { color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.4); }
+        .cli-prompt  { color: var(--theme-tertiary); }
+        .cli-line    { margin-bottom: 2px; }
+
+        /* CLI open button in nav */
+        #cli-open-btn {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            padding: 0.3rem 0.9rem;
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.3);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.05);
+            color: var(--theme-primary);
+            cursor: pointer;
+            letter-spacing: 0.1em;
+            transition: background 0.2s;
+        }
+        #cli-open-btn:hover { background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.14); }
+
+        /* ── Scroll reveal ──────────────────────────────────── */
+        .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.55s ease, transform 0.55s ease; }
+        .reveal.visible { opacity: 1; transform: none; }
+
+        /* ── Cyber mode overrides (index-specific) ─────────── */
+        body.cyber-mode {
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+        body.cyber-mode .hero-title { color: var(--theme-primary); text-shadow: 0 0 20px var(--theme-primary); }
+        body.cyber-mode .section-title { color: var(--theme-primary); }
+        body.cyber-mode .post-card { border-color: var(--theme-border); background: var(--theme-surface); }
+        body.cyber-mode .post-card h3 { color: var(--theme-primary); }
+        body.cyber-mode .cve-name { color: var(--theme-primary); }
+
+        /* ── Layout helpers (replaces inline styles) ────────── */
+        .mt-posts   { margin-top: 1.4rem; }
+        .mt-widget  { margin-top: 1rem; }
+        .section-header--widget { margin-bottom: 0.8rem; }
+        .nvd-source {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.3);
+            margin-top: 0.8rem;
+        }
+        .btn-ghost--sm { font-size: 0.72rem; }
+
+        /* ── Footer ─────────────────────────────────────────── */
+        .site-footer {
+            border-top: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.08);
+            padding: 2rem clamp(1.5rem, 6vw, 4rem);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .footer-copy { font-family: var(--font-mono); font-size: 0.7rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.35); }
+        .footer-links { display: flex; gap: 1.2rem; }
+        .footer-links a { font-family: var(--font-mono); font-size: 0.7rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.45); text-decoration: none; }
+        .footer-links a:hover { color: var(--theme-primary); }
+    </style>
 </head>
-<body class="homepage">
+<body>
+    <!-- Canvas Background -->
+    <canvas id="cyber-canvas" aria-hidden="true"></canvas>
+
+    <!-- Nav -->
     <header>
         <nav>
             <div class="logo">
-                <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+                <a href="index.html" class="glitch-text" data-text="YanMo">YanMo</a>
             </div>
-            <button class="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
             </button>
             <div class="nav-container">
                 <ul class="nav-links">
@@ -33,497 +410,125 @@
                     <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
                     <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><button type="button" id="cli-open-btn" title="Ctrl+K">[ TERMINAL ]</button></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
-                <div class="nav-actions">
-                    <button class="theme-toggle">切换到白昼模式</button>
-                </div>
             </div>
         </nav>
     </header>
 
     <main>
-        <section class="hero reveal">
-            <div class="hero-bg-orb orb-left"></div>
-            <div class="hero-bg-orb orb-right"></div>
-            <div class="hero-corner-tl"></div>
-            <div class="hero-corner-br"></div>
-            <div class="hero-grid">
-                <div class="hero-main">
-                    <div class="terminal-label">YANMO_CAMPUS_LOG // v3.0.0 // STUDENT_MODE</div>
-                    <h1 class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</h1>
-                    <p>大学生安全学习日志 | Web 安全 | CTF 复盘 | AI 安全探索</p>
-                    <div class="typing-line">
-                        <span class="typing-prefix">本周学习:</span>
-                        <span class="typing-text" id="typing-text"></span>
-                        <span class="typing-caret" aria-hidden="true"></span>
-                    </div>
-                    <div class="hero-tags">
-                        <span class="hero-tag">WEB SECURITY</span>
-                        <span class="hero-tag">CTF NOTE</span>
-                        <span class="hero-tag">PYTHON TOOLING</span>
-                        <span class="hero-tag">AI SAFETY</span>
-                    </div>
-                </div>
-                <aside class="hero-panel">
-                    <h3>Campus Feed</h3>
-                    <ul>
-                        <li><span>TASK-01</span> 复盘一题认证绕过并整理思路</li>
-                        <li><span>TASK-02</span> 完成本周 CTF Web 方向训练</li>
-                        <li><span>TASK-03</span> 尝试用脚本自动化信息收集流程</li>
-                    </ul>
-                    <a href="articles.html" class="panel-link">查看全部学习记录 ></a>
-                </aside>
+        <!-- ── Hero ─────────────────────────────────────────── -->
+        <section class="hero" aria-label="Hero">
+            <p class="hero-eyebrow">// YANMO CYBER GATEWAY // INITIALIZING...</p>
+            <h1 class="hero-title glitch-text" data-text="YANMO">YANMO</h1>
+            <div class="hero-slogan-wrap">
+                <span id="hero-slogan"></span><span id="hero-cursor"></span>
             </div>
-            <div class="hero-info">
-                <div class="info-item">
-                    <span class="info-label">当前重点 / FOCUS</span>
-                    <span class="info-value">Web 常见漏洞原理、CTF 解题方法、Python 自动化脚本、AI 安全基础</span>
+            <div class="hero-actions">
+                <a href="articles.html" class="btn-primary">VIEW_WRITEUPS →</a>
+                <a href="about.html"    class="btn-ghost">WHOAMI</a>
+                <button type="button" id="cli-open-btn-hero" class="btn-ghost">OPEN_TERMINAL [$]</button>
+            </div>
+        </section>
+
+        <!-- ── Recent Posts ──────────────────────────────────── -->
+        <section class="cyber-section reveal" aria-label="Recent posts">
+            <div class="section-wrap">
+                <div class="section-header">
+                    <span class="section-label">// 01</span>
+                    <h2 class="section-title">LATEST_TRANSMISSIONS</h2>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">学习状态 / STATUS</span>
-                    <div class="status-indicators">
-                        <span class="status-v">课程: 进行中</span>
-                        <span class="status-v">训练: 每周更新</span>
-                        <span class="status-v">目标: 持续进步</span>
-                    </div>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">写作方向 / WRITING</span>
-                    <span class="info-value">课堂知识整理、漏洞复现笔记、工具脚本记录、比赛后复盘总结</span>
+                <p id="posts-status">[ LOADING DATA... ]</p>
+                <div id="posts-grid"></div>
+                <div class="mt-posts">
+                    <a href="articles.html" class="btn-ghost">ALL_POSTS →</a>
                 </div>
             </div>
         </section>
 
-        <section class="intel-strip reveal">
-            <article class="intel-card">
-                <div class="intel-k">学习项目</div>
-                <div class="intel-v count-up" data-value="6" data-prefix="" data-suffix="">0</div>
-                <p>课程实践和小工具同步推进</p>
-            </article>
-            <article class="intel-card">
-                <div class="intel-k">CTF 题目笔记</div>
-                <div class="intel-v count-up" data-value="48" data-prefix="" data-suffix="+">0+</div>
-                <p>以 Web 方向为主，持续积累中</p>
-            </article>
-            <article class="intel-card">
-                <div class="intel-k">最近更新</div>
-                <div class="intel-v count-up" data-value="7" data-prefix="" data-suffix="d">0d</div>
-                <p>保持一周一更的学习输出节奏</p>
-            </article>
-        </section>
+        <!-- ── Arsenal + Zero-Day (2-col) ───────────────────── -->
+        <section class="cyber-section reveal" aria-label="GitHub Arsenal and Zero-Day Feed">
+            <div class="section-wrap">
+                <div class="cyber-grid-2">
+                    <!-- GitHub Arsenal -->
+                    <div class="widget-panel">
+                        <div class="section-header section-header--widget">
+                            <span class="section-label">// 02</span>
+                            <h2 class="section-title">OPEN_SOURCE_ARSENAL</h2>
+                        </div>
+                        <div id="github-arsenal">
+                            <div class="widget-loading">[ FETCHING REPOS... ]</div>
+                        </div>
+                        <div class="mt-widget">
+                            <a href="https://github.com/YanMo5" target="_blank" rel="noopener" class="btn-ghost btn-ghost--sm">GITHUB_PROFILE →</a>
+                        </div>
+                    </div>
 
-        <section class="latest-posts reveal">
-            <div class="section-header">
-                <h2>最新学习笔记 / LATEST NOTES</h2>
-                <div class="section-header-bar"></div>
-            </div>
-            <div class="posts-grid" id="posts-grid">
-                <article class="post-card post-skeleton">
-                    <div class="post-image"></div>
-                    <div class="post-content">
-                        <div class="skeleton-line skeleton-title"></div>
-                        <div class="skeleton-line"></div>
-                        <div class="skeleton-line skeleton-short"></div>
-                        <div class="skeleton-link"></div>
+                    <!-- Zero-Day Alert Feed -->
+                    <div class="widget-panel">
+                        <div class="section-header section-header--widget">
+                            <span class="section-label">// 03</span>
+                            <h2 class="section-title">ZERO-DAY_ALERT_FEED</h2>
+                        </div>
+                        <div id="zeroday-feed">
+                            <div class="widget-loading">[ QUERYING NVD... ]</div>
+                        </div>
+                        <p class="nvd-source">
+                            SOURCE: NIST NVD API v2 · AUTO-REFRESH
+                        </p>
                     </div>
-                </article>
-                <article class="post-card post-skeleton">
-                    <div class="post-image"></div>
-                    <div class="post-content">
-                        <div class="skeleton-line skeleton-title"></div>
-                        <div class="skeleton-line"></div>
-                        <div class="skeleton-line skeleton-short"></div>
-                        <div class="skeleton-link"></div>
-                    </div>
-                </article>
-                <article class="post-card post-skeleton">
-                    <div class="post-image"></div>
-                    <div class="post-content">
-                        <div class="skeleton-line skeleton-title"></div>
-                        <div class="skeleton-line"></div>
-                        <div class="skeleton-line skeleton-short"></div>
-                        <div class="skeleton-link"></div>
-                    </div>
-                </article>
+                </div>
             </div>
         </section>
 
-        <section class="cta-section reveal">
-            <h2>把每周学习，变成看得见的成长轨迹</h2>
-            <p>从课堂知识到实战练习，我会把关键方法和踩坑过程写下来，方便自己复习，也希望能帮到同样在学习安全的你。</p>
-            <div class="cta-buttons">
-                <a href="articles.html" class="btn btn-primary">查看学习笔记</a>
-                <a href="about.html" class="btn btn-secondary">认识一下我</a>
+        <!-- ── CVE Wall of Fame ──────────────────────────────── -->
+        <section class="cyber-section reveal" aria-label="CVE Wall of Fame">
+            <div class="section-wrap">
+                <div class="section-header">
+                    <span class="section-label">// 04</span>
+                    <h2 class="section-title">CVE_HALL_OF_FAME</h2>
+                </div>
+                <div id="cve-wall"></div>
             </div>
         </section>
     </main>
 
-    <footer>
-        <div class="footer-content">
-            <div class="footer-info">
-                <h3>YanMo的个人博客</h3>
-                <p>大学生安全学习记录 | Web 安全 | CTF | AI 安全探索</p>
-                <p>—— 技术改变未来，代码创造世界 ——</p>
+    <!-- ── CLI Terminal Overlay ──────────────────────────────── -->
+    <div id="cli-overlay" role="dialog" aria-modal="true" aria-label="Terminal navigation">
+        <div id="cli-terminal">
+            <div class="cli-titlebar">
+                <span class="cli-titlebar-label">YANMO_TERMINAL // Ctrl+K · Tab · ↑↓</span>
+                <button type="button" id="cli-close-btn">[X] ESC</button>
             </div>
-            <div class="footer-social">
-                <h4>联系我 | Contact Me</h4>
-                <div class="social-links">
-                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
-                    <a href="#" class="social-link">Bilibili</a>
-                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
-                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
-                    <a href="#" class="social-link">Discord</a>
-                </div>
-            </div>
-            <div class="footer-links">
-                <h4>友情链接</h4>
-                <a href="link-apply.html" class="footer-link">前往友链申请页面</a>
+            <div id="cli-output"></div>
+            <div class="cli-input-row">
+                <span class="cli-ps">yanmo@cyber:~$</span>
+                <input id="cli-input" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="type 'help'" aria-label="Terminal input">
             </div>
         </div>
-        <div class="footer-copyright">
-            <p>YanMo的个人博客 © 2026 All Copyrights Reserved.</p>
-        </div>
+    </div>
+
+    <!-- ── Footer ────────────────────────────────────────────── -->
+    <footer class="site-footer">
+        <span class="footer-copy">© 2025 YanMo // ALL_RIGHTS_RESERVED // EDUCATIONAL_USE_ONLY</span>
+        <nav class="footer-links" aria-label="Footer navigation">
+            <a href="about.html">ABOUT</a>
+            <a href="articles.html">POSTS</a>
+            <a href="contact.html">CONTACT</a>
+            <a href="https://github.com/YanMo5" target="_blank" rel="noopener">GITHUB</a>
+        </nav>
     </footer>
 
-    <script src="/js/local-api.js"></script>
+    <!-- Scripts -->
+    <script src="/js/utils.js"></script>
+    <script src="/js/palette-manager.js"></script>
     <script src="/js/ux-enhancements.js"></script>
+    <script src="/js/local-api.js"></script>
+    <script src="/js/home-page.js"></script>
     <script>
-        function escapeHtml(value) {
-            return String(value || '').replace(/[&<>'"]/g, function (char) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    "'": '&#39;',
-                    '"': '&quot;'
-                }[char] || char;
-            });
-        }
-
-        function truncateText(text, maxLength) {
-            const raw = String(text || '').replace(/\s+/g, ' ').trim();
-            if (raw.length <= maxLength) {
-                return raw;
-            }
-            return raw.slice(0, maxLength) + '...';
-        }
-
-        function coverStyleByIndex(index) {
-            const presets = [
-                'linear-gradient(135deg, rgba(24,244,214,0.7), rgba(7,23,35,0.95))',
-                'linear-gradient(135deg, rgba(255,122,24,0.75), rgba(25,8,18,0.95))',
-                'linear-gradient(135deg, rgba(105,123,255,0.72), rgba(5,18,38,0.95))'
-            ];
-            return presets[index % presets.length];
-        }
-
-        function normalizeCoverUrl(value) {
-            const raw = String(value || '').trim();
-            if (!raw) {
-                return '';
-            }
-
-            if (raw.startsWith('data:image/')) {
-                return raw;
-            }
-
-            try {
-                const parsed = new URL(raw, window.location.origin);
-                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                    return parsed.href;
-                }
-            } catch (error) {
-                return '';
-            }
-
-            return '';
-        }
-
-        function resolvePostCover(post) {
-            if (!post || typeof post !== 'object') {
-                return '';
-            }
-
-            const candidates = [
-                post.cover_url,
-                post.coverUrl,
-                post.cover,
-                post.thumbnail,
-                post.image,
-                post.image_url,
-                post.banner
-            ];
-
-            for (const item of candidates) {
-                const normalized = normalizeCoverUrl(item);
-                if (normalized) {
-                    return normalized;
-                }
-            }
-
-            return '';
-        }
-
-        function escapeSvgText(value) {
-            return String(value || '').replace(/[&<>"']/g, function (char) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#39;'
-                }[char] || char;
-            });
-        }
-
-        function generateFallbackCover(post, index) {
-            const title = escapeSvgText(post && post.title ? post.title : '未命名文章');
-            const category = escapeSvgText(post && post.category ? post.category : '学习笔记');
-            const palettes = [
-                ['#18f4d6', '#071723'],
-                ['#ff7a18', '#190812'],
-                ['#697bff', '#051226']
-            ];
-            const palette = palettes[index % palettes.length];
-            const svg = [
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">',
-                '<defs>',
-                '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">',
-                '<stop offset="0%" stop-color="#07131f" />',
-                '<stop offset="100%" stop-color="#02050b" />',
-                '</linearGradient>',
-                '<linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">',
-                '<stop offset="0%" stop-color="' + palette[0] + '" stop-opacity="0.86" />',
-                '<stop offset="100%" stop-color="' + palette[1] + '" stop-opacity="0.96" />',
-                '</linearGradient>',
-                '<pattern id="scan" width="6" height="6" patternUnits="userSpaceOnUse">',
-                '<rect width="6" height="1.2" fill="rgba(255,255,255,0.07)" />',
-                '</pattern>',
-                '</defs>',
-                '<rect width="1200" height="675" fill="url(#bg)" />',
-                '<rect width="1200" height="675" fill="url(#accent)" opacity="0.88" />',
-                '<rect width="1200" height="675" fill="url(#scan)" opacity="0.55" />',
-                '<rect x="78" y="78" width="1044" height="519" rx="24" fill="rgba(2,8,16,0.32)" stroke="rgba(24,244,214,0.58)" stroke-width="4" />',
-                '<text x="130" y="180" fill="#d9fff7" font-size="42" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" opacity="0.88">' + category + '</text>',
-                '<text x="130" y="290" fill="#ffffff" font-size="54" font-weight="700" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">' + title + '</text>',
-                '<text x="130" y="548" fill="rgba(230,245,255,0.88)" font-size="28" letter-spacing="4" font-family="Consolas, monospace">YANMO BLOG COVER</text>',
-                '</svg>'
-            ].join('');
-
-            return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
-        }
-
-        function renderPostCover(post, index, rawTitle) {
-            const coverUrl = resolvePostCover(post) || generateFallbackCover(post, index);
-
-            return [
-                '<div class="post-image">',
-                '<img src="' + escapeHtml(coverUrl) + '" alt="' + escapeHtml(rawTitle) + ' 封面" loading="lazy" decoding="async">',
-                '</div>'
-            ].join('');
-        }
-
-        function renderPosts(posts) {
-            const postsGrid = document.getElementById('posts-grid');
-            if (!postsGrid) {
-                return;
-            }
-
-            if (!Array.isArray(posts) || posts.length === 0) {
-                postsGrid.innerHTML = [
-                    '<article class="post-card post-empty">',
-                    '<div class="post-content">',
-                    '<h3>暂无笔记</h3>',
-                    '<p class="post-excerpt">正在整理本周学习内容，稍后再来看看。</p>',
-                    '<div class="empty-actions">',
-                    '<a href="admin-dashboard.html#articles" class="btn btn-primary">发布第一篇学习笔记</a>',
-                    '<a href="articles.html" class="btn btn-secondary">前往笔记页</a>',
-                    '</div>',
-                    '</div>',
-                    '</article>'
-                ].join('');
-                return;
-            }
-
-            postsGrid.innerHTML = posts.slice(0, 3).map(function (post, index) {
-                const rawTitle = String(post.title || '未命名文章');
-                const title = escapeHtml(rawTitle);
-                const excerpt = escapeHtml(truncateText(post.content || '', 78));
-                const articleId = encodeURIComponent(String(post.id || ''));
-                const category = escapeHtml(post.category || '未分类');
-                const createdAt = escapeHtml(String(post.created_at || '').split(' ')[0]);
-                const cover = renderPostCover(post, index, rawTitle);
-
-                return [
-                    '<article class="post-card">',
-                    cover,
-                    '<div class="post-content">',
-                    '<h3>' + title + '</h3>',
-                    '<p class="post-meta"><span>' + category + '</span><span>' + createdAt + '</span></p>',
-                    '<p class="post-excerpt">' + excerpt + '</p>',
-                    '<a href="post.html?id=' + articleId + '" class="read-more">阅读全文</a>',
-                    '</div>',
-                    '</article>'
-                ].join('');
-            }).join('');
-        }
-
-        async function loadLatestPosts() {
-            try {
-                const response = await fetch('/api/articles');
-                if (!response.ok) {
-                    renderPosts([]);
-                    return;
-                }
-
-                const posts = await response.json().catch(function () {
-                    return [];
-                });
-                renderPosts(posts);
-            } catch (error) {
-                renderPosts([]);
-            }
-        }
-
-        function startTypingEffect() {
-            const target = document.getElementById('typing-text');
-            if (!target) {
-                return;
-            }
-
-            const keywords = [
-                '复盘一个 Web 鉴权绕过案例',
-                '整理 CTF Web 题解方法',
-                '写一个批量信息收集脚本',
-                '记录 AI 安全基础学习笔记'
-            ];
-
-            let keywordIndex = 0;
-            let charIndex = 0;
-            let deleting = false;
-
-            function tick() {
-                const word = keywords[keywordIndex];
-
-                if (!deleting) {
-                    charIndex += 1;
-                    target.textContent = word.slice(0, charIndex);
-                    if (charIndex >= word.length) {
-                        deleting = true;
-                        setTimeout(tick, 1300);
-                        return;
-                    }
-                } else {
-                    charIndex -= 1;
-                    target.textContent = word.slice(0, Math.max(0, charIndex));
-                    if (charIndex <= 0) {
-                        deleting = false;
-                        keywordIndex = (keywordIndex + 1) % keywords.length;
-                    }
-                }
-
-                const speed = deleting ? 45 : 85;
-                setTimeout(tick, speed);
-            }
-
-            tick();
-        }
-
-        function animateCounter(el, duration) {
-            const targetValue = Number(el.dataset.value || '0');
-            const prefix = String(el.dataset.prefix || '');
-            const suffix = String(el.dataset.suffix || '');
-            const start = performance.now();
-
-            function frame(now) {
-                const progress = Math.min((now - start) / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
-                const current = Math.round(targetValue * eased);
-                el.textContent = prefix + current + suffix;
-
-                if (progress < 1) {
-                    requestAnimationFrame(frame);
-                } else {
-                    el.textContent = prefix + targetValue + suffix;
-                    el.classList.add('count-up-done');
-                }
-            }
-
-            requestAnimationFrame(frame);
-        }
-
-        function initIntelCounters() {
-            const counters = Array.from(document.querySelectorAll('.count-up'));
-            if (!counters.length) {
-                return;
-            }
-
-            let played = false;
-            const runOnce = () => {
-                if (played) {
-                    return;
-                }
-                played = true;
-                counters.forEach((el, index) => {
-                    const delay = index * 120;
-                    setTimeout(() => animateCounter(el, 1100 + index * 200), delay);
-                });
-            };
-
-            if (!('IntersectionObserver' in window)) {
-                runOnce();
-                return;
-            }
-
-            const section = document.querySelector('.intel-strip');
-            if (!section) {
-                runOnce();
-                return;
-            }
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {
-                    if (entry.isIntersecting) {
-                        runOnce();
-                        observer.disconnect();
-                    }
-                });
-            }, {
-                threshold: 0.3
-            });
-
-            observer.observe(section);
-        }
-
-        // 主题切换功能
-        document.addEventListener('DOMContentLoaded', function() {
-            const themeToggle = document.querySelector('.theme-toggle');
-            const body = document.body;
-            
-            // 检查本地存储中的主题偏好
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                body.classList.add('light-mode');
-                themeToggle.textContent = '切换到赛博模式';
-            }
-            
-            // 主题切换点击事件
-            themeToggle.addEventListener('click', function() {
-                body.classList.toggle('light-mode');
-                
-                if (body.classList.contains('light-mode')) {
-                    themeToggle.textContent = '切换到赛博模式';
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    themeToggle.textContent = '切换到白昼模式';
-                    localStorage.setItem('theme', 'dark');
-                }
-            });
-
-            startTypingEffect();
-            loadLatestPosts();
-            initIntelCounters();
-        });
+        document.getElementById('cli-open-btn-hero')
+            ?.addEventListener('click', () => window.YanMoCLI?.open());
     </script>
 </body>
 </html>

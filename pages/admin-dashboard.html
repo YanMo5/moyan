@@ -2,8 +2,12 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <script>!function(){document.documentElement.classList.add('cyber-mode');var s=document.documentElement.style;function mc(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');var c;if(typeof v==='string')c=v;else if(v&&typeof v==='object')c=v.cyber||v.dark||v.light||null;else c=null;if(c&&k==='yanmo.site.text-color'&&c.toLowerCase()==='#e0e8f0'){localStorage.removeItem(k);return d;}return c||d;}catch(e){return d;}}try{var bg=mc('yanmo.site.bg-color','#05050a');var tx=mc('yanmo.site.text-color','#00ffff');s.setProperty('--bg-color',bg);var br=parseInt(bg.slice(1,3),16),bn=parseInt(bg.slice(3,5),16),bb=parseInt(bg.slice(5,7),16);s.setProperty('--bg-color-r',br);s.setProperty('--bg-color-g',bn);s.setProperty('--bg-color-b',bb);s.setProperty('--text-color',tx);var tr=parseInt(tx.slice(1,3),16),tn=parseInt(tx.slice(3,5),16),tb=parseInt(tx.slice(5,7),16);s.setProperty('--text-color-r',tr);s.setProperty('--text-color-g',tn);s.setProperty('--text-color-b',tb);}catch(e){}if(localStorage.getItem('yanmo.site.font-mode')==='cyberpunk')document.documentElement.classList.add('cyberpunk-mode');}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理员后台 - YanMo的个人博客</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/beautify.css">
 </head>
@@ -34,6 +38,7 @@
 
     <script src="/js/local-api.js"></script>
     <script src="/js/ux-enhancements.js"></script>
+    <script src="/js/palette-manager.js"></script>
     <script>
         const REAL_ADMIN_SESSION_KEY = 'yanmo.site.admin.real-session.v1';
         const ADMIN_CSRF_TOKEN_KEY = 'yanmo.site.admin.csrf.v1';
@@ -59,7 +64,14 @@
     <main>
         <section class="admin-dashboard reveal">
             <div class="terminal-label">ADMIN_CONSOLE // ROOT_ACCESS // SECURE_SESSION</div>
-            <div id="admin-api-mode-badge" class="admin-api-mode is-server" aria-live="polite">API: SERVER</div>
+            <div class="admin-dashboard-meta">
+                <div id="admin-api-mode-badge" class="admin-api-mode is-server" aria-live="polite">API: SERVER</div>
+                <div class="admin-realtime-clock" id="admin-realtime-clock">
+                    <span class="clock-label">SYS_TIME</span>
+                    <span class="clock-value" id="admin-clock-value">--:--:--</span>
+                    <span class="clock-date" id="admin-clock-date">----/--/--</span>
+                </div>
+            </div>
             <h1>管理员后台</h1>
             <div class="dashboard-stats">
                 <div class="stat-card">
@@ -133,6 +145,19 @@
             }
             
             renderApiModeBadge();
+
+            function tickAdminClock() {
+                const now = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+                const dateStr = `${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}`;
+                const valueEl = document.getElementById('admin-clock-value');
+                const dateEl = document.getElementById('admin-clock-date');
+                if (valueEl) valueEl.textContent = timeStr;
+                if (dateEl) dateEl.textContent = dateStr;
+            }
+            tickAdminClock();
+            setInterval(tickAdminClock, 1000);
 
             // 初始加载数据
             getStats();
@@ -250,26 +275,68 @@
                 <h2>留言管理 / MESSAGE_CONTROL</h2>
                 <div class="section-header-bar"></div>
             </div>
+            <div class="links-audit-toolbar">
+                <div class="audit-chip-group">
+                    <span class="audit-chip">全部 <strong id="messages-total-count">0</strong></span>
+                    <span class="audit-chip">未读 <strong id="messages-unread-count">0</strong></span>
+                    <span class="audit-chip">已读 <strong id="messages-read-count">0</strong></span>
+                </div>
+                <div class="links-audit-controls">
+                    <label>
+                        状态
+                        <select id="messages-status-filter">
+                            <option value="all">全部</option>
+                            <option value="unread">未读</option>
+                            <option value="read">已读</option>
+                        </select>
+                    </label>
+                    <label>
+                        关键词
+                        <input id="messages-keyword-filter" type="text" placeholder="姓名/邮箱/主题/内容">
+                    </label>
+                    <button type="button" class="btn-sm edit" id="messages-refresh-btn">刷新列表</button>
+                </div>
+                <div id="messages-audit-message" class="form-message" style="margin-top:0.4rem;"></div>
+            </div>
             <div class="admin-table-container">
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th>用户名</th>
+                            <th>状态</th>
+                            <th>姓名</th>
                             <th>邮箱</th>
-                            <th>留言内容</th>
-                            <th>留言日期</th>
+                            <th>主题</th>
+                            <th>内容预览</th>
+                            <th>时间</th>
                             <th>操作</th>
                         </tr>
                     </thead>
                     <tbody id="messages-table-body">
-                        <!-- 留言数据将通过JavaScript动态加载 -->
                         <tr>
-                            <td colspan="5" style="text-align: center; padding: 2rem;">加载中...</td>
+                            <td colspan="7" style="text-align: center; padding: 2rem;">加载中...</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </section>
+
+        <!-- 留言详情模态框 -->
+        <div id="message-detail-modal" class="modal-overlay" style="display:none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>留言详情 / MESSAGE_DETAIL</h3>
+                    <button type="button" class="modal-close" aria-label="关闭">✕</button>
+                </div>
+                <div class="modal-body" id="message-detail-body">
+                    <!-- 动态填充 -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-sm edit" id="message-toggle-read-btn">标记已读</button>
+                    <a id="message-reply-link" class="btn-sm approve" href="#" target="_blank" rel="noopener">回复邮件</a>
+                    <button type="button" class="btn-sm delete" id="message-delete-btn">删除</button>
+                </div>
+            </div>
+        </div>
 
         <section id="audit-logs" class="admin-section reveal">
             <div class="section-header">
@@ -380,7 +447,7 @@
 
             <div class="article-form" style="margin-top: 1rem;">
                 <h3>紧急恢复</h3>
-                <p style="margin-bottom: 1rem; color: #bbb;">忘记当前密码时，可在本机将账号重置为默认值（admin / admin）。</p>
+                <p style="margin-bottom: 1rem; color: var(--theme-text-muted);">忘记当前密码时，可在本机将账号重置为默认值（admin / admin）。</p>
                 <button type="button" class="btn btn-secondary" id="reset-admin-btn">一键重置为默认账号</button>
                 <div id="reset-admin-message" class="form-message"></div>
             </div>
@@ -433,16 +500,53 @@
                 return 'badge-magenta';
             }
 
+            // 将数据库存储的 UTC 时间戳正确解析为本地时间
+            function parseDbTime(value) {
+                if (!value) return null;
+                // 数据库 CURRENT_TIMESTAMP 返回 UTC，格式 'YYYY-MM-DD HH:MM:SS'
+                // 追加 'Z' 让 JS 按 UTC 解析，再自动转为本地时区
+                const s = String(value).replace(' ', 'T').replace(/\.\d+$/, '');
+                // 若已带时区信息则直接解析
+                if (/([Zz]|[+-]\d{2}:?\d{2})$/.test(s)) return new Date(s);
+                return new Date(s + 'Z');
+            }
+
             function formatAdminDateTime(value) {
                 if (!value) return '--';
-                const date = new Date(String(value).replace(' ', 'T'));
-                if (Number.isNaN(date.getTime())) return String(value);
+                const date = parseDbTime(value);
+                if (!date || Number.isNaN(date.getTime())) return String(value);
+                const now = new Date();
+                const diffMs = now - date;
+                const diffSec = Math.floor(diffMs / 1000);
+                if (diffSec < 60) return '刚刚';
+                const diffMin = Math.floor(diffSec / 60);
+                if (diffMin < 60) return `${diffMin}分钟前`;
+                const diffHour = Math.floor(diffMin / 60);
+                if (diffHour < 24) return `${diffHour}小时前`;
+                const diffDay = Math.floor(diffHour / 24);
+                if (diffDay < 7) return `${diffDay}天前`;
                 return date.toLocaleString('zh-CN', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
                     hour: '2-digit',
                     minute: '2-digit'
+                });
+            }
+
+            // 详情模态框用：显示完整的本地时间（含秒）
+            function formatAdminDateTimeFull(value) {
+                if (!value) return '--';
+                const date = parseDbTime(value);
+                if (!date || Number.isNaN(date.getTime())) return String(value);
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
                 });
             }
 
@@ -681,7 +785,7 @@
                         
                         articles.forEach(article => {
                             const safeTitle = escapeHtml(article.title || '');
-                            const safeCreatedAt = escapeHtml(article.created_at || '');
+                            const safeCreatedAt = escapeHtml(formatAdminDateTime(article.created_at));
                             const safeCategory = escapeHtml(article.category || '');
                             const safeId = Number(article.id) || 0;
                             const tr = document.createElement('tr');
@@ -703,35 +807,187 @@
             }
             
             // 加载留言数据
+            let messagesCache = [];
+            let messagesCurrentDetailId = null;
+
             async function loadMessages() {
                 try {
                     const response = await fetch('/api/messages');
                     if (response.ok) {
-                        const messages = await response.json();
-                        const tbody = document.getElementById('messages-table-body');
-                        tbody.innerHTML = '';
-                        
-                        messages.forEach(message => {
-                            const safeName = escapeHtml(message.name || '');
-                            const safeEmail = escapeHtml(message.email || '');
-                            const safeMessage = escapeHtml(message.message || '');
-                            const safeCreatedAt = escapeHtml(message.created_at || '');
-                            const safeId = Number(message.id) || 0;
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td>${safeName}</td>
-                                <td>${safeEmail}</td>
-                                <td>${safeMessage}</td>
-                                <td>${safeCreatedAt}</td>
-                                <td>
-                                    <button class="btn small delete" onclick="deleteMessage(${safeId})">删除</button>
-                                </td>
-                            `;
-                            tbody.appendChild(tr);
-                        });
+                        messagesCache = await response.json();
+                        // 更新统计
+                        const total = messagesCache.length;
+                        const unread = messagesCache.filter(m => !Number(m.is_read)).length;
+                        const read = total - unread;
+                        const elTotal = document.getElementById('messages-total-count');
+                        const elUnread = document.getElementById('messages-unread-count');
+                        const elRead = document.getElementById('messages-read-count');
+                        if (elTotal) elTotal.textContent = total;
+                        if (elUnread) elUnread.textContent = unread;
+                        if (elRead) elRead.textContent = read;
+                        applyMessagesFilters();
                     }
                 } catch (error) {
                     console.error('加载留言失败:', error);
+                    setMessagesAuditMessage('网络错误，加载留言失败', true);
+                }
+            }
+
+            function applyMessagesFilters() {
+                const tbody = document.getElementById('messages-table-body');
+                if (!tbody) return;
+                const statusFilter = document.getElementById('messages-status-filter').value;
+                const keyword = (document.getElementById('messages-keyword-filter').value || '').trim().toLowerCase();
+
+                const filtered = messagesCache.filter(m => {
+                    if (statusFilter === 'unread' && Number(m.is_read)) return false;
+                    if (statusFilter === 'read' && !Number(m.is_read)) return false;
+                    if (keyword) {
+                        const hay = [
+                            m.name || '', m.email || '', m.subject || '', m.message || ''
+                        ].join(' ').toLowerCase();
+                        if (!hay.includes(keyword)) return false;
+                    }
+                    return true;
+                });
+
+                tbody.innerHTML = '';
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;">暂无留言</td></tr>`;
+                    return;
+                }
+
+                filtered.forEach(message => {
+                    const safeName = escapeHtml(message.name || '');
+                    const safeEmail = escapeHtml(message.email || '');
+                    const safeSubject = escapeHtml(message.subject || '（无主题）');
+                    const safeMessage = escapeHtml(message.message || '');
+                    const previewText = safeMessage.length > 50 ? safeMessage.slice(0, 50) + '…' : safeMessage;
+                    const safeCreatedAt = escapeHtml(formatAdminDateTime(message.created_at));
+                    const safeId = Number(message.id) || 0;
+                    const isRead = Number(message.is_read);
+                    const tr = document.createElement('tr');
+                    tr.style.cursor = 'pointer';
+                    tr.innerHTML = `
+                        <td>
+                            <span class="message-status-dot ${isRead ? 'is-read' : 'is-unread'}" title="${isRead ? '已读' : '未读'}"></span>
+                        </td>
+                        <td>${safeName}${!isRead ? ' <span class="new-flag">NEW</span>' : ''}</td>
+                        <td>${safeEmail}</td>
+                        <td>${safeSubject}</td>
+                        <td>${previewText}</td>
+                        <td>${safeCreatedAt}</td>
+                        <td>
+                            <button class="btn small edit" onclick="event.stopPropagation();viewMessageDetail(${safeId})">查看</button>
+                            <button class="btn small delete" onclick="event.stopPropagation();deleteMessage(${safeId})">删除</button>
+                        </td>
+                    `;
+                    tr.addEventListener('click', () => viewMessageDetail(safeId));
+                    tbody.appendChild(tr);
+                });
+            }
+
+            function setMessagesAuditMessage(text, isError) {
+                const el = document.getElementById('messages-audit-message');
+                if (!el) return;
+                el.textContent = text || '';
+                el.style.color = isError ? '#ff4757' : 'var(--text-color)';
+            }
+
+            function viewMessageDetail(id) {
+                const message = messagesCache.find(m => Number(m.id) === Number(id));
+                if (!message) return;
+                messagesCurrentDetailId = Number(message.id);
+                const body = document.getElementById('message-detail-body');
+                const fields = [
+                    ['编号', message.id],
+                    ['状态', Number(message.is_read) ? '已读' : '未读'],
+                    ['姓名', message.name || ''],
+                    ['邮箱', message.email || ''],
+                    ['主题', message.subject || '（无主题）'],
+                    ['时间', formatAdminDateTimeFull(message.created_at)],
+                ];
+                body.innerHTML = `
+                    <div class="message-detail-grid">
+                        ${fields.map(([k, v]) => `
+                            <div class="detail-row">
+                                <span class="detail-key">${escapeHtml(k)}</span>
+                                <span class="detail-val">${escapeHtml(String(v))}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="detail-message-box">
+                        <div class="detail-message-label">留言内容</div>
+                        <div class="detail-message-text">${escapeHtml(message.message || '')}</div>
+                    </div>
+                `;
+
+                const toggleBtn = document.getElementById('message-toggle-read-btn');
+                toggleBtn.textContent = Number(message.is_read) ? '标记未读' : '标记已读';
+
+                const replyLink = document.getElementById('message-reply-link');
+                if (message.email) {
+                    const subjectText = message.subject ? `Re: ${message.subject}` : 'Re: 你的留言';
+                    replyLink.href = `mailto:${encodeURIComponent(message.email)}?subject=${encodeURIComponent(subjectText)}`;
+                    replyLink.style.display = '';
+                } else {
+                    replyLink.style.display = 'none';
+                }
+
+                document.getElementById('message-detail-modal').style.display = 'flex';
+
+                // 首次查看自动标记为已读
+                if (!Number(message.is_read)) {
+                    toggleMessageRead(message.id, true, false);
+                }
+            }
+
+            function closeMessageDetail() {
+                document.getElementById('message-detail-modal').style.display = 'none';
+                messagesCurrentDetailId = null;
+            }
+
+            async function toggleMessageRead(id, forceRead, reload) {
+                const message = messagesCache.find(m => Number(m.id) === Number(id));
+                if (!message) return;
+                const nextValue = forceRead === true ? true : forceRead === false ? false : !Number(message.is_read);
+                try {
+                    const response = await fetch(`/api/messages/${id}`, {
+                        method: 'PATCH',
+                        headers: getAdminCsrfHeaders(true),
+                        body: JSON.stringify({ is_read: nextValue })
+                    });
+                    if (response.ok) {
+                        message.is_read = nextValue ? 1 : 0;
+                        // 更新统计
+                        const unread = messagesCache.filter(m => !Number(m.is_read)).length;
+                        const total = messagesCache.length;
+                        const elTotal = document.getElementById('messages-total-count');
+                        const elUnread = document.getElementById('messages-unread-count');
+                        const elRead = document.getElementById('messages-read-count');
+                        if (elTotal) elTotal.textContent = total;
+                        if (elUnread) elUnread.textContent = unread;
+                        if (elRead) elRead.textContent = total - unread;
+                        applyMessagesFilters();
+                        // 同步按钮文字
+                        const toggleBtn = document.getElementById('message-toggle-read-btn');
+                        if (messagesCurrentDetailId === Number(id) && toggleBtn) {
+                            toggleBtn.textContent = nextValue ? '标记未读' : '标记已读';
+                        }
+                        if (reload) setMessagesAuditMessage(nextValue ? '已标记为已读' : '已标记为未读');
+                    } else {
+                        setMessagesAuditMessage('更新状态失败', true);
+                    }
+                } catch (error) {
+                    console.error('更新留言状态失败:', error);
+                    setMessagesAuditMessage('网络错误，更新状态失败', true);
+                }
+            }
+
+            async function deleteMessageFromDetail() {
+                if (messagesCurrentDetailId && confirm('确定要删除这条留言吗？')) {
+                    await deleteMessage(messagesCurrentDetailId, true);
+                    closeMessageDetail();
                 }
             }
             
@@ -818,19 +1074,22 @@
             }
             
             // 删除留言
-            async function deleteMessage(id) {
-                if (confirm('确定要删除这条留言吗？')) {
-                    try {
-                        const response = await fetch(`/api/messages/${id}`, {
-                            method: 'DELETE',
-                            headers: getAdminCsrfHeaders(false)
-                        });
-                        if (response.ok) {
-                            loadMessages();
-                        }
-                    } catch (error) {
-                        console.error('删除留言失败:', error);
+            async function deleteMessage(id, skipConfirm) {
+                if (!skipConfirm && !confirm('确定要删除这条留言吗？')) return;
+                try {
+                    const response = await fetch(`/api/messages/${id}`, {
+                        method: 'DELETE',
+                        headers: getAdminCsrfHeaders(false)
+                    });
+                    if (response.ok) {
+                        setMessagesAuditMessage('留言已删除');
+                        await loadMessages();
+                    } else {
+                        setMessagesAuditMessage('删除失败', true);
                     }
+                } catch (error) {
+                    console.error('删除留言失败:', error);
+                    setMessagesAuditMessage('网络错误，删除失败', true);
                 }
             }
             
@@ -902,6 +1161,22 @@
                 setLinksAuditMessage('正在刷新友链列表...');
                 loadLinks();
             });
+
+            // 留言管理事件
+            document.getElementById('messages-status-filter').addEventListener('change', applyMessagesFilters);
+            document.getElementById('messages-keyword-filter').addEventListener('input', applyMessagesFilters);
+            document.getElementById('messages-refresh-btn').addEventListener('click', () => {
+                setMessagesAuditMessage('正在刷新留言列表...');
+                loadMessages();
+            });
+            document.querySelector('#message-detail-modal .modal-close').addEventListener('click', closeMessageDetail);
+            document.getElementById('message-detail-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'message-detail-modal') closeMessageDetail();
+            });
+            document.getElementById('message-toggle-read-btn').addEventListener('click', () => {
+                if (messagesCurrentDetailId) toggleMessageRead(messagesCurrentDetailId, null, true);
+            });
+            document.getElementById('message-delete-btn').addEventListener('click', deleteMessageFromDetail);
 
             document.getElementById('audit-action-filter').addEventListener('change', () => {
                 auditState.page = 1;

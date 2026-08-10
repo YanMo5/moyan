@@ -423,18 +423,17 @@ function getEnvCredentials() {
     };
 }
 
+// C-01 fix: local-mode detection is based solely on the runtime environment,
+// never on per-request headers which an attacker can spoof.
+const IS_LOCAL_MODE = !process.env.VERCEL && process.env.NODE_ENV !== 'production';
+
 function getRequestHost(req) {
     const host = String(req.headers.host || '').split(':')[0].trim().toLowerCase();
     return host;
 }
 
-function isLocalRequestHost(req) {
-    const host = getRequestHost(req);
-    return host === 'localhost' || host === '127.0.0.1' || host === '::1';
-}
-
 function requireCloudAdminEnv(req, res) {
-    if (isLocalRequestHost(req)) {
+    if (IS_LOCAL_MODE) {
         return true;
     }
 
@@ -577,8 +576,20 @@ function parseCookies(req) {
     return out;
 }
 
+// C-02 fix: refuse to start with a missing or default session secret.
+const _SESSION_SECRET = (() => {
+    const s = String(process.env.ADMIN_SESSION_SECRET || '');
+    if (!s || s === 'yanmo-session-secret-change-me') {
+        throw new Error(
+            '[FATAL] ADMIN_SESSION_SECRET env var is required and must not be the default value. ' +
+            'Generate a secret with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
+        );
+    }
+    return s;
+})();
+
 function sessionSecret() {
-    return String(process.env.ADMIN_SESSION_SECRET || 'yanmo-session-secret-change-me');
+    return _SESSION_SECRET;
 }
 
 function signToken(content) {
@@ -626,11 +637,13 @@ function verifySessionToken(token) {
 
 function setSessionCookie(res, token) {
     const maxAge = Math.floor(SESSION_TTL_MS / 1000);
-    res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}`);
+    const secure = IS_LOCAL_MODE ? '' : '; Secure';
+    res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax${secure}; Max-Age=${maxAge}`);
 }
 
 function clearSessionCookie(res) {
-    res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+    const secure = IS_LOCAL_MODE ? '' : '; Secure';
+    res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax${secure}; Max-Age=0`);
 }
 
 function getAdminSession(req) {
@@ -745,33 +758,13 @@ module.exports = async function handler(req, res) {
     }
 
     if (routePath === '/health' && method === 'GET') {
-            if (routePath === '/debug') {
-                return res.status(200).json({
-                    req_url: req.url,
-                    req_query_route: req.query && req.query.route,
-                    route_path: routePath,
-                    method: method
-                });
-            }
-
-        return res.status(200).json({
-            ok: true,
-            mode: 'server-api',
-            host: getRequestHost(req) || 'unknown',
-            storage_mode: dataStorageMode,
-            credentials_mode: getCredentialsMode(),
-            env_admin_configured: Boolean(getEnvCredentials()),
-            login_lock_policy: {
-                window_seconds: Math.floor(LOGIN_WINDOW_MS / 1000),
-                max_attempts: LOGIN_MAX_ATTEMPTS,
-                lock_seconds: Math.floor(LOGIN_LOCK_MS / 1000)
-            },
-            timestamp: new Date().toISOString()
-        });
+        return res.status(200).json({ ok: true, ts: new Date().toISOString() });
     }
 
     if (routePath === '/messages' && method === 'GET') {
-        return res.status(200).json(sortByCreatedAtDesc(data.messages));
+        // M-01: strip email from public response — email is PII and only the admin should see it
+        const publicMessages = sortByCreatedAtDesc(data.messages).map(({ email: _email, ...rest }) => rest);
+        return res.status(200).json(publicMessages);
     }
 
     if (routePath === '/messages' && method === 'POST') {
@@ -991,7 +984,7 @@ module.exports = async function handler(req, res) {
             return;
         }
 
-        if (!isLocalRequestHost(req)) {
+        if (!IS_LOCAL_MODE) {
             return res.status(403).json({
                 success: false,
                 message: 'Only localhost can reset admin credentials.'

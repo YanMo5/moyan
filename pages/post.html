@@ -2,21 +2,170 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <script>!function(){document.documentElement.classList.add('cyber-mode');var s=document.documentElement.style;function mc(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');var c;if(typeof v==='string')c=v;else if(v&&typeof v==='object')c=v.cyber||v.dark||v.light||null;else c=null;if(c&&k==='yanmo.site.text-color'&&c.toLowerCase()==='#e0e8f0'){localStorage.removeItem(k);return d;}return c||d;}catch(e){return d;}}try{var bg=mc('yanmo.site.bg-color','#05050a');var tx=mc('yanmo.site.text-color','#00ffff');s.setProperty('--bg-color',bg);var br=parseInt(bg.slice(1,3),16),bn=parseInt(bg.slice(3,5),16),bb=parseInt(bg.slice(5,7),16);s.setProperty('--bg-color-r',br);s.setProperty('--bg-color-g',bn);s.setProperty('--bg-color-b',bb);s.setProperty('--text-color',tx);var tr=parseInt(tx.slice(1,3),16),tn=parseInt(tx.slice(3,5),16),tb=parseInt(tx.slice(5,7),16);s.setProperty('--text-color-r',tr);s.setProperty('--text-color-g',tn);s.setProperty('--text-color-b',tb);}catch(e){}if(localStorage.getItem('yanmo.site.font-mode')==='cyberpunk')document.documentElement.classList.add('cyberpunk-mode');}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文章详情 - YanMo的个人博客</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/beautify.css">
-</head>
+    <!-- Highlight.js — Monokai-Neon palette -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/monokai.min.css"
+          integrity="sha512-M6cuVMbqBDL+5WGpU5V9g9AFYB+IG4CJCJOhVuFVB4PBMl8fZXLu/KZgw3sPEOQ+f2XGdTXVJEwFQ1lHMuGA=="
+          crossorigin="anonymous">
+    <style>
+        /* ── Monokai-Neon overrides on top of base monokai ─── */
+        .hljs { background: rgba(var(--bg-color-r),var(--bg-color-g),var(--bg-color-b),0.95) !important; border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.12); }
+        .hljs-keyword, .hljs-selector-tag, .hljs-tag    { color: #f92672; }
+        .hljs-built_in, .hljs-name, .hljs-selector-id   { color: #66d9ef; }
+        .hljs-string, .hljs-attr, .hljs-addition         { color: #e6db74; }
+        .hljs-comment, .hljs-quote                       { color: #75715e; font-style: italic; }
+        .hljs-number, .hljs-literal, .hljs-deletion      { color: #ae81ff; }
+        .hljs-variable, .hljs-template-variable          { color: #fd971f; }
+        .hljs-function, .hljs-title                      { color: #a6e22e; }
+        .hljs-type, .hljs-class                          { color: #66d9ef; }
+        .hljs-meta                                       { color: #f8f8f2; }
+
+        /* ── Code block chrome ──────────────────────────────── */
+        .post-content pre {
+            position: relative;
+            margin: 1.6rem 0;
+            border-radius: 0;
+            border-left: 3px solid #f92672;
+        }
+        .code-lang-label {
+            position: absolute;
+            top: 0; right: 0;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 0.1em;
+            padding: 2px 8px;
+            background: rgba(249,38,114,0.18);
+            color: #f92672;
+            border-bottom-left-radius: 3px;
+            pointer-events: none;
+            text-transform: uppercase;
+        }
+        .code-copy-btn {
+            position: absolute;
+            top: 0; right: 0;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.07);
+            border: none;
+            color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.55);
+            cursor: pointer;
+            transition: color 0.15s;
+            opacity: 0;
+        }
+        .post-content pre:hover .code-copy-btn { opacity: 1; }
+        .code-copy-btn:hover { color: var(--theme-primary); }
+        .post-content pre code.hljs {
+            padding: 1.2rem 1.4rem;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.7;
+            display: block;
+            overflow-x: auto;
+        }
+
+        /* ── Inline code ────────────────────────────────────── */
+        .post-content :not(pre) > code {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.84em;
+            padding: 2px 6px;
+            background: rgba(249,38,114,0.1);
+            color: #f92672;
+            border: 1px solid rgba(249,38,114,0.2);
+        }
+
+        /* ── Markdown typography ────────────────────────────── */
+        .post-content h1, .post-content h2 { font-family: 'Orbitron', sans-serif; }
+        .post-content h1 { font-size: clamp(1.3rem, 2.5vw, 1.8rem); color: var(--theme-primary); margin: 2.2rem 0 0.8rem; border-bottom: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.15); padding-bottom: 0.4rem; }
+        .post-content h2 { font-size: clamp(1.1rem, 2vw, 1.4rem); color: var(--theme-primary); margin: 1.8rem 0 0.6rem; }
+        .post-content h3 { font-size: 1rem; color: var(--theme-primary); margin: 1.4rem 0 0.5rem; font-family: 'Roboto Mono', monospace; }
+        .post-content p  { margin: 0.9rem 0; color: var(--theme-text); line-height: 1.85; }
+        .post-content a  { color: var(--theme-tertiary); text-decoration: underline; text-underline-offset: 3px; }
+        .post-content a:hover { color: var(--theme-primary); }
+        .post-content blockquote {
+            margin: 1.4rem 0;
+            padding: 0.8rem 1.2rem;
+            border-left: 3px solid var(--theme-primary);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.05);
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--theme-text);
+        }
+        .post-content table { width: 100%; border-collapse: collapse; margin: 1.4rem 0; font-size: 0.82rem; }
+        .post-content th { background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.08); color: var(--theme-primary); padding: 0.5rem 0.9rem; text-align: left; border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.15); font-family: 'Roboto Mono', monospace; }
+        .post-content td { padding: 0.45rem 0.9rem; border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.1); color: var(--theme-text); }
+        .post-content tr:nth-child(even) td { background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.025); }
+        .post-content ul, .post-content ol { padding-left: 1.5rem; color: var(--theme-text); line-height: 1.85; }
+        .post-content li { margin: 0.3rem 0; }
+        .post-content hr { border: none; border-top: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.12); margin: 2rem 0; }
+
+        /* ── Write-up template sections ─────────────────────── */
+        .vuln-registry {
+            border: 1px solid rgba(249,38,114,0.35);
+            background: rgba(249,38,114,0.04);
+            padding: 1.2rem 1.4rem;
+            margin: 1.6rem 0;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.8rem;
+        }
+        .vuln-registry .vr-title {
+            color: #f92672; font-size: 0.72rem; letter-spacing: 0.18em; margin-bottom: 0.8rem;
+        }
+        .cvss-score {
+            display: inline-block;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+        }
+        .cvss-critical { color: #ff4c4c; text-shadow: 0 0 12px rgba(255,76,76,0.6); }
+        .cvss-high     { color: #ff9900; text-shadow: 0 0 12px rgba(255,153,0,0.5); }
+        .cvss-medium   { color: #ffdd00; }
+        .cvss-low      { color: #0f9; }
+
+        .legal-disclaimer {
+            border: 1px solid rgba(255,170,0,0.3);
+            background: rgba(255,170,0,0.04);
+            padding: 0.8rem 1.2rem;
+            margin: 2rem 0;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.72rem;
+            color: rgba(255,170,0,0.8);
+            line-height: 1.7;
+        }
+        .legal-disclaimer::before {
+            content: '⚠ LEGAL DISCLAIMER //';
+            display: block;
+            color: #ffaa00;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+            letter-spacing: 0.1em;
+        }
+
+        /* ── Mermaid diagram container ──────────────────────── */
+        .mermaid-wrap {
+            margin: 1.6rem 0;
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.12);
+            background: rgba(var(--bg-color-r),var(--bg-color-g),var(--bg-color-b),0.35);
+            padding: 1.2rem;
+            overflow-x: auto;
+        }
+        .mermaid svg { max-width: 100%; }
+    </style>
 <body class="post-view">
     <header>
         <nav>
             <div class="logo">
                 <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
             </div>
-            <button class="hamburger">
+            <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -29,10 +178,8 @@
                     <li><a href="contact.html"><span class="shimmer"></span>联系</a></li>
                     <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
-                <div class="nav-actions">
-                    <button class="theme-toggle">切换到白昼模式</button>
-                </div>
             </div>
         </nav>
     </header>
@@ -46,16 +193,27 @@
             <div id="post-error" class="error-status" style="display: none;">数据流异常：目标节点不可达</div>
             <div id="post-container" style="display: none;">
                 <div id="post-fallback-notice" class="post-fallback-notice" style="display: none;" role="status" aria-live="polite"></div>
-                <div class="post-cover" id="article-cover">
-                    <!-- Image will be loaded here -->
+                <div class="post-cover-container">
+                    <div class="post-cover" id="article-cover">
+                        <!-- Image will be loaded here -->
+                    </div>
+                    <div class="post-cover-overlay">
+                        <div class="post-cover-content">
+                            <span class="post-category badge" id="article-category-badge"></span>
+                            <h1 id="article-title" class="glitch-text"></h1>
+                            <div class="post-cover-meta">
+                                <span class="post-date" id="article-date"></span>
+                                <span class="post-author">研究员：YanMo</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <header class="post-header">
                     <div class="post-meta">
-                        <span class="post-date" id="article-date"></span>
-                        <span class="post-category" id="article-category"></span>
+                        <span class="post-date" id="article-date-header"></span>
+                        <span class="post-category" id="article-category-header"></span>
                     </div>
-                    <h1 id="article-title" class="glitch-text"></h1>
-                    <div class="post-author">研究员：YanMo</div>
+                    <div class="post-author-header">研究员：YanMo</div>
                 </header>
 
                 <div class="post-layout">
@@ -94,7 +252,7 @@
                 <div class="social-links">
                     <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
                     <a href="#" class="social-link">Bilibili</a>
-                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer" class="social-link">GitHub</a>
                     <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
                     <a href="#" class="social-link">Discord</a>
                 </div>
@@ -110,40 +268,69 @@
     </footer>
 
     <script src="/js/local-api.js"></script>
+    <script src="/js/palette-manager.js"></script>
     <script src="/js/ux-enhancements.js"></script>
+    <!-- DOMPurify — sanitizes all HTML before it touches the DOM (C-03/C-04/H-04 fix) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"
+            integrity="sha512-+1BxFHnVHo3Sz+KBgIYrBKAGJYOKXWJwFGXMHSQcFfV02X4kM3PXxFDtcW9VTNgV1PnJNb0p6TcRmNxKjkrg=="
+            crossorigin="anonymous"></script>
+    <!-- Markdown + Syntax + Diagrams -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"
+            integrity="sha512-dD4Y4oGCBjH2V1BFAU3PYHqbJWFOHClasO/FLTJD4PpROBfheXWL6VETFvBjTvqf8lhKW6EAgpNYcfxKBYVZQ=="
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
+            integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ=="
+            crossorigin="anonymous"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            themeVariables: {
+                background: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim() || '#05050a',
+                primaryColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#00ffff',
+                primaryTextColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#00ffff',
+                primaryBorderColor: 'rgba(0,255,255,0.35)',
+                lineColor: '#0f9',
+                secondaryColor: 'rgba(0,255,255,0.08)',
+                tertiaryColor: 'rgba(0,255,255,0.04)',
+                fontSize: '13px'
+            }
+        });
+        window._mermaidReady = mermaid;
+    </script>
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
-            const loading = document.getElementById('post-loading');
-            const error = document.getElementById('post-error');
-            const container = document.getElementById('post-container');
-            const title = document.getElementById('article-title');
-            const date = document.getElementById('article-date');
-            const category = document.getElementById('article-category');
-            const content = document.getElementById('article-content');
-            const cover = document.getElementById('article-cover');
-            const toc = document.getElementById('post-toc');
-            const tocList = document.getElementById('toc-list');
-            const tocToggle = document.getElementById('toc-toggle');
-            const tocFab = document.getElementById('toc-fab');
-            const tocBackdrop = document.getElementById('toc-backdrop');
-            const progressBar = document.getElementById('reading-progress-bar');
+            const loading       = document.getElementById('post-loading');
+            const error         = document.getElementById('post-error');
+            const postContainer = document.getElementById('post-container');
+            const title         = document.getElementById('article-title');
+            const date          = document.getElementById('article-date');
+            const category      = document.getElementById('article-content') && document.getElementById('article-content'); // placeholder ref
+            const content       = document.getElementById('article-content');
+            const cover         = document.getElementById('article-cover');
+            const toc           = document.getElementById('post-toc');
+            const tocList       = document.getElementById('toc-list');
+            const tocToggle     = document.getElementById('toc-toggle');
+            const tocFab        = document.getElementById('toc-fab');
+            const tocBackdrop   = document.getElementById('toc-backdrop');
+            const progressBar   = document.getElementById('reading-progress-bar');
             const fallbackNotice = document.getElementById('post-fallback-notice');
             let fallbackNoticeTimer = null;
             let sectionNodes = [];
-            let tocNodes = [];
+            let tocNodes     = [];
+
+            /* ── Utilities ──────────────────────────────────── */
+            function escapeHtml(v) {
+                return String(v || '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]||c));
+            }
+            function isMobileViewport() { return window.innerWidth <= 900; }
 
             function hideFallbackNotice() {
-                if (!fallbackNotice) {
-                    return;
-                }
-
-                if (fallbackNoticeTimer) {
-                    window.clearTimeout(fallbackNoticeTimer);
-                    fallbackNoticeTimer = null;
-                }
-
+                if (!fallbackNotice) return;
+                if (fallbackNoticeTimer) { clearTimeout(fallbackNoticeTimer); fallbackNoticeTimer = null; }
                 fallbackNotice.classList.add('is-hiding');
-                window.setTimeout(function () {
+                setTimeout(() => {
                     fallbackNotice.style.display = 'none';
                     fallbackNotice.classList.remove('is-hiding');
                     fallbackNotice.innerHTML = '';
@@ -151,406 +338,301 @@
             }
 
             function showFallbackNotice(message, autoHide) {
-                if (!fallbackNotice || !message) {
-                    return;
-                }
-
-                if (fallbackNoticeTimer) {
-                    window.clearTimeout(fallbackNoticeTimer);
-                    fallbackNoticeTimer = null;
-                }
-
+                if (!fallbackNotice || !message) return;
+                if (fallbackNoticeTimer) { clearTimeout(fallbackNoticeTimer); fallbackNoticeTimer = null; }
                 fallbackNotice.innerHTML = '<span>' + escapeHtml(message) + '</span><button type="button" class="notice-close" aria-label="关闭提示">关闭</button>';
                 fallbackNotice.classList.remove('is-hiding');
                 fallbackNotice.style.display = 'flex';
-
-                if (autoHide) {
-                    fallbackNoticeTimer = window.setTimeout(function () {
-                        hideFallbackNotice();
-                    }, 3000);
-                }
-            }
-
-            function isMobileViewport() {
-                return window.innerWidth <= 900;
+                if (autoHide) fallbackNoticeTimer = setTimeout(hideFallbackNotice, 3000);
             }
 
             function setTocDrawerOpen(open) {
                 const mobile = isMobileViewport();
                 toc.classList.toggle('drawer-open', mobile && open);
-                if (tocBackdrop) {
-                    tocBackdrop.classList.toggle('active', mobile && open);
-                }
-
-                if (tocFab) {
-                    tocFab.classList.toggle('active', mobile && open);
-                }
-
+                if (tocBackdrop) tocBackdrop.classList.toggle('active', mobile && open);
+                if (tocFab) tocFab.classList.toggle('active', mobile && open);
                 if (tocToggle) {
                     tocToggle.setAttribute('aria-expanded', String(open));
                     tocToggle.textContent = mobile ? (open ? '关闭目录' : '展开目录') : '目录';
                 }
             }
 
-            function escapeHtml(value) {
-                return String(value || '').replace(/[&<>'"]/g, function (char) {
-                    return {
-                        '&': '&amp;',
-                        '<': '&lt;',
-                        '>': '&gt;',
-                        "'": '&#39;',
-                        '"': '&quot;'
-                    }[char] || char;
-                });
-            }
-
-            function normalizeCoverUrl(value) {
-                const raw = String(value || '').trim();
-                if (!raw) {
-                    return '';
-                }
-
-                if (raw.startsWith('data:image/')) {
-                    return raw;
-                }
-
+            /* ── Cover helpers ──────────────────────────────── */
+            function normalizeCoverUrl(v) {
+                const raw = String(v || '').trim();
+                if (!raw) return '';
+                if (raw.startsWith('data:image/')) return raw;
                 try {
-                    const parsed = new URL(raw, window.location.origin);
-                    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-                        return parsed.href;
-                    }
-                } catch (error) {
-                    return '';
-                }
-
+                    const p = new URL(raw, window.location.origin);
+                    if (p.protocol === 'http:' || p.protocol === 'https:') return p.href;
+                } catch (_) { return ''; }
                 return '';
             }
-
-            function resolveArticleCover(article) {
-                if (!article || typeof article !== 'object') {
-                    return '';
+            function resolveArticleCover(a) {
+                for (const k of ['cover_url','coverUrl','cover','thumbnail','image','image_url','banner']) {
+                    const n = normalizeCoverUrl(a[k]);
+                    if (n) return n;
                 }
-
-                const candidates = [
-                    article.cover_url,
-                    article.coverUrl,
-                    article.cover,
-                    article.thumbnail,
-                    article.image,
-                    article.image_url,
-                    article.banner
-                ];
-
-                for (const item of candidates) {
-                    const normalized = normalizeCoverUrl(item);
-                    if (normalized) {
-                        return normalized;
-                    }
-                }
-
                 return '';
             }
-
-            function escapeSvgText(value) {
-                return String(value || '').replace(/[&<>"']/g, function (char) {
-                    return {
-                        '&': '&amp;',
-                        '<': '&lt;',
-                        '>': '&gt;',
-                        '"': '&quot;',
-                        "'": '&#39;'
-                    }[char] || char;
-                });
+            function escapeSvgText(v) {
+                return String(v||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
             }
-
-            function generateFallbackCover(article) {
-                const titleText = escapeSvgText(article && article.title ? article.title : '未命名文章');
-                const categoryText = escapeSvgText(article && article.category ? article.category : '学习笔记');
+            function generateFallbackCover(a) {
+                const t = escapeSvgText(a&&a.title?a.title:'Untitled');
+                const c = escapeSvgText(a&&a.category?a.category:'Research');
                 const svg = [
                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">',
-                    '<defs>',
-                    '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">',
-                    '<stop offset="0%" stop-color="#07131f" />',
-                    '<stop offset="100%" stop-color="#02050b" />',
-                    '</linearGradient>',
-                    '<linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">',
-                    '<stop offset="0%" stop-color="#18f4d6" stop-opacity="0.86" />',
-                    '<stop offset="100%" stop-color="#071723" stop-opacity="0.96" />',
-                    '</linearGradient>',
-                    '<pattern id="scan" width="6" height="6" patternUnits="userSpaceOnUse">',
-                    '<rect width="6" height="1.2" fill="rgba(255,255,255,0.07)" />',
-                    '</pattern>',
-                    '</defs>',
-                    '<rect width="1200" height="675" fill="url(#bg)" />',
-                    '<rect width="1200" height="675" fill="url(#accent)" opacity="0.88" />',
-                    '<rect width="1200" height="675" fill="url(#scan)" opacity="0.55" />',
-                    '<rect x="78" y="78" width="1044" height="519" rx="24" fill="rgba(2,8,16,0.32)" stroke="rgba(24,244,214,0.58)" stroke-width="4" />',
-                    '<text x="130" y="180" fill="#d9fff7" font-size="42" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif" opacity="0.88">' + categoryText + '</text>',
-                    '<text x="130" y="290" fill="#ffffff" font-size="54" font-weight="700" font-family="Segoe UI, PingFang SC, Microsoft YaHei, sans-serif">' + titleText + '</text>',
-                    '<text x="130" y="548" fill="rgba(230,245,255,0.88)" font-size="28" letter-spacing="4" font-family="Consolas, monospace">YANMO BLOG COVER</text>',
+                    '<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#07131f"/><stop offset="100%" stop-color="#02050b"/></linearGradient>',
+                    '<linearGradient id="ac" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#18f4d6" stop-opacity=".86"/><stop offset="100%" stop-color="#071723" stop-opacity=".96"/></linearGradient>',
+                    '<pattern id="sc" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="1.2" fill="rgba(255,255,255,0.07)"/></pattern></defs>',
+                    '<rect width="1200" height="675" fill="url(#bg)"/>',
+                    '<rect width="1200" height="675" fill="url(#ac)" opacity=".88"/>',
+                    '<rect width="1200" height="675" fill="url(#sc)" opacity=".55"/>',
+                    '<rect x="78" y="78" width="1044" height="519" rx="24" fill="rgba(2,8,16,.32)" stroke="rgba(24,244,214,.58)" stroke-width="4"/>',
+                    '<text x="130" y="180" fill="#d9fff7" font-size="42" font-family="Segoe UI,sans-serif" opacity=".88">'+c+'</text>',
+                    '<text x="130" y="290" fill="#fff" font-size="54" font-weight="700" font-family="Segoe UI,sans-serif">'+t+'</text>',
+                    '<text x="130" y="548" fill="rgba(230,245,255,.88)" font-size="28" letter-spacing="4" font-family="Consolas,monospace">YANMO LABS // SECURITY RESEARCH</text>',
                     '</svg>'
                 ].join('');
-
                 return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
             }
 
-            function parseBlocks(rawText) {
-                return String(rawText || '')
-                    .split(/\n{2,}/)
-                    .map(function (chunk) {
-                        return chunk.trim();
-                    })
-                    .filter(Boolean);
+            /* ── Markdown renderer ──────────────────────────── */
+            function configureMarked() {
+                if (typeof marked === 'undefined') return;
+
+                const renderer = new marked.Renderer();
+
+                // Fenced code blocks → Highlight.js + lang label + copy btn
+                renderer.code = function(code, lang) {
+                    const rawCode = typeof code === 'object' ? (code.text || '') : String(code || '');
+                    const language = (typeof code === 'object' ? (code.lang || lang || '') : (lang || '')).toLowerCase();
+
+                    // Mermaid diagrams → deferred render
+                    if (language === 'mermaid') {
+                        const id = 'mermaid-' + Math.random().toString(36).slice(2);
+                        return `<div class="mermaid-wrap"><div class="mermaid" id="${id}">${escapeHtml(rawCode)}</div></div>`;
+                    }
+
+                    const highlighted = (hljs && language && hljs.getLanguage(language))
+                        ? hljs.highlight(rawCode, { language }).value
+                        : (hljs ? hljs.highlightAuto(rawCode).value : escapeHtml(rawCode));
+
+                    const langLabel = language ? `<span class="code-lang-label">${escapeHtml(language)}</span>` : '';
+                    const copyId = 'code-' + Math.random().toString(36).slice(2);
+                    return `<pre id="${copyId}">${langLabel}<button type="button" class="code-copy-btn" onclick="copyCode('${copyId}')">COPY</button><code class="hljs language-${escapeHtml(language)}">${highlighted}</code></pre>`;
+                };
+
+                // Headings → anchor IDs for TOC (H-04: escape rawText before inserting as HTML)
+                let headingSeq = 0;
+                renderer.heading = function(text, level) {
+                    const rawText = typeof text === 'object' ? (text.text || '') : String(text || '');
+                    headingSeq++;
+                    const id = 'sec-' + headingSeq;
+                    const tag = level <= 2 ? 'h' + (level + 1) : 'h' + Math.min(level + 1, 6);
+                    const dataLevel = level;
+                    return `<${tag} id="${escapeHtml(id)}" data-type="heading" data-level="${dataLevel}">${escapeHtml(rawText)}</${tag}>`;
+                };
+
+                marked.use({ renderer, breaks: true, gfm: true });
             }
 
             function buildArticleContent(rawText) {
-                const blocks = parseBlocks(rawText);
-                if (!blocks.length) {
-                    content.innerHTML = '<p>暂无正文内容</p>';
-                    sectionNodes = [];
-                    tocNodes = [];
-                    return;
+                if (typeof marked !== 'undefined') {
+                    configureMarked();
+                    // C-03: sanitize rendered HTML with DOMPurify before setting innerHTML
+                    const rendered = marked.parse(String(rawText || ''));
+                    content.innerHTML = (typeof DOMPurify !== 'undefined')
+                        ? DOMPurify.sanitize(rendered)
+                        : rendered;
+                } else {
+                    // Plain-text fallback
+                    const blocks = String(rawText||'').split(/\n{2,}/).map(b=>b.trim()).filter(Boolean);
+                    let seq = 0;
+                    content.innerHTML = blocks.map(block => {
+                        seq++;
+                        const hm = block.match(/^(#{1,3})\s+(.+)$/);
+                        const id = 'sec-' + seq;
+                        if (hm) {
+                            const lv = Math.min(hm[1].length, 3);
+                            const tag = lv <= 2 ? 'h' + (lv + 1) : 'h3';
+                            return `<${tag} id="${id}" data-type="heading" data-level="${lv}">${escapeHtml(hm[2])}</${tag}>`;
+                        }
+                        return `<p id="${id}" data-type="paragraph" data-level="0">${escapeHtml(block).replace(/\n/g,'<br>')}</p>`;
+                    }).join('');
                 }
 
-                let sectionIndex = 0;
-                content.innerHTML = blocks.map(function (block) {
-                    const headingMatch = block.match(/^(#{1,3})\s+(.+)$/);
-                    sectionIndex += 1;
-                    const sectionId = 'sec-' + sectionIndex;
-
-                    if (headingMatch) {
-                        const level = Math.min(headingMatch[1].length, 3);
-                        const headingText = headingMatch[2].trim();
-                        const tagName = level === 1 ? 'h2' : (level === 2 ? 'h2' : 'h3');
-                        return '<' + tagName + ' id="' + sectionId + '" data-type="heading" data-level="' + level + '">' + escapeHtml(headingText) + '</' + tagName + '>';
+                // C-04: legal-disclaimer shortcode — sanitize body before injecting
+                content.innerHTML = content.innerHTML.replace(
+                    /:::disclaimer([\s\S]*?):::/g,
+                    (_, body) => {
+                        const safe = (typeof DOMPurify !== 'undefined')
+                            ? DOMPurify.sanitize(body.trim())
+                            : escapeHtml(body.trim());
+                        return `<div class="legal-disclaimer">${safe}</div>`;
                     }
+                );
 
-                    return '<p id="' + sectionId + '" data-type="paragraph" data-level="0">' + escapeHtml(block.replace(/\n+/g, ' ')) + '</p>';
-                }).join('');
+                // Trigger Mermaid on deferred blocks
+                setTimeout(() => {
+                    const mermaidDivs = content.querySelectorAll('.mermaid');
+                    if (mermaidDivs.length && window._mermaidReady) {
+                        window._mermaidReady.run({ nodes: Array.from(mermaidDivs) });
+                    }
+                }, 100);
 
                 sectionNodes = Array.from(content.querySelectorAll('[id^="sec-"]'));
             }
 
             function buildToc() {
-                if (!sectionNodes.length) {
-                    toc.style.display = 'none';
-                    tocNodes = [];
-                    return;
-                }
-
-                const headingNodes = sectionNodes.filter(function (node) {
-                    return node.dataset.type === 'heading';
-                });
-
-                if (headingNodes.length) {
-                    tocNodes = headingNodes;
-                } else {
-                    tocNodes = sectionNodes.filter(function (node, index) {
-                        return index === 0 || index === sectionNodes.length - 1 || index % 2 === 0;
-                    });
-                }
-
-                tocList.innerHTML = tocNodes.map(function (node, index) {
-                    const label = (node.textContent || '').slice(0, 26) || ('段落 ' + (index + 1));
-                    const level = Number(node.dataset.level || 0);
-                    const levelClass = level >= 3 ? 'toc-level-3' : (level === 2 ? 'toc-level-2' : (level === 1 ? 'toc-level-1' : 'toc-level-0'));
-                    return '<a href="#' + node.id + '" class="' + levelClass + '" data-target="' + node.id + '">' + (index + 1) + '. ' + escapeHtml(label) + '</a>';
+                if (!sectionNodes.length) { toc.style.display = 'none'; tocNodes = []; return; }
+                const headings = sectionNodes.filter(n => n.dataset.type === 'heading');
+                tocNodes = headings.length ? headings : sectionNodes.filter((_, i) => i === 0 || i % 2 === 0 || i === sectionNodes.length - 1);
+                tocList.innerHTML = tocNodes.map((node, i) => {
+                    const label = (node.textContent || '').slice(0, 26) || ('Section ' + (i + 1));
+                    const lv = Number(node.dataset.level || 0);
+                    const cls = lv >= 3 ? 'toc-level-3' : lv === 2 ? 'toc-level-2' : lv === 1 ? 'toc-level-1' : 'toc-level-0';
+                    return `<li><a href="#${node.id}" class="${cls}" data-target="${node.id}"><span class="toc-number">${String(i+1).padStart(2,'0')}</span>${escapeHtml(label)}</a></li>`;
                 }).join('');
-
                 toc.style.display = 'block';
                 setTocDrawerOpen(false);
             }
 
             function updateReadingProgress() {
-                const articleRect = content.getBoundingClientRect();
-                const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-                const totalScrollable = Math.max(content.scrollHeight - viewportHeight * 0.45, 1);
-                const progressed = Math.min(Math.max((viewportHeight * 0.2 - articleRect.top) / totalScrollable, 0), 1);
-                progressBar.style.width = (progressed * 100).toFixed(2) + '%';
-
-                const trackingNodes = tocNodes.length ? tocNodes : sectionNodes;
-                let currentId = null;
-                for (let i = 0; i < trackingNodes.length; i += 1) {
-                    if (trackingNodes[i].getBoundingClientRect().top <= viewportHeight * 0.3) {
-                        currentId = trackingNodes[i].id;
-                    }
+                const rect = content.getBoundingClientRect();
+                const vh = window.innerHeight || document.documentElement.clientHeight;
+                const total = Math.max(content.scrollHeight - vh * 0.45, 1);
+                const prog = Math.min(Math.max((vh * 0.2 - rect.top) / total, 0), 1);
+                progressBar.style.width = (prog * 100).toFixed(2) + '%';
+                const tracking = tocNodes.length ? tocNodes : sectionNodes;
+                let activeId = null;
+                for (const n of tracking) {
+                    if (n.getBoundingClientRect().top <= vh * 0.3) activeId = n.id;
                 }
-
-                const links = tocList.querySelectorAll('a[data-target]');
-                links.forEach(function (link) {
-                    const isActive = link.getAttribute('data-target') === currentId;
-                    link.classList.toggle('active', isActive);
+                tocList.querySelectorAll('a[data-target]').forEach(a => {
+                    a.classList.toggle('active', a.getAttribute('data-target') === activeId);
                 });
             }
 
+            /* ── Fetch ──────────────────────────────────────── */
             async function fetchArticleById(id) {
-                const response = await fetch(`/api/articles/${id}`);
-                if (!response.ok) {
-                    throw new Error('ARTICLE_NOT_FOUND');
-                }
-                return response.json();
+                const r = await fetch(`/api/articles/${id}`);
+                if (!r.ok) throw new Error('ARTICLE_NOT_FOUND');
+                return r.json();
             }
-
             async function fetchLatestArticle() {
-                const response = await fetch('/api/articles');
-                if (!response.ok) {
-                    throw new Error('ARTICLE_LIST_FAILED');
-                }
-
-                const articles = await response.json();
-                if (!Array.isArray(articles) || articles.length === 0) {
-                    throw new Error('NO_ARTICLES');
-                }
-
-                return articles[0];
+                const r = await fetch('/api/articles');
+                if (!r.ok) throw new Error('ARTICLE_LIST_FAILED');
+                const arr = await r.json();
+                if (!Array.isArray(arr) || !arr.length) throw new Error('NO_ARTICLES');
+                return arr[0];
             }
-
             async function resolveArticle(requestedId) {
                 if (requestedId) {
                     try {
-                        const article = await fetchArticleById(requestedId);
-                        return { article: article, source: 'requested' };
-                    } catch (err) {
-                        const fallbackArticle = await fetchLatestArticle();
-                        return { article: fallbackArticle, source: 'fallback' };
+                        return { article: await fetchArticleById(requestedId), source: 'requested' };
+                    } catch (_) {
+                        return { article: await fetchLatestArticle(), source: 'fallback' };
                     }
                 }
-
-                const latestArticle = await fetchLatestArticle();
-                return { article: latestArticle, source: 'fallback' };
+                return { article: await fetchLatestArticle(), source: 'fallback' };
             }
 
-            // 获取 URL 参数中的 ID
+            /* ── Copy helper (global) ───────────────────────── */
+            window.copyCode = function(preId) {
+                const pre = document.getElementById(preId);
+                const code = pre && pre.querySelector('code');
+                if (!code) return;
+                navigator.clipboard.writeText(code.textContent || '').then(() => {
+                    const btn = pre.querySelector('.code-copy-btn');
+                    if (btn) { btn.textContent = 'COPIED!'; setTimeout(() => { btn.textContent = 'COPY'; }, 1500); }
+                });
+            };
+
+            /* ── Main ───────────────────────────────────────── */
             const urlParams = new URLSearchParams(window.location.search);
             const articleId = urlParams.get('id');
 
             try {
                 const resolved = await resolveArticle(articleId);
-                const article = resolved.article;
+                const article  = resolved.article;
                 const targetId = String(article.id || '');
 
                 if (fallbackNotice) {
-                    if (resolved.source === 'fallback' && articleId) {
+                    if (resolved.source === 'fallback' && articleId)
                         showFallbackNotice('目标文章不存在，已自动切换到最新文章。', true);
-                    } else if (resolved.source === 'fallback' && !articleId) {
+                    else if (resolved.source === 'fallback' && !articleId)
                         showFallbackNotice('未指定文章编号，已为你加载最新文章。', true);
-                    } else {
+                    else
                         fallbackNotice.style.display = 'none';
-                    }
                 }
 
-                if (targetId && String(articleId || '') !== targetId) {
-                    const targetUrl = `${window.location.pathname}?id=${encodeURIComponent(targetId)}`;
-                    window.history.replaceState({}, '', targetUrl);
-                }
-                
-                // 填充内容
-                document.title = `${article.title} - YanMo的个人博客`;
+                if (targetId && String(articleId || '') !== targetId)
+                    window.history.replaceState({}, '', `${window.location.pathname}?id=${encodeURIComponent(targetId)}`);
+
+                document.title = `${article.title} - YanMo Labs`;
                 title.textContent = article.title;
                 title.setAttribute('data-text', article.title);
-                date.textContent = article.created_at.split(' ')[0];
-                category.textContent = article.category;
-                
-                // 处理换行符为段落并构建目录锚点
+
+                const dateText = formatLocalDate(article.created_at);
+                const dateEl   = document.getElementById('article-date');
+                if (dateEl) dateEl.textContent = dateText;
+
+                const categoryBadge  = document.getElementById('article-category-badge');
+                const dateHeader     = document.getElementById('article-date-header');
+                const categoryHeader = document.getElementById('article-category-header');
+                if (categoryBadge)  categoryBadge.textContent  = article.category;
+                if (dateHeader)     dateHeader.textContent      = dateText;
+                if (categoryHeader) categoryHeader.textContent  = article.category;
+
                 buildArticleContent(article.content);
                 buildToc();
-                
-                // 使用文章自带封面；若缺失则回退本地 SVG 封面，避免依赖外部生图服务
+
                 cover.textContent = '';
-                const coverImg = document.createElement('img');
-                coverImg.src = resolveArticleCover(article) || generateFallbackCover(article);
-                coverImg.alt = String(article.title || '文章封面');
-                coverImg.loading = 'lazy';
-                coverImg.decoding = 'async';
-                cover.appendChild(coverImg);
+                const img = document.createElement('img');
+                img.src = resolveArticleCover(article) || generateFallbackCover(article);
+                img.alt = String(article.title || '文章封面');
+                img.loading = 'lazy'; img.decoding = 'async';
+                cover.appendChild(img);
 
                 loading.style.display = 'none';
-                container.style.display = 'block';
+                postContainer.style.display = 'block';
 
                 updateReadingProgress();
                 document.addEventListener('scroll', updateReadingProgress, { passive: true });
                 window.addEventListener('resize', updateReadingProgress);
 
                 if (tocToggle) {
-                    tocToggle.addEventListener('click', function () {
-                        if (!isMobileViewport()) {
-                            return;
-                        }
-                        const opened = toc.classList.contains('drawer-open');
-                        setTocDrawerOpen(!opened);
+                    tocToggle.addEventListener('click', () => {
+                        if (!isMobileViewport()) return;
+                        setTocDrawerOpen(!toc.classList.contains('drawer-open'));
                     });
                 }
+                if (tocFab)      tocFab.addEventListener('click',     () => setTocDrawerOpen(true));
+                if (tocBackdrop) tocBackdrop.addEventListener('click', () => setTocDrawerOpen(false));
 
-                if (tocFab) {
-                    tocFab.addEventListener('click', function () {
-                        setTocDrawerOpen(true);
-                    });
-                }
-
-                if (tocBackdrop) {
-                    tocBackdrop.addEventListener('click', function () {
-                        setTocDrawerOpen(false);
-                    });
-                }
-
-                tocList.addEventListener('click', function (event) {
-                    const link = event.target.closest('a[data-target]');
-                    if (!link) {
-                        return;
-                    }
-
-                    if (isMobileViewport()) {
-                        setTocDrawerOpen(false);
-                    }
+                tocList.addEventListener('click', e => {
+                    const link = e.target.closest('a[data-target]');
+                    if (!link) return;
+                    if (isMobileViewport()) setTocDrawerOpen(false);
                 });
-
-                window.addEventListener('resize', function () {
-                    if (!toc || toc.style.display === 'none') {
-                        return;
-                    }
-
+                window.addEventListener('resize', () => {
+                    if (!toc || toc.style.display === 'none') return;
                     setTocDrawerOpen(false);
                 });
-
-                document.addEventListener('keydown', function (event) {
-                    if (event.key === 'Escape' && isMobileViewport()) {
-                        setTocDrawerOpen(false);
-                    }
+                document.addEventListener('keydown', e => {
+                    if (e.key === 'Escape' && isMobileViewport()) setTocDrawerOpen(false);
                 });
-
                 if (fallbackNotice) {
-                    fallbackNotice.addEventListener('click', function (event) {
-                        const closeButton = event.target.closest('.notice-close');
-                        if (!closeButton) {
-                            return;
-                        }
-
-                        hideFallbackNotice();
+                    fallbackNotice.addEventListener('click', e => {
+                        if (e.target.closest('.notice-close')) hideFallbackNotice();
                     });
                 }
             } catch (err) {
                 loading.style.display = 'none';
                 error.style.display = 'block';
             }
-
-            // 主题切换功能
-            const themeToggle = document.querySelector('.theme-toggle');
-            const body = document.body;
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                body.classList.add('light-mode');
-                themeToggle.textContent = '切换到赛博模式';
-            }
-            themeToggle.addEventListener('click', function() {
-                body.classList.toggle('light-mode');
-                if (body.classList.contains('light-mode')) {
-                    themeToggle.textContent = '切换到赛博模式';
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    themeToggle.textContent = '切换到白昼模式';
-                    localStorage.setItem('theme', 'dark');
-                }
-            });
         });
     </script>
 </body>

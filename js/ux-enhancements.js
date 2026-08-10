@@ -143,38 +143,50 @@ document.addEventListener('DOMContentLoaded', () => {
         statusEl.className = 'nav-status';
         navActions.prepend(statusEl);
 
+        let cachedStatsText = '';
+        let cachedLvl = 'GUEST_USER';
+
+        // Clock updates every second (client-only — no API call)
+        const tickClock = () => {
+            const clockEl = statusEl.querySelector('.status-clock');
+            if (clockEl) {
+                clockEl.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            }
+        };
+
+        // Stats + auth state refresh every 60 seconds
         const updateStatus = async () => {
-            let isAdmin = false;
             if (window.SiteLocalApi) {
-                isAdmin = window.SiteLocalApi.isAdminLoggedIn();
+                cachedLvl = window.SiteLocalApi.isAdminLoggedIn() ? 'ROOT_NODE' : 'GUEST_USER';
             }
 
-            let statsText = "";
             try {
                 const response = await fetch('/api/stats');
                 if (response.ok) {
                     const stats = await response.json();
-                    statsText = ` [VIEWS: ${stats.total_views}] [ITEMS: ${stats.published_articles}]`;
+                    cachedStatsText = stats.published_articles != null
+                        ? ` [ITEMS: ${stats.published_articles}]`
+                        : '';
                 }
             } catch (e) {
                 // Silently fail if API is down
             }
 
-            const lvl = isAdmin ? "ROOT_NODE" : "GUEST_USER";
+            const syncStatus = ['STABLE', 'SYNCING', 'ENCRYPTED'][Math.floor(Math.random() * 3)];
             const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
-            const syncStatus = ["STABLE", "SYNCING", "ENCRYPTED"][Math.floor(Math.random() * 3)];
-            
+
             statusEl.innerHTML = `
                 <span class="status-pulse"></span>
-                <span class="status-id">> ID_${lvl}</span>
-                <span class="status-data">${statsText}</span>
+                <span class="status-id">> ID_${cachedLvl}</span>
+                <span class="status-data">${cachedStatsText}</span>
                 <span class="status-sync">[${syncStatus}]</span>
                 <span class="status-clock">${time}</span>
             `;
         };
 
         updateStatus();
-        setInterval(updateStatus, 1000);
+        setInterval(updateStatus, 60000);
+        setInterval(tickClock, 1000);
     }
 
     // --- Back to Top Button ---
@@ -187,15 +199,15 @@ document.addEventListener('DOMContentLoaded', () => {
         right: 30px;
         width: 50px;
         height: 50px;
-        background: rgba(10, 10, 18, 0.8);
-        border: 1px solid #0ff;
-        color: #0ff;
+        background: rgba(var(--bg-color-r), var(--bg-color-g), var(--bg-color-b), 0.8);
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
         border-radius: 50%;
         cursor: pointer;
         display: none;
         z-index: 999;
         font-size: 1.5rem;
-        box-shadow: 0 0 10px #0ff;
+        box-shadow: 0 0 10px var(--primary-color);
         transition: all 0.3s ease;
     `;
     document.body.appendChild(backToTop);
@@ -209,15 +221,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     backToTop.addEventListener('mouseenter', () => {
-        backToTop.style.boxShadow = '0 0 20px #f0f';
-        backToTop.style.borderColor = '#f0f';
-        backToTop.style.color = '#f0f';
+        backToTop.style.boxShadow = '0 0 20px var(--theme-secondary)';
+        backToTop.style.borderColor = 'var(--theme-secondary)';
+        backToTop.style.color = 'var(--theme-secondary)';
     });
 
     backToTop.addEventListener('mouseleave', () => {
-        backToTop.style.boxShadow = '0 0 10px #0ff';
-        backToTop.style.borderColor = '#0ff';
-        backToTop.style.color = '#0ff';
+        backToTop.style.boxShadow = '0 0 10px var(--primary-color)';
+        backToTop.style.borderColor = 'var(--primary-color)';
+        backToTop.style.color = 'var(--primary-color)';
     });
 });
 
@@ -225,8 +237,11 @@ document.addEventListener('DOMContentLoaded', () => {
 // Matrix Digital Rain Background
 // ==========================================
 function initMatrixRain() {
+    // home-page.js owns #cyber-canvas with a rAF loop.
+    // Only activate this fallback renderer on pages that don't load home-page.js.
+    if (document.getElementById('cyber-canvas')) return;
     if (document.getElementById('matrix-canvas')) return;
-    
+
     const canvas = document.createElement('canvas');
     canvas.id = 'matrix-canvas';
     canvas.style.cssText = `
@@ -247,20 +262,39 @@ function initMatrixRain() {
 
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()?'.split('');
     const fontSize = 14;
-    let columns = width / fontSize;
-    let drops = Array(Math.floor(columns)).fill(1);
+    let columns = Math.floor(width / fontSize);
+    let drops = Array(columns).fill(1);
+    let rafId = null;
 
+    // Read palette CSS variables so the matrix rain follows the
+    // background/primary color pickers instead of hard-coded values.
+    function readRgb(prefix) {
+        const cs = getComputedStyle(document.documentElement);
+        return {
+            r: parseInt(cs.getPropertyValue(prefix + '-r').trim(), 10) || 0,
+            g: parseInt(cs.getPropertyValue(prefix + '-g').trim(), 10) || 0,
+            b: parseInt(cs.getPropertyValue(prefix + '-b').trim(), 10) || 0,
+        };
+    }
+
+    let resizeTimer = null;
     window.addEventListener('resize', () => {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-        columns = width / fontSize;
-        drops = Array(Math.floor(columns)).fill(1);
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            columns = Math.floor(width / fontSize);
+            drops = Array(columns).fill(1);
+        }, 200);
     });
 
-    const draw = () => {
-        ctx.fillStyle = 'rgba(5, 5, 10, 0.05)';
+    function draw() {
+        rafId = requestAnimationFrame(draw);
+        const bg = readRgb('--bg-color');
+        const main = readRgb('--primary-color');
+        ctx.fillStyle = `rgba(${bg.r},${bg.g},${bg.b},0.05)`;
         ctx.fillRect(0, 0, width, height);
-        ctx.fillStyle = document.body.classList.contains('light-theme') ? '#006400' : '#0f0';
+        ctx.fillStyle = `rgba(${main.r},${main.g},${main.b},0.9)`;
         ctx.font = fontSize + 'px monospace';
 
         for (let i = 0; i < drops.length; i++) {
@@ -271,9 +305,9 @@ function initMatrixRain() {
             }
             drops[i]++;
         }
-    };
+    }
 
-    setInterval(draw, 50);
+    draw();
 }
 
 // ==========================================
@@ -285,7 +319,7 @@ function initPageTransitions() {
     overlay.style.cssText = `
         position: fixed;
         inset: 0;
-        background: #05050a;
+        background: var(--bg-color);
         z-index: 9999;
         pointer-events: none;
         opacity: 0;
@@ -324,13 +358,19 @@ function initCodeEnhancements() {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css';
+    link.integrity = 'sha512-vswe+cgvic/XBoF1OcM/TeJ2FW0OofqAVdCZiEYkd6dwGXthvkSFWOoGGJgS2CW70VK5dQM5Oh+7ne47s74YQ==';
+    link.crossOrigin = 'anonymous';
     document.head.appendChild(link);
 
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js';
+    script.integrity = 'sha512-AKn+B5RnAZkwNTLXRRV7gKN7EwQ6IDpCCbBFT6blVE70FNLhPFQKFbE7cXsqzGqN8z2dPAFbTBiOoX23UjwA==';
+    script.crossOrigin = 'anonymous';
     script.onload = () => {
         const autoloader = document.createElement('script');
         autoloader.src = 'https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js';
+        autoloader.integrity = 'sha512-SkmBfuA2hqjMFhBGMdJCzJBJg4JJ0PnKtBlNInq9x/hqZ8O3i7cZaFJRdkKqNQFJbq+8V8A3T7yEPmfW6LFw==';
+        autoloader.crossOrigin = 'anonymous';
         document.head.appendChild(autoloader);
         
         preBlocks.forEach(pre => {

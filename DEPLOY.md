@@ -1,99 +1,132 @@
-# 网站部署指南
+# 部署指南
 
-本项目支持两种部署方式：
+本项目支持两种部署模式：
 
-1. 服务器部署（Python 服务，SQLite 持久化）
-2. Serverless 部署（Vercel API 路由）
+- **本地/云服务器**：Node.js + Express + SQLite，数据持久化
+- **Serverless**：Vercel + 可选 PostgreSQL
+
+---
 
 ## 本地开发
 
-1. 克隆仓库
-2. 进入项目根目录
-3. 启动：
-
 ```bash
-python server/server.py
+cd server
+npm install
+npm run dev        # nodemon 热重载，监听 :3000
 ```
 
-4. 访问：http://localhost:3000
+访问 http://localhost:3000
 
-## 方式一：云服务器部署（推荐持久化）
+---
 
-适合需要稳定持久化数据（留言、友链、文章、审计日志）的场景。
+## 方式一：云服务器部署（数据持久化）
+
+适合需要稳定存储留言、友链、文章的生产场景。
+
+### 前置要求
+
+- Node.js 18+
+- 可选：Nginx 反代 + HTTPS
 
 ### 步骤
 
-1. 准备一台 Linux 服务器（Ubuntu/CentOS 均可）
-2. 安装 Python 3
-3. 拉取仓库并启动：
-
 ```bash
 git clone <your-repo-url>
-cd BoKe-main
-python server/server.py
+cd BoKe-main/server
+npm install --production
+npm start           # node server.js，监听 :3000
 ```
 
-4. 使用 Nginx 反向代理到 3000 端口（可配 HTTPS）
+Nginx 反代示例（`/etc/nginx/sites-available/yanmo`）：
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name your-domain.com;
+
+    ssl_certificate     /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass         http://127.0.0.1:3000;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+```
+
+数据文件默认路径：`server/blog.db`，可通过环境变量 `DB_PATH` 修改。
+
+管理员凭据：
+- 凭据文件：`admin_credentials.json`（根目录），可通过 `ADMIN_CREDENTIALS_FILE` 指定路径
+- 首次启动后通过管理后台 `设置 → 修改密码` 更改默认账号
+
+---
 
 ## 方式二：Vercel Serverless 部署
 
-项目已提供以下云端文件：
+### 前置要求
 
-- api/index.js
-- api/[...route].js
-- vercel.json
+- Vercel 账号，仓库已导入
 
-### 部署步骤
+### 必须设置的环境变量（Production）
 
-1. 将仓库导入 Vercel
-2. 设置环境变量（Production 环境）：
+| 变量名 | 说明 |
+|--------|------|
+| `ADMIN_USERNAME` | 管理员用户名 |
+| `ADMIN_PASSWORD` | 管理员密码 |
+| `ADMIN_SESSION_SECRET` | Session 签名密钥，**必须**为随机长字符串 |
 
-- ADMIN_USERNAME（建议必填）
-- ADMIN_PASSWORD（建议必填）
-- ADMIN_SESSION_SECRET（强烈建议必填，随机长字符串）
+生成 Session 密钥：
 
-说明：非本机访问下，如果未配置 ADMIN_USERNAME / ADMIN_PASSWORD，管理员登录会被后端拒绝（503）。
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
-3. 部署后访问站点并验证：
+> 未设置 `ADMIN_SESSION_SECRET` 或使用默认值时，API 会在启动时抛出 FATAL 错误拒绝运行。
 
-- /api 返回 mode: server-api
-- /api/health 返回 ok: true，且可查看 storage_mode / credentials_mode
-- 管理后台显示 API: SERVER
+### 可选：PostgreSQL 持久化
 
-### 重要说明
+设置 `DATABASE_URL` 环境变量为 PostgreSQL 连接字符串，API 会自动建表并优先使用数据库存储。不设置则降级为实例内存存储（**重启后数据丢失**）。
 
-- Serverless 环境可能是只读文件系统。
-- 当文件系统不可写时，api/[...route].js 会降级为实例内存存储。
-- 实例重启后内存数据会丢失。
+### 验证部署
 
-生产环境请接入外部数据库（如 PostgreSQL/MySQL/云数据库）。
+| 地址 | 期望返回 |
+|------|----------|
+| `/api` | `{ "ok": true, "mode": "server-api" }` |
+| `/api/health` | `{ "ok": true, "ts": "..." }` |
+| 管理后台状态栏 | 显示 `API: SERVER` |
+
+---
 
 ## 常见问题
 
-### 1. 线上仍然是本地数据
+**页面仍显示本地 Mock 数据**
+- 强制刷新（Ctrl+F5）
+- 打开 DevTools → Application → LocalStorage，确认 `yanmo.site.api.mode.v1` 的值不是 `local`
 
-- 强刷浏览器缓存（Ctrl+F5）
-- 确认 localStorage 中 yanmo.site.api.mode.v1 不是 local
-- 确认后台显示 API: SERVER
+**登录失败**
+- 返回 `503`：未配置 `ADMIN_USERNAME` / `ADMIN_PASSWORD`
+- 返回 `429`：触发登录限流（10 分钟内 5 次失败，锁定 15 分钟）
+- 返回 `401`：用户名或密码错误
 
-### 2. 登录总失败
+**重置管理员账号**
+- `/api/reset-admin-credentials` 仅允许 localhost 调用（远程访问返回 403）
+- 配置了环境变量凭据时，后台改密和重置均被禁用，需直接修改环境变量
 
-- 检查 ADMIN_USERNAME / ADMIN_PASSWORD 是否正确配置
-- 检查 ADMIN_SESSION_SECRET 是否为空
-- 若返回 503，请优先检查是否遗漏了 ADMIN_USERNAME / ADMIN_PASSWORD
-- 若返回 429，说明触发登录限流锁定（10 分钟窗口 5 次失败，锁 15 分钟）
+**Vercel 数据重启后丢失**
+- 当前处于内存存储模式，需接入 PostgreSQL（设置 `DATABASE_URL`）
 
-### 3. 无法重置默认账号
+---
 
-- 云端远程访问下 `reset-admin-credentials` 被限制为仅 localhost 调用（403）
-- 配置了 ADMIN_USERNAME / ADMIN_PASSWORD 时，后台改密与重置同样会被禁用
-
-### 4. 数据重启后丢失
-
-- 你当前处于 Serverless 内存存储降级模式
-- 需要切换到外部数据库持久化
-
-## 技术支持
+## 联系
 
 - GitHub: https://github.com/YanMo5
 - Email: 3351708803@qq.com

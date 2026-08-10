@@ -2,12 +2,13 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <script>!function(){document.documentElement.classList.add('cyber-mode');var s=document.documentElement.style;function mc(k,d){try{var v=JSON.parse(localStorage.getItem(k)||'null');var c;if(typeof v==='string')c=v;else if(v&&typeof v==='object')c=v.cyber||v.dark||v.light||null;else c=null;if(c&&k==='yanmo.site.text-color'&&c.toLowerCase()==='#e0e8f0'){localStorage.removeItem(k);return d;}return c||d;}catch(e){return d;}}try{var bg=mc('yanmo.site.bg-color','#05050a');var tx=mc('yanmo.site.text-color','#00ffff');s.setProperty('--bg-color',bg);var br=parseInt(bg.slice(1,3),16),bn=parseInt(bg.slice(3,5),16),bb=parseInt(bg.slice(5,7),16);s.setProperty('--bg-color-r',br);s.setProperty('--bg-color-g',bn);s.setProperty('--bg-color-b',bb);s.setProperty('--text-color',tx);var tr=parseInt(tx.slice(1,3),16),tn=parseInt(tx.slice(3,5),16),tb=parseInt(tx.slice(5,7),16);s.setProperty('--text-color-r',tr);s.setProperty('--text-color-g',tn);s.setProperty('--text-color-b',tb);}catch(e){}if(localStorage.getItem('yanmo.site.font-mode')==='cyberpunk')document.documentElement.classList.add('cyberpunk-mode');}();</script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>联系我 - YanMo的个人博客</title>
     <meta name="description" content="欢迎联系YanMo交流课程学习、CTF训练与技术实践。可通过邮箱、QQ或GitHub进行沟通。">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/beautify.css">
 </head>
@@ -17,7 +18,7 @@
             <div class="logo">
                 <a href="index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
             </div>
-            <button class="hamburger">
+            <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -30,15 +31,14 @@
                     <li><a href="contact.html" class="active"><span class="shimmer"></span>联系</a></li>
                     <li><a href="guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
-                <div class="nav-actions">
-                    <button class="theme-toggle">切换到白昼模式</button>
-                </div>
             </div>
         </nav>
     </header>
 
     <script src="/js/local-api.js"></script>
+    <script src="/js/palette-manager.js"></script>
     <script src="/js/ux-enhancements.js"></script>
 
     <main>
@@ -66,7 +66,7 @@
                         <div class="contact-icon">MAIL</div>
                         <div class="contact-text">
                             <h3>邮箱 / EMAIL</h3>
-                            <p>3351708803@qq.com</p>
+                            <p id="email-display"></p>
                         </div>
                     </div>
                     <div class="contact-item">
@@ -80,8 +80,8 @@
                         <div class="contact-icon">IM</div>
                         <div class="contact-text">
                             <h3>即时沟通 / INSTANT MESSAGE</h3>
-                            <p>QQ：3351708803</p>
-                            <p>微信：15206561773</p>
+                            <p id="qq-display"></p>
+                            <p id="wechat-display"></p>
                         </div>
                     </div>
                 </div>
@@ -117,6 +117,33 @@
                         </div>
                     </form>
                     <script>
+                        function initContactInfo() {
+                            const emailParts = ['3351708803', '@', 'qq.com'];
+                            const qqParts = ['QQ：', '3', '3', '5', '1', '7', '0', '8', '8', '0', '3'];
+                            const wechatParts = ['微信：', '1', '5', '2', '0', '6', '5', '6', '1', '7', '7', '3'];
+
+                            document.getElementById('email-display').textContent = emailParts.join('');
+                            document.getElementById('qq-display').textContent = qqParts.join('');
+                            document.getElementById('wechat-display').textContent = wechatParts.join('');
+                        }
+
+                        function loadSavedContact() {
+                            const savedName = localStorage.getItem('contact_name');
+                            const savedEmail = localStorage.getItem('contact_email');
+                            
+                            if (savedName) {
+                                document.getElementById('name').value = savedName;
+                            }
+                            if (savedEmail) {
+                                document.getElementById('email').value = savedEmail;
+                            }
+                        }
+
+                        function saveContactInfo(name, email) {
+                            if (name) localStorage.setItem('contact_name', name);
+                            if (email) localStorage.setItem('contact_email', email);
+                        }
+
                         document.getElementById('contact-form').addEventListener('submit', async (e) => {
                             e.preventDefault();
 
@@ -152,6 +179,8 @@
                                     contactMessage.textContent = result.message || '消息发送成功！';
                                     contactMessage.style.color = '#00ff80';
 
+                                    saveContactInfo(name, email);
+
                                     if (receipt && receiptTime && receiptSubject && receiptEmail) {
                                         const nowText = new Date().toLocaleString('zh-CN', { hour12: false });
                                         receiptTime.textContent = nowText;
@@ -163,7 +192,8 @@
                                         });
                                     }
 
-                                    document.getElementById('contact-form').reset();
+                                    document.getElementById('subject').value = '';
+                                    document.getElementById('message').value = '';
                                 } else {
                                     if (response.status === 404) {
                                         contactMessage.textContent = '当前留言接口暂不可用，请先通过 QQ 或邮箱联系。';
@@ -176,6 +206,11 @@
                                 contactMessage.textContent = '网络错误，请稍后再试';
                                 contactMessage.style.color = '#ff6b6b';
                             }
+                        });
+
+                        document.addEventListener('DOMContentLoaded', () => {
+                            initContactInfo();
+                            loadSavedContact();
                         });
                     </script>
                 </div>
@@ -195,7 +230,7 @@
                 <div class="social-links">
                     <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
                     <a href="#" class="social-link">Bilibili</a>
-                    <a href="https://github.com/YanMo5" target="_blank" class="social-link">GitHub</a>
+                    <a href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer" class="social-link">GitHub</a>
                     <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
                     <a href="#" class="social-link">Discord</a>
                 </div>
@@ -210,32 +245,5 @@
         </div>
     </footer>
 
-    <script>
-        // 主题切换功能
-        document.addEventListener('DOMContentLoaded', function() {
-            const themeToggle = document.querySelector('.theme-toggle');
-            const body = document.body;
-            
-            // 检查本地存储中的主题偏好
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                body.classList.add('light-mode');
-                themeToggle.textContent = '切换到赛博模式';
-            }
-            
-            // 主题切换点击事件
-            themeToggle.addEventListener('click', function() {
-                body.classList.toggle('light-mode');
-                
-                if (body.classList.contains('light-mode')) {
-                    themeToggle.textContent = '切换到赛博模式';
-                    localStorage.setItem('theme', 'light');
-                } else {
-                    themeToggle.textContent = '切换到白昼模式';
-                    localStorage.setItem('theme', 'dark');
-                }
-            });
-        });
-    </script>
 </body>
 </html>
