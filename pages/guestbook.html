@@ -37,6 +37,7 @@
     </header>
 
     <script src="/js/local-api.js"></script>
+    <script src="/js/date-utils.js"></script>
     <script src="/js/palette-manager.js"></script>
     <script src="/js/ux-enhancements.js"></script>
 
@@ -100,14 +101,6 @@
                             '"': '&quot;'
                         }[char] || char;
                     });
-                }
-                // 数据库存储 UTC 时间，转为本地日期字符串
-                function formatLocalDate(value) {
-                    if (!value) return '--';
-                    var s = String(value).replace(' ', 'T').replace(/\.\d+$/, '');
-                    var d = /([Zz]|[+-]\d{2}:?\d{2})$/.test(s) ? new Date(s) : new Date(s + 'Z');
-                    if (isNaN(d.getTime())) return String(value).split(' ')[0] || '--';
-                    return d.toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' });
                 }
 
                 function readMessageCache() {
