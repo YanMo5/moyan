@@ -576,16 +576,18 @@ function parseCookies(req) {
     return out;
 }
 
-// C-02 fix: refuse to start with a missing or default session secret.
+// C-02 fix: use env var if configured, otherwise auto-generate a per-instance secret.
+// A randomly-generated secret means admin sessions won't survive cold starts,
+// but public routes (GET /links, /articles, /messages) work without any env setup.
 const _SESSION_SECRET = (() => {
-    const s = String(process.env.ADMIN_SESSION_SECRET || '');
-    if (!s || s === 'yanmo-session-secret-change-me') {
-        throw new Error(
-            '[FATAL] ADMIN_SESSION_SECRET env var is required and must not be the default value. ' +
-            'Generate a secret with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"'
-        );
+    const s = String(process.env.ADMIN_SESSION_SECRET || '').trim();
+    if (s && s !== 'yanmo-session-secret-change-me') {
+        return s;
     }
-    return s;
+    // Auto-generate a per-instance fallback secret
+    const fallback = crypto.randomBytes(32).toString('hex');
+    console.warn('[WARN] ADMIN_SESSION_SECRET not set — using per-instance random secret. Admin sessions will not survive cold starts.');
+    return fallback;
 })();
 
 function sessionSecret() {
