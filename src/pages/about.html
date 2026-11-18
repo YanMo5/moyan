@@ -1,0 +1,2796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <script src="/src/js/theme-boot.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于我 - YanMo的个人博客</title>
+    <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
+    <link rel="shortcut icon" href="/assets/images/site-avatar.png">
+    <meta name="description" content="YanMo：信息安全在读，关注 Web 渗透、漏洞复现、蓝队运营与 AI 安全。这里是他的公开实验台与技术笔记。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/src/css/styles.css">
+    <link rel="stylesheet" href="/src/css/beautify.css">
+    <style>
+        /* ══ About · 2026 refresh ═══════════════════════════════════════════
+           颜色全部走主题 token（--lm-* / --theme-*），暗色与亮色模式都能读；
+           选择器带 .about-view 前缀，优先级压过 beautify.css 里的旧版规则。 */
+
+        .about-view section.about-section {
+            --ab-border: var(--lm-border, rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.14));
+            --ab-border-strong: var(--lm-border-strong, rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.3));
+            --ab-surface: var(--lm-surface, rgba(255, 255, 255, 0.04));
+            --ab-surface-2: var(--lm-surface-2, rgba(255, 255, 255, 0.07));
+            --ab-text: var(--lm-text, var(--theme-text, #e8eef9));
+            --ab-dim: var(--lm-text-dim, rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.72));
+            --ab-faint: var(--lm-text-faint, rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.46));
+            --ab-accent: var(--lm-accent, var(--theme-tertiary, #00ffff));
+            --ab-accent-2: var(--lm-accent-2, #a78bfa);
+            --ab-accent-3: var(--lm-accent-3, #34d399);
+            --ab-radius: var(--lm-radius, 16px);
+            --ab-radius-sm: var(--lm-radius-sm, 10px);
+            --ab-shadow: var(--lm-shadow, 0 18px 40px -24px rgba(2, 6, 23, 0.85));
+
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: clamp(1.4rem, 3.6vw, 2.6rem);
+        }
+
+        /* ── Hero ─────────────────────────────────────────────────────── */
+        .about-view .about-hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 300px;
+            gap: clamp(1.2rem, 3vw, 2.4rem);
+            align-items: start;
+            margin-bottom: 1.7rem;
+        }
+
+        .about-view .about-hero-main { min-width: 0; }
+
+        .about-view .about-hero-h1 {
+            margin: 0.45rem 0;
+            font-size: clamp(2.2rem, 5.6vw, 3.5rem);
+            font-weight: 700;
+            line-height: 1.05;
+            letter-spacing: 0.01em;
+            text-align: left;
+            color: var(--ab-text);
+        }
+
+        .about-view .about-role {
+            margin: 0 0 1rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.76rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--ab-accent);
+        }
+
+        .about-view .about-lead {
+            max-width: 62ch;
+            margin: 0;
+            font-size: clamp(0.94rem, 1.5vw, 1.02rem);
+            line-height: 1.9;
+            color: var(--ab-dim);
+        }
+
+        .about-view .about-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-top: 1.1rem;
+        }
+
+        .about-view .about-tag {
+            padding: 0.24rem 0.66rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.7rem;
+            letter-spacing: 0.04em;
+            color: var(--ab-dim);
+            border: 1px solid var(--ab-border);
+            border-radius: 999px;
+            background: var(--ab-surface);
+            transition: color .2s var(--lm-ease, ease), background .2s var(--lm-ease, ease), border-color .2s var(--lm-ease, ease);
+        }
+
+        .about-view .about-tag:hover {
+            color: var(--ab-text);
+            background: var(--ab-surface-2);
+            border-color: var(--ab-border-strong);
+        }
+
+        .about-view .about-hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            margin-top: 1.4rem;
+        }
+
+        .about-view .about-hero-actions .btn {
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+        }
+
+        .about-view .about-hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.24rem 0.68rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.64rem;
+            letter-spacing: 0.12em;
+            color: var(--ab-dim);
+            border: 1px solid var(--ab-border);
+            border-radius: 999px;
+            background: var(--ab-surface);
+        }
+
+        .about-view .about-hero-eyebrow::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--ab-accent-3);
+            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15);
+        }
+
+        /* ── Hero metrics ─────────────────────────────────────────────── */
+        .about-view .hero-metrics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            padding-top: 1.1rem;
+            border-top: 1px dashed var(--ab-border);
+        }
+
+        .about-view .hero-metric { min-width: 0; }
+
+        .about-view .hero-metric .mv {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: clamp(0.98rem, 1.8vw, 1.12rem);
+            font-weight: 600;
+            line-height: 1.2;
+            color: var(--ab-text);
+        }
+
+        .about-view .hero-metric .mk {
+            margin-top: 0.2rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.6rem;
+            letter-spacing: 0.12em;
+            color: var(--ab-faint);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ── Operator ID card ─────────────────────────────────────────── */
+        .about-view .about-id-card {
+            display: grid;
+            gap: 0.8rem;
+            min-width: 0;
+            padding: 1.1rem 1.15rem 1.2rem;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius);
+            background: var(--ab-surface);
+        }
+
+        .about-view .ab-id-top {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .about-view .ab-avatar {
+            flex: 0 0 auto;
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            object-fit: cover;
+            border: 1px solid var(--ab-border-strong);
+            background: var(--ab-surface-2);
+        }
+
+        .about-view .ab-id-name {
+            font-size: 1.05rem;
+            font-weight: 650;
+            line-height: 1.25;
+            color: var(--ab-text);
+        }
+
+        .about-view .ab-id-sub {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.7rem;
+            letter-spacing: 0.06em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .about-id-card ul {
+            display: grid;
+            gap: 0.45rem;
+            margin: 0.2rem 0 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .about-view .about-id-card li {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.7rem;
+            padding-bottom: 0.4rem;
+            font-family: var(--lm-sans, 'Inter', system-ui, sans-serif);
+            font-size: 0.78rem;
+            color: var(--ab-faint);
+            border-bottom: 1px dashed var(--ab-border);
+        }
+
+        .about-view .about-id-card li:last-child {
+            padding-bottom: 0;
+            border-bottom: 0;
+        }
+
+        .about-view .about-id-card li span {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.76rem;
+            color: var(--ab-dim);
+            text-align: right;
+        }
+
+        .about-view .ab-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.66rem;
+            letter-spacing: 0.12em;
+            color: var(--ab-accent-3);
+        }
+
+        .about-view .ab-status::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.16);
+            animation: ab-pulse 2.4s ease-in-out infinite;
+        }
+
+        @keyframes ab-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+
+        .about-view .ab-id-foot {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding-top: 0.7rem;
+            border-top: 1px dashed var(--ab-border);
+        }
+
+        .about-view .ab-id-reply {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.6rem;
+            letter-spacing: 0.08em;
+            color: var(--ab-faint);
+        }
+
+        /* ── In-page nav ──────────────────────────────────────────────── */
+        .about-view .about-quicknav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.6rem;
+            border-bottom: 1px solid var(--ab-border);
+        }
+
+        .about-view .about-quicknav a {
+            padding: 0.34rem 0.72rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.72rem;
+            letter-spacing: 0.06em;
+            color: var(--ab-dim);
+            text-decoration: none;
+            border: 1px solid var(--ab-border);
+            border-radius: 999px;
+            transition: color .18s var(--lm-ease, ease), background .18s var(--lm-ease, ease), border-color .18s var(--lm-ease, ease), transform .18s var(--lm-ease, ease);
+        }
+
+        .about-view .about-quicknav a:hover,
+        .about-view .about-quicknav a.is-active {
+            color: var(--ab-text);
+            background: var(--ab-surface-2);
+            border-color: var(--ab-border-strong);
+            transform: translateY(-1px);
+        }
+
+        .about-view .quicknav-label {
+            align-self: center;
+            margin-right: 0.25rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.6rem;
+            letter-spacing: 0.18em;
+            color: var(--ab-faint);
+        }
+
+        /* ── Section blocks ───────────────────────────────────────────── */
+        .about-view .about-block {
+            margin: 0 0 2.6rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--ab-border);
+            scroll-margin-top: 96px;
+        }
+
+        .about-view .about-block:last-of-type { margin-bottom: 1.2rem; }
+
+        .about-view .block-label {
+            margin-bottom: 0.45rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.68rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .block-title {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.3rem 1rem;
+            margin-bottom: 1.4rem;
+            font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+            font-weight: 650;
+            letter-spacing: 0.01em;
+            color: var(--ab-text);
+        }
+
+        .about-view .block-hint {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            color: var(--ab-faint);
+        }
+        /* ── 0x01 · prose + NOW panel ─────────────────────────────────── */
+        .about-view .ab-split {
+            display: grid;
+            grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+            gap: clamp(1rem, 2.6vw, 1.6rem);
+            align-items: start;
+            margin-bottom: 1.5rem;
+        }
+
+        .about-view .ab-prose p {
+            margin: 0 0 0.9rem;
+            font-size: 0.94rem;
+            line-height: 1.9;
+            color: var(--ab-dim);
+        }
+
+        .about-view .ab-prose p:last-child { margin-bottom: 0; }
+        .about-view .ab-prose strong { font-weight: 600; color: var(--ab-text); }
+
+        .about-view .ab-now {
+            padding: 1.05rem 1.2rem 1.15rem;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius);
+            background: var(--ab-surface);
+        }
+
+        .about-view .ab-now h3 {
+            margin: 0 0 0.85rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .ab-now ul {
+            display: grid;
+            gap: 0.75rem;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .about-view .ab-now li {
+            display: grid;
+            grid-template-columns: 3.6rem minmax(0, 1fr);
+            gap: 0.6rem;
+            font-size: 0.84rem;
+            line-height: 1.65;
+            color: var(--ab-dim);
+        }
+
+        .about-view .ab-now .k {
+            padding-top: 0.18rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.66rem;
+            letter-spacing: 0.08em;
+            color: var(--ab-accent);
+        }
+
+        /* ── Focus cards ──────────────────────────────────────────────── */
+        .about-view .focus-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.8rem;
+            margin: 0 0 1.6rem;
+        }
+
+        .about-view .focus-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            padding: 1.05rem 1.15rem;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius);
+            background: var(--ab-surface);
+            transition: transform .2s var(--lm-ease, ease), border-color .2s var(--lm-ease, ease), box-shadow .2s var(--lm-ease, ease);
+        }
+
+        .about-view .focus-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--ab-border-strong);
+            box-shadow: var(--ab-shadow);
+        }
+
+        .about-view .focus-card .focus-kicker {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            letter-spacing: 0.16em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .focus-card h3 {
+            margin: 0;
+            font-size: 0.98rem;
+            font-weight: 650;
+            color: var(--ab-text);
+        }
+
+        .about-view .focus-card p {
+            margin: 0;
+            font-size: 0.85rem;
+            line-height: 1.72;
+            color: var(--ab-dim);
+        }
+
+        .about-view .focus-card .focus-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin-top: auto;
+            padding-top: 0.55rem;
+        }
+
+        .about-view .focus-card .focus-tags span {
+            padding: 0.1rem 0.45rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            color: var(--ab-faint);
+            background: var(--ab-surface-2);
+            border-radius: 999px;
+        }
+
+        /* ── Stack rows ───────────────────────────────────────────────── */
+        .about-view .ab-stack {
+            display: grid;
+            gap: 0.7rem;
+        }
+
+        .about-view .ab-stack-row {
+            display: grid;
+            grid-template-columns: 5.6rem minmax(0, 1fr);
+            gap: 0.8rem;
+            align-items: start;
+            padding-top: 0.7rem;
+            border-top: 1px dashed var(--ab-border);
+        }
+
+        .about-view .ab-stack-row:first-child {
+            padding-top: 0;
+            border-top: 0;
+        }
+
+        .about-view .ab-stack-key {
+            padding-top: 0.2rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.68rem;
+            letter-spacing: 0.12em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .ab-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.38rem;
+        }
+
+        .about-view .ab-chip {
+            padding: 0.2rem 0.58rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.72rem;
+            color: var(--ab-dim);
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius-xs, 6px);
+            background: var(--ab-surface);
+            transition: color .18s var(--lm-ease, ease), border-color .18s var(--lm-ease, ease);
+        }
+
+        .about-view .ab-chip:hover {
+            color: var(--ab-text);
+            border-color: var(--ab-border-strong);
+        }
+
+        /* ── 0x03 · skill matrix ──────────────────────────────────────── */
+        .about-view .skill-matrix-wrap {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+            gap: clamp(1rem, 3vw, 2rem);
+            align-items: start;
+        }
+
+        .about-view .radar-wrap {
+            position: relative;
+            padding: 1rem;
+        }
+
+        .about-view #radar-canvas {
+            display: block;
+            width: 320px;
+            max-width: 100%;
+            height: auto;
+            margin: 0 auto;
+            cursor: crosshair;
+        }
+
+        .about-view .radar-legend {
+            justify-content: center;
+            margin-top: 0.7rem;
+        }
+
+        .about-view .radar-legend-dot.dot-current { background: var(--ab-accent); }
+        .about-view .radar-legend-dot.dot-target { background: var(--ab-accent-2); opacity: 0.6; }
+
+        .about-view .radar-tooltip {
+            position: absolute;
+            display: none;
+            z-index: 5;
+            padding: 0.3rem 0.6rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.66rem;
+            color: var(--ab-text);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .about-view .skill-bars { display: grid; gap: 0.55rem; }
+
+        .about-view .skill-category {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.55rem 0 0.1rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.66rem;
+            letter-spacing: 0.16em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .skill-category::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--ab-border);
+        }
+
+        .about-view .skill-row {
+            grid-template-columns: minmax(88px, 122px) minmax(0, 1fr) 44px;
+            gap: 0.7rem;
+            margin-bottom: 0;
+        }
+
+        .about-view .skill-lbl { font-size: 0.82rem; color: var(--ab-dim); }
+
+        .about-view .skill-track {
+            height: 8px;
+            border-radius: 999px;
+            background: var(--ab-surface-2);
+            border: 1px solid var(--ab-border);
+        }
+
+        .about-view .skill-fill {
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--ab-accent), var(--ab-accent-2));
+        }
+
+        .about-view .skill-pct { font-size: 0.72rem; color: var(--ab-faint); }
+
+        .about-view .skill-track {
+            position: relative;
+            overflow: visible;
+        }
+
+        .about-view .skill-fill {
+            height: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .about-view .skill-target {
+            position: absolute;
+            top: 50%;
+            z-index: 2;
+            width: 2px;
+            height: 15px;
+            border-radius: 2px;
+            background: var(--ab-accent-2);
+            opacity: 0.7;
+            transform: translate(-50%, -50%);
+        }
+
+        .about-view .skill-legend {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.35rem 1rem;
+            margin: 0 0 0.7rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            letter-spacing: 0.06em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .skill-legend-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .about-view .skill-legend-bar {
+            display: inline-block;
+            width: 16px;
+            height: 6px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--ab-accent), var(--ab-accent-2));
+        }
+
+        .about-view .skill-legend-tick {
+            display: inline-block;
+            width: 2px;
+            height: 10px;
+            border-radius: 2px;
+            background: var(--ab-accent-2);
+            opacity: 0.7;
+        }
+
+        .about-view .skill-note {
+            margin: 0.9rem 0 0;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.64rem;
+            line-height: 1.8;
+            letter-spacing: 0.03em;
+            color: var(--ab-faint);
+        }
+
+        /* ── Stats ────────────────────────────────────────────────────── */
+        .about-view .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.7rem;
+            margin: 1.8rem 0 0;
+        }
+
+        .about-view .stats-row .stat-item {
+            padding: 0.95rem 0.8rem;
+            text-align: center;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius-sm);
+            background: var(--ab-surface);
+            clip-path: none;
+            overflow: visible;
+        }
+
+        .about-view .stats-row .stat-item::before { display: none; }
+
+        .about-view .stats-row .stat-number {
+            font-family: var(--lm-sans, 'Inter', system-ui, sans-serif);
+            font-size: clamp(1.45rem, 3vw, 1.95rem);
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--ab-text);
+        }
+
+        .about-view .stats-row .stat-label {
+            margin-top: 0.25rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.64rem;
+            letter-spacing: 0.1em;
+            color: var(--ab-faint);
+        }
+
+        /* ── 0x04 · timeline ──────────────────────────────────────────── */
+        .about-view .timeline {
+            display: grid;
+            gap: 0.6rem;
+            margin: 0;
+            padding-left: 0;
+            border-left: 0;
+        }
+
+        .about-view .timeline-item {
+            position: relative;
+            display: grid;
+            grid-template-columns: 7.4rem minmax(0, 1fr);
+            gap: 0.25rem 1.1rem;
+            padding: 0.9rem 1.1rem;
+            margin-bottom: 0;
+            overflow: hidden;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius-sm);
+            background: var(--ab-surface);
+            transition: transform .2s var(--lm-ease, ease), border-color .2s var(--lm-ease, ease), background .2s var(--lm-ease, ease);
+        }
+
+        .about-view .timeline-item:hover {
+            transform: translateX(3px);
+            border-color: var(--ab-border-strong);
+            background: var(--ab-surface-2);
+        }
+
+        .about-view .timeline-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 2px;
+            height: auto;
+            border: 0;
+            border-radius: 0;
+            background: linear-gradient(180deg, var(--ab-accent), transparent);
+            box-shadow: none;
+        }
+
+        .about-view .timeline-date {
+            margin: 0;
+            padding-top: 0.15rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.68rem;
+            letter-spacing: 0.1em;
+            color: var(--ab-accent);
+        }
+
+        .about-view .timeline-content { min-width: 0; }
+
+        .about-view .timeline-content h4 {
+            margin: 0 0 0.28rem;
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--ab-text);
+        }
+
+        .about-view .timeline-content p {
+            margin: 0;
+            font-size: 0.84rem;
+            line-height: 1.72;
+            color: var(--ab-dim);
+        }
+
+        .about-view .timeline-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.28rem;
+            margin-top: 0.5rem;
+        }
+
+        .about-view .timeline-tag {
+            padding: 0.08rem 0.42rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.6rem;
+            letter-spacing: 0.04em;
+            color: var(--ab-faint);
+            border: 1px solid var(--ab-border);
+            border-radius: 999px;
+            background: var(--ab-surface-2);
+        }
+
+        /* ── 0x05 · field log ─────────────────────────────────────────── */
+        .about-view .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 0.8rem;
+        }
+
+        .about-view .achievement-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            padding: 1rem 1.15rem;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius);
+            background: var(--ab-surface);
+            color: var(--ab-text);
+            transition: transform .2s var(--lm-ease, ease), border-color .2s var(--lm-ease, ease), box-shadow .2s var(--lm-ease, ease);
+        }
+
+        .about-view .achievement-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--ab-border-strong);
+            box-shadow: var(--ab-shadow);
+        }
+
+        .about-view .achievement-card::before { display: none; }
+
+        .about-view .achievement-card.type-ctf { border-left: 3px solid var(--ab-accent-3); }
+        .about-view .achievement-card.type-cve { border-left: 3px solid #f87171; }
+        .about-view .achievement-card.type-src { border-left: 3px solid #f59e0b; }
+        .about-view .achievement-card.type-cert { border-left: 3px solid var(--ab-accent); }
+        .about-view .achievement-card.type-geek { border-left: 3px solid var(--ab-accent-2); }
+
+        .about-view .achievement-card.is-hidden { display: none; }
+
+        .about-view .log-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin: 0 0 1rem;
+        }
+
+        .about-view .log-filter {
+            padding: 0.26rem 0.7rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.66rem;
+            letter-spacing: 0.06em;
+            color: var(--ab-dim);
+            background: transparent;
+            border: 1px solid var(--ab-border);
+            border-radius: 999px;
+            cursor: pointer;
+            transition: color .18s var(--lm-ease, ease), background .18s var(--lm-ease, ease), border-color .18s var(--lm-ease, ease);
+        }
+
+        .about-view .log-filter:hover,
+        .about-view .log-filter.is-active {
+            color: var(--ab-text);
+            background: var(--ab-surface-2);
+            border-color: var(--ab-border-strong);
+        }
+
+        .about-view .log-filter:focus-visible {
+            outline: 2px solid var(--ab-accent);
+            outline-offset: 2px;
+        }
+
+        .about-view .log-count {
+            margin-left: auto;
+            align-self: center;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            letter-spacing: 0.06em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .ach-type {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            letter-spacing: 0.14em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .ach-title {
+            font-size: 0.94rem;
+            font-weight: 650;
+            color: var(--ab-text);
+        }
+
+        .about-view .ach-meta {
+            font-size: 0.82rem;
+            line-height: 1.7;
+            color: var(--ab-dim);
+        }
+
+        .about-view .ach-note {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            color: var(--ab-faint);
+        }
+
+        .about-view .cert-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.42rem;
+            margin-top: 0.45rem;
+            padding: 0.3rem 0.65rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.68rem;
+            color: var(--ab-dim);
+            border: 1px solid var(--ab-border);
+            border-radius: 999px;
+            background: var(--ab-surface-2);
+        }
+
+        .about-view .cert-badge.earned {
+            color: var(--ab-accent-3);
+            border-color: rgba(52, 211, 153, 0.5);
+            background: rgba(52, 211, 153, 0.08);
+        }
+
+        .about-view .cert-badge.pending { color: var(--ab-faint); }
+
+        .about-view .cert-dot {
+            flex: 0 0 auto;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .about-view .geek-badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.55rem;
+        }
+
+        .about-view .geek-chip {
+            padding: 0.15rem 0.5rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.64rem;
+            color: var(--ab-dim);
+            border: 1px solid var(--ab-border);
+            border-radius: 999px;
+            background: var(--ab-surface-2);
+        }
+
+        .about-view .field-note {
+            margin: 1rem 0 0;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.64rem;
+            line-height: 1.8;
+            letter-spacing: 0.03em;
+            color: var(--ab-faint);
+        }
+
+        /* ── Hero stats band ──────────────────────────────────────────── */
+        .about-view .hero-stats {
+            margin: 1.9rem 0 0;
+        }
+
+        .about-view .hero-stats .stats-row { margin: 0; }
+
+        /* ── 0x06 · principles + FAQ ──────────────────────────────────── */
+        .about-view .principle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.8rem;
+            margin: 0 0 0.4rem;
+        }
+
+        .about-view .principle-card {
+            position: relative;
+            padding: 1.05rem 1.15rem 1.1rem;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius);
+            background: var(--ab-surface);
+            transition: transform .2s var(--lm-ease, ease), border-color .2s var(--lm-ease, ease), background .2s var(--lm-ease, ease);
+        }
+
+        .about-view .principle-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--ab-border-strong);
+            background: var(--ab-surface-2);
+        }
+
+        .about-view .principle-num {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            letter-spacing: 0.16em;
+            color: var(--ab-accent);
+        }
+
+        .about-view .principle-card h3 {
+            margin: 0.35rem 0 0.4rem;
+            font-size: 0.95rem;
+            font-weight: 650;
+            color: var(--ab-text);
+        }
+
+        .about-view .principle-card p {
+            margin: 0;
+            font-size: 0.84rem;
+            line-height: 1.75;
+            color: var(--ab-dim);
+        }
+
+        .about-view .faq-list {
+            display: grid;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .about-view .faq-item {
+            overflow: hidden;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius-sm);
+            background: var(--ab-surface);
+        }
+
+        .about-view .faq-item summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.8rem 1rem;
+            font-family: var(--lm-sans, 'Inter', system-ui, sans-serif);
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--ab-text);
+            cursor: pointer;
+            list-style: none;
+            transition: background .18s var(--lm-ease, ease);
+        }
+
+        .about-view .faq-item summary::-webkit-details-marker { display: none; }
+
+        .about-view .faq-item summary::after {
+            content: '+';
+            flex: 0 0 auto;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 1rem;
+            color: var(--ab-accent);
+            transition: transform .2s var(--lm-ease, ease);
+        }
+
+        .about-view .faq-item[open] summary {
+            border-bottom: 1px dashed var(--ab-border);
+            background: var(--ab-surface-2);
+        }
+
+        .about-view .faq-item[open] summary::after {
+            content: '−';
+        }
+
+        .about-view .faq-item summary:hover { background: var(--ab-surface-2); }
+
+        .about-view .faq-item summary:focus-visible {
+            outline: 2px solid var(--ab-accent);
+            outline-offset: -2px;
+        }
+
+        .about-view .faq-body {
+            padding: 0.8rem 1rem 0.95rem;
+            font-size: 0.84rem;
+            line-height: 1.8;
+            color: var(--ab-dim);
+        }
+
+        .about-view .faq-body strong { color: var(--ab-text); font-weight: 600; }
+
+        .about-view .faq-body a {
+            color: var(--ab-accent);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .about-view .faq-body code {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.78rem;
+            color: var(--ab-text);
+        }
+
+        /* ── contact meta ─────────────────────────────────────────────── */
+        .about-view .comms-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 1.1rem;
+            margin-top: 1rem;
+            padding-top: 0.85rem;
+            border-top: 1px dashed var(--ab-border);
+        }
+
+        .about-view .comms-meta > span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.64rem;
+            letter-spacing: 0.06em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .comms-meta > span::before {
+            content: '';
+            flex: 0 0 auto;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--ab-accent-3);
+        }
+
+        .about-view .comms-meta-k { color: var(--ab-faint); }
+
+        .about-view .comms-meta-v {
+            color: var(--ab-text);
+            letter-spacing: 0.02em;
+        }
+
+        /* ── 0x07 · contact ───────────────────────────────────────────── */
+        .about-view .ab-intro {
+            max-width: 64ch;
+            margin: 0;
+            font-size: 0.9rem;
+            line-height: 1.85;
+            color: var(--ab-dim);
+        }
+
+        .about-view .comms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 0.75rem;
+            margin-top: 1.2rem;
+        }
+
+        .about-view .comms-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            padding: 1rem 1.1rem 1.05rem;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius);
+            background: var(--ab-surface);
+            transition: transform .2s var(--lm-ease, ease), border-color .2s var(--lm-ease, ease), box-shadow .2s var(--lm-ease, ease);
+        }
+
+        .about-view .comms-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--ab-border-strong);
+            box-shadow: var(--ab-shadow);
+        }
+
+        .about-view .comms-card.tier-1 { border-top: 2px solid var(--ab-accent-3); }
+        .about-view .comms-card.tier-2 { border-top: 2px solid var(--ab-accent); }
+        .about-view .comms-card.tier-3 { border-top: 2px solid #f59e0b; }
+
+        .about-view .comms-tier-label {
+            position: absolute;
+            top: 0.6rem;
+            right: 0.75rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.56rem;
+            letter-spacing: 0.12em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .comms-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            margin-bottom: 0.15rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            letter-spacing: 0.04em;
+            color: var(--ab-accent);
+            border: 1px solid var(--ab-border);
+            border-radius: 10px;
+            background: var(--ab-surface-2);
+        }
+
+        .about-view .comms-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--ab-text);
+        }
+
+        .about-view .comms-handle {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.76rem;
+            color: var(--ab-accent);
+            word-break: break-all;
+            text-decoration: none;
+        }
+
+        .about-view .comms-handle[data-copy] { cursor: pointer; }
+        .about-view .comms-handle[data-copy]::after { content: ' ⎘'; font-size: 0.6rem; opacity: 0.5; }
+        .about-view .comms-handle:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+        .about-view .comms-desc {
+            margin: 0.1rem 0 0.2rem;
+            font-size: 0.8rem;
+            line-height: 1.65;
+            color: var(--ab-dim);
+        }
+
+        .about-view .comms-badge {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.58rem;
+            letter-spacing: 0.08em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .comms-copy-feedback {
+            position: absolute;
+            right: 0.75rem;
+            bottom: 0.6rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.58rem;
+            color: var(--ab-accent-3);
+            opacity: 0;
+            transition: opacity .2s;
+            pointer-events: none;
+        }
+
+        .about-view .ab-note {
+            margin-top: 1.1rem;
+            padding: 0.85rem 1rem;
+            font-size: 0.83rem;
+            line-height: 1.75;
+            color: var(--ab-dim);
+            border-left: 3px solid var(--ab-accent-3);
+            border-radius: 0 var(--ab-radius-sm) var(--ab-radius-sm) 0;
+            background: var(--ab-surface);
+        }
+
+        .about-view .ab-note strong { color: var(--ab-text); }
+
+        .about-view .ab-note code {
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.78rem;
+        }
+
+        /* ── CTA ──────────────────────────────────────────────────────── */
+        .about-view .about-cta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.9rem 1.2rem;
+            margin-top: 1.4rem;
+            padding: 1.1rem 1.2rem;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius);
+            background: var(--ab-surface);
+        }
+
+        .about-view .about-cta-text { min-width: 0; }
+
+        .about-view .about-cta-text strong {
+            display: block;
+            font-size: 0.92rem;
+            font-weight: 650;
+            color: var(--ab-text);
+        }
+
+        .about-view .about-cta-text span {
+            display: block;
+            margin-top: 0.2rem;
+            font-size: 0.78rem;
+            line-height: 1.7;
+            color: var(--ab-dim);
+        }
+
+        .about-view .about-cta-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+        }
+
+        /* ── 0x02 · latest updates ────────────────────────────────────── */
+        .about-view .latest-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+
+        .about-view .latest-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            padding: 1rem 1.15rem 1.05rem;
+            border: 1px solid var(--ab-border);
+            border-radius: var(--ab-radius);
+            background: var(--ab-surface);
+            color: inherit;
+            text-decoration: none;
+            transition: transform .2s var(--lm-ease, ease), border-color .2s var(--lm-ease, ease), background .2s var(--lm-ease, ease), box-shadow .2s var(--lm-ease, ease);
+        }
+
+        .about-view a.latest-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--ab-border-strong);
+            background: var(--ab-surface-2);
+            box-shadow: var(--ab-shadow);
+        }
+
+        .about-view a.latest-card:focus-visible {
+            outline: 2px solid var(--ab-accent);
+            outline-offset: 2px;
+        }
+
+        .about-view .latest-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem;
+        }
+
+        .about-view .latest-cat {
+            flex: 0 1 auto;
+            overflow: hidden;
+            padding: 0.1rem 0.5rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            letter-spacing: 0.06em;
+            color: var(--ab-accent);
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            border: 1px solid var(--ab-border);
+            border-radius: 999px;
+            background: var(--ab-surface-2);
+        }
+
+        .about-view .latest-date {
+            flex: 0 0 auto;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.62rem;
+            letter-spacing: 0.04em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .latest-title {
+            display: -webkit-box;
+            overflow: hidden;
+            font-size: 0.92rem;
+            font-weight: 650;
+            line-height: 1.5;
+            color: var(--ab-text);
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .about-view .latest-excerpt {
+            display: -webkit-box;
+            overflow: hidden;
+            padding-right: 1.35rem;
+            font-size: 0.8rem;
+            line-height: 1.7;
+            color: var(--ab-dim);
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+        }
+
+        .about-view .latest-card::after {
+            content: '→';
+            position: absolute;
+            right: 1rem;
+            bottom: 0.8rem;
+            font-size: 0.85rem;
+            color: var(--ab-faint);
+            transition: transform .2s var(--lm-ease, ease), color .2s var(--lm-ease, ease);
+        }
+
+        .about-view a.latest-card:hover::after {
+            transform: translateX(3px);
+            color: var(--ab-accent);
+        }
+
+        .about-view .latest-card.is-skeleton::after { content: none; }
+
+        .about-view .latest-skel-line {
+            display: block;
+            height: 10px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--ab-surface-2), var(--ab-surface), var(--ab-surface-2));
+            background-size: 200% 100%;
+            animation: ab-skeleton 1.5s ease-in-out infinite;
+        }
+
+        .about-view .latest-skel-line.w-20 { width: 20%; }
+        .about-view .latest-skel-line.w-30 { width: 30%; }
+        .about-view .latest-skel-line.w-70 { width: 70%; }
+        .about-view .latest-skel-line.w-90 { width: 90%; }
+
+        @keyframes ab-skeleton {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .about-view .latest-empty {
+            grid-column: 1 / -1;
+            padding: 1.15rem 1.25rem;
+            font-size: 0.84rem;
+            line-height: 1.8;
+            color: var(--ab-dim);
+            border: 1px dashed var(--ab-border);
+            border-radius: var(--ab-radius);
+            background: var(--ab-surface);
+        }
+
+        .about-view .latest-empty a {
+            color: var(--ab-accent);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        .about-view .latest-foot {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.4rem 1rem;
+            margin: 0.85rem 0 0;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.64rem;
+            letter-spacing: 0.04em;
+            color: var(--ab-faint);
+        }
+
+        .about-view .latest-foot a {
+            color: var(--ab-accent);
+            text-decoration: none;
+        }
+
+        .about-view .latest-foot a:hover {
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+
+        /* ── 0x05 · field log · card header ──────────────────────────── */
+        .about-view .ach-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.6rem;
+        }
+
+        .about-view .ach-status {
+            flex: 0 0 auto;
+            padding: 0.06rem 0.44rem;
+            font-family: var(--lm-mono, 'Roboto Mono', monospace);
+            font-size: 0.58rem;
+            letter-spacing: 0.08em;
+            color: var(--ab-faint);
+            border: 1px solid var(--ab-border);
+            border-radius: 999px;
+            background: var(--ab-surface-2);
+        }
+
+        .about-view .ach-status.is-live {
+            color: var(--ab-accent-3);
+            border-color: rgba(52, 211, 153, 0.45);
+            background: rgba(52, 211, 153, 0.08);
+        }
+
+        .about-view .ach-status.is-wip {
+            color: var(--ab-accent);
+            border-color: rgba(110, 168, 254, 0.42);
+            background: rgba(110, 168, 254, 0.08);
+        }
+
+        /* ── 0x07 · contact · 三列罗列 ────────────────────────────────── */
+        .about-view .comms-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        /* ── Responsive ───────────────────────────────────────────────── */
+        @media (max-width: 960px) {
+            .about-view .about-hero { grid-template-columns: 1fr; }
+            .about-view .ab-split { grid-template-columns: 1fr; }
+            .about-view .skill-matrix-wrap { grid-template-columns: 1fr; }
+            .about-view .hero-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .about-view .latest-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .about-view .comms-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 760px) {
+            .about-view .focus-grid { grid-template-columns: 1fr; }
+            .about-view .stats-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .about-view .timeline-item { grid-template-columns: 1fr; gap: 0.35rem; }
+            .about-view .timeline-date { padding-top: 0; }
+            .about-view .about-quicknav {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 1rem;
+                scrollbar-width: none;
+            }
+            .about-view .about-quicknav::-webkit-scrollbar { display: none; }
+            .about-view .about-quicknav a { flex: 0 0 auto; }
+            .about-view .quicknav-label { display: none; }
+        }
+
+        @media (max-width: 560px) {
+            .about-view .ab-stack-row { grid-template-columns: 1fr; gap: 0.35rem; }
+            .about-view .about-hero-h1 { font-size: clamp(1.9rem, 9vw, 2.4rem); }
+            .about-view .about-cta { flex-direction: column; align-items: flex-start; }
+            .about-view .about-cta-actions { width: 100%; }
+            .about-view .latest-grid { grid-template-columns: 1fr; }
+            .about-view .comms-grid { grid-template-columns: 1fr; }
+            .about-view .latest-card { padding: 0.95rem 1rem 1.05rem; }
+            .about-view .latest-foot { flex-direction: column; align-items: flex-start; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .about-view *,
+            .about-view *::before,
+            .about-view *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="/src/css/music-box.css">
+    <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+</head>
+
+
+<body class="about-view">
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+            </div>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="/src/pages/index.html"><span class="shimmer"></span>首页</a></li>
+                    <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/about.html" class="active"><span class="shimmer"></span>关于我</a></li>
+                    <li><a href="/src/pages/contact.html"><span class="shimmer"></span>联系</a></li>
+                    <li><a href="/src/pages/guestbook.html"><span class="shimmer"></span>留言板</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <section class="about-section">
+
+            <!-- ── 0x00 · Profile ─────────────────────────────────────── -->
+            <div class="about-hero reveal">
+                <div class="about-hero-main">
+                    <div class="about-hero-eyebrow">信息安全在读 · 页面更新于 2026.11</div>
+                    <h1 class="about-hero-h1">YANMO</h1>
+                    <p class="about-role">Web Offense / Blue Team / AI Security</p>
+                    <p class="about-lead">
+                        我是 YanMo，信息安全专业在读。日常在课程、靶场和自己的小实验室之间来回：
+                        拆 Web 漏洞、写检测规则，也把踩过的坑整理成能复现的笔记。
+                        这个站点是我的公开实验台——Web 渗透、蓝队运营与 AI 安全，
+                        我都尽量把「为什么」写清楚，而不是只给一条 payload。
+                    </p>
+                    <div class="about-tags">
+                        <span class="about-tag">Web 渗透</span>
+                        <span class="about-tag">漏洞复现</span>
+                        <span class="about-tag">CTF</span>
+                        <span class="about-tag">蓝队运营</span>
+                        <span class="about-tag">日志分析</span>
+                        <span class="about-tag">AI 安全</span>
+                    </div>
+                    <div class="about-hero-actions">
+                        <a class="btn" href="/src/pages/articles.html">阅读文章 →</a>
+                        <a class="btn ghost-btn" href="/src/pages/contact.html">联系我</a>
+                        <a class="btn ghost-btn" href="https://github.com/YanMo5" target="_blank" rel="noopener">GitHub ↗</a>
+                    </div>
+                    <div class="hero-metrics">
+                        <div class="hero-metric">
+                            <div class="mv">2023</div>
+                            <div class="mk">起步年份</div>
+                        </div>
+                        <div class="hero-metric">
+                            <div class="mv">20+</div>
+                            <div class="mk">复现笔记</div>
+                        </div>
+                        <div class="hero-metric">
+                            <div class="mv">08</div>
+                            <div class="mk">CTF 参赛</div>
+                        </div>
+                        <div class="hero-metric">
+                            <div class="mv">03</div>
+                            <div class="mk">实验环境</div>
+                        </div>
+                    </div>
+                </div>
+                <aside class="about-id-card" aria-label="个人信息卡">
+                    <div class="ab-id-top">
+                        <img class="ab-avatar" src="/assets/images/site-avatar.png" alt="YanMo 的头像" width="52" height="52" loading="lazy">
+                        <div>
+                            <div class="ab-id-name">YANMO</div>
+                            <div class="ab-id-sub">@YanMo5 · Cybersecurity</div>
+                        </div>
+                    </div>
+                    <ul>
+                        <li>身份 <span>信息安全 · 在读</span></li>
+                        <li>方向 <span>Web / 蓝队 / AI 安全</span></li>
+                        <li>坐标 <span>中国 · 校园实验室</span></li>
+                        <li>联络 <span>3351708803@qq.com</span></li>
+                        <li>状态 <span>开放交流与勘误</span></li>
+                    </ul>
+                    <div class="ab-id-foot">
+                        <div class="ab-status">OPEN_FOR_DISCUSSION</div>
+                        <span class="ab-id-reply">REPLY ≤ 48H</span>
+                    </div>
+                </aside>
+            </div>
+
+            <!-- ── 数据速览 ───────────────────────────────────────────── -->
+            <div class="hero-stats reveal">
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="5" data-dynamic="articles">0</div>
+                        <div class="stat-label">已发布文章</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="4">0</div>
+                        <div class="stat-label">专注方向</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="12" data-suffix="+">0</div>
+                        <div class="stat-label">常用工具</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" data-target="3" data-suffix="+">0</div>
+                        <div class="stat-label">学习年限</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── 页内导航 ───────────────────────────────────────────── -->
+            <nav class="about-quicknav" aria-label="关于页内导航">
+                <span class="quicknav-label">INDEX</span>
+                <a href="#whoami">01 · 关于我</a>
+                <a href="#latest">02 · 最近更新</a>
+                <a href="#skills">03 · 能力矩阵</a>
+                <a href="#journey">04 · 成长路线</a>
+                <a href="#log">05 · 实战记录</a>
+                <a href="#principles">06 · 原则与问答</a>
+                <a href="#contact">07 · 联系方式</a>
+            </nav>
+
+            <!-- ── 0x01 · Whoami ──────────────────────────────────────── -->
+            <div class="about-block reveal" id="whoami">
+                <div class="block-label">// 0x01 · WHOAMI</div>
+                <h2 class="block-title">关于我 / WHOAMI <span class="block-hint">最近校对 2026.11</span></h2>
+
+                <div class="ab-split">
+                    <div class="ab-prose">
+                        <p>
+                            我的方向集中在三块：<strong>Web 应用安全</strong>（OWASP Top 10、漏洞复现与修复验证）、
+                            <strong>企业安全运营</strong>（日志狩猎、零信任落地、应急响应），以及
+                            <strong>AI 安全</strong>（Prompt Injection、RAG 数据泄露、模型供应链风险）。
+                            比起堆工具，我更在意一条完整链路能否被解释清楚。
+                        </p>
+                        <p>
+                            最早是从写 Python 脚本做自动化开始接触安全的。后来慢慢发现，「打得动」不等于「讲得清」——
+                            于是开始把每个靶场、每个 N-day 的复现过程整理成文章，逼自己把利用条件、影响面、
+                            检测思路和修复方案都写完整。这也是我判断自己是否真的学会的标准。
+                        </p>
+                        <p>
+                            这个站点是我自己从零搭的：静态前端 + Express / SQLite 后端 + SMTP 邮件通知 + Vercel 部署。
+                            写博客本身也是一次安全工程实践——输入校验、CSRF、限流、上传与日志，这些坑都是真实踩过的。
+                            站内所有实验均在自建环境或授权范围内完成。
+                        </p>
+                    </div>
+                    <aside class="ab-now">
+                        <h3>// NOW · 现在进行时</h3>
+                        <ul>
+                            <li><span class="k">在读</span><span>信息安全专业课，维护自建靶场与 AD 实验环境</span></li>
+                            <li><span class="k">在学</span><span>内网渗透（Kerberos / AD）、日志分析与检测规则编写</span></li>
+                            <li><span class="k">在做</span><span>复现近年 N-day，整理可复用的漏洞笔记与检查清单</span></li>
+                            <li><span class="k">在备</span><span>OSCP，把零散的技术点串成一套可验证的方法论</span></li>
+                        </ul>
+                    </aside>
+                </div>
+
+                <div class="focus-grid">
+                    <article class="focus-card">
+                        <div class="focus-kicker">// OFFENSE</div>
+                        <h3>Web 渗透与漏洞复现</h3>
+                        <p>从信息收集到 getshell 的完整链路，关注 SQLi / XSS / SSRF / 文件上传在真实业务里的变形；复现完回到修复侧，验证补丁是否真的生效。</p>
+                        <div class="focus-tags">
+                            <span>Burp Suite</span><span>Nmap</span><span>SQLMap</span>
+                        </div>
+                    </article>
+                    <article class="focus-card">
+                        <div class="focus-kicker">// DEFENSE</div>
+                        <h3>企业安全与蓝队运营</h3>
+                        <p>从日志里还原攻击链：告警降噪、检测规则编写与应急响应。关注零信任落地误区、供应链投毒识别，以及「规则为什么这样写」。</p>
+                        <div class="focus-tags">
+                            <span>日志狩猎</span><span>检测规则</span><span>应急响应</span>
+                        </div>
+                    </article>
+                    <article class="focus-card">
+                        <div class="focus-kicker">// AI SECURITY</div>
+                        <h3>AI 与应用安全边界</h3>
+                        <p>Prompt Injection、工具调用越权、RAG 数据泄露与模型供应链风险——LLM 应用上线前到底该检查什么，以及如何留下可验证的证据。</p>
+                        <div class="focus-tags">
+                            <span>Prompt 注入</span><span>RAG</span><span>供应链</span>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="block-label">// STACK · 常用工具箱</div>
+                <div class="ab-stack">
+                    <div class="ab-stack-row">
+                        <div class="ab-stack-key">语言</div>
+                        <div class="ab-chips">
+                            <span class="ab-chip">Python</span>
+                            <span class="ab-chip">JavaScript</span>
+                            <span class="ab-chip">SQL</span>
+                            <span class="ab-chip">Bash</span>
+                            <span class="ab-chip">HTML / CSS</span>
+                        </div>
+                    </div>
+                    <div class="ab-stack-row">
+                        <div class="ab-stack-key">安全工具</div>
+                        <div class="ab-chips">
+                            <span class="ab-chip">Burp Suite</span>
+                            <span class="ab-chip">Nmap</span>
+                            <span class="ab-chip">SQLMap</span>
+                            <span class="ab-chip">Wireshark</span>
+                            <span class="ab-chip">Ghidra</span>
+                            <span class="ab-chip">Metasploit</span>
+                        </div>
+                    </div>
+                    <div class="ab-stack-row">
+                        <div class="ab-stack-key">开发栈</div>
+                        <div class="ab-chips">
+                            <span class="ab-chip">Node.js</span>
+                            <span class="ab-chip">Express</span>
+                            <span class="ab-chip">SQLite</span>
+                            <span class="ab-chip">Git</span>
+                            <span class="ab-chip">Docker</span>
+                            <span class="ab-chip">Vercel</span>
+                        </div>
+                    </div>
+                    <div class="ab-stack-row">
+                        <div class="ab-stack-key">实验环境</div>
+                        <div class="ab-chips">
+                            <span class="ab-chip">Kali Linux</span>
+                            <span class="ab-chip">Ubuntu Server</span>
+                            <span class="ab-chip">Windows AD Lab</span>
+                            <span class="ab-chip">DVWA</span>
+                            <span class="ab-chip">Vulhub</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ── 0x02 · Latest ──────────────────────────────────────── -->
+            <div class="about-block reveal" id="latest">
+                <div class="block-label">// 0x02 · LATEST_UPDATES</div>
+                <h2 class="block-title">最近更新 / LATEST <span class="block-hint">读取文章接口 · 按发布时间倒序</span></h2>
+
+                <div class="latest-grid" id="latest-grid" aria-live="polite" aria-busy="true">
+                    <div class="latest-card is-skeleton" aria-hidden="true">
+                        <div class="latest-top">
+                            <span class="latest-skel-line w-30"></span>
+                            <span class="latest-skel-line w-20"></span>
+                        </div>
+                        <span class="latest-skel-line w-90"></span>
+                        <span class="latest-skel-line w-70"></span>
+                    </div>
+                    <div class="latest-card is-skeleton" aria-hidden="true">
+                        <div class="latest-top">
+                            <span class="latest-skel-line w-30"></span>
+                            <span class="latest-skel-line w-20"></span>
+                        </div>
+                        <span class="latest-skel-line w-90"></span>
+                        <span class="latest-skel-line w-70"></span>
+                    </div>
+                    <div class="latest-card is-skeleton" aria-hidden="true">
+                        <div class="latest-top">
+                            <span class="latest-skel-line w-30"></span>
+                            <span class="latest-skel-line w-20"></span>
+                        </div>
+                        <span class="latest-skel-line w-90"></span>
+                        <span class="latest-skel-line w-70"></span>
+                    </div>
+                </div>
+
+                <p class="latest-foot">
+                    <span id="latest-status">正在读取文章列表…</span>
+                    <a href="/src/pages/articles.html">查看全部文章 →</a>
+                </p>
+            </div>
+
+
+            <!-- ── 0x03 · Capability ──────────────────────────────────── -->
+            <div class="about-block reveal" id="skills">
+                <div class="block-label">// 0x03 · CAPABILITY</div>
+                <h2 class="block-title">能力矩阵 / SKILL MATRIX</h2>
+
+                <div class="skill-matrix-wrap">
+                    <div class="radar-wrap">
+                        <canvas id="radar-canvas" width="320" height="320" aria-label="能力雷达图：当前水平与阶段目标"></canvas>
+                        <div class="radar-tooltip" id="radar-tooltip"></div>
+                        <div class="radar-legend">
+                            <span class="radar-legend-item"><span class="radar-legend-dot dot-current"></span>当前水平</span>
+                            <span class="radar-legend-item"><span class="radar-legend-dot dot-target"></span>阶段目标</span>
+                        </div>
+                    </div>
+
+                    <div class="skill-bars">
+                        <div class="skill-legend">
+                            <span class="skill-legend-item"><span class="skill-legend-bar"></span>当前水平</span>
+                            <span class="skill-legend-item"><span class="skill-legend-tick"></span>阶段目标</span>
+                        </div>
+                        <div class="skill-category">// OFFENSE · 攻击面</div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">Web 渗透</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="80"></div>
+                                <span class="skill-target" style="left: 90%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">80%</span>
+                        </div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">漏洞复现</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="76"></div>
+                                <span class="skill-target" style="left: 88%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">76%</span>
+                        </div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">提权与内网</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="62"></div>
+                                <span class="skill-target" style="left: 80%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">62%</span>
+                        </div>
+
+                        <div class="skill-category">// DEFENSE · 防守面</div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">日志狩猎</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="66"></div>
+                                <span class="skill-target" style="left: 82%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">66%</span>
+                        </div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">应急响应</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="60"></div>
+                                <span class="skill-target" style="left: 78%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">60%</span>
+                        </div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">安全加固</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="68"></div>
+                                <span class="skill-target" style="left: 82%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">68%</span>
+                        </div>
+
+                        <div class="skill-category">// TOOLING · 工具链</div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">Python</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="84"></div>
+                                <span class="skill-target" style="left: 92%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">84%</span>
+                        </div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">Burp Suite</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="78"></div>
+                                <span class="skill-target" style="left: 88%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">78%</span>
+                        </div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">Linux Shell</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="72"></div>
+                                <span class="skill-target" style="left: 85%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">72%</span>
+                        </div>
+
+                        <div class="skill-category">// RESEARCH · 研究面</div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">AI 安全</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="64"></div>
+                                <span class="skill-target" style="left: 82%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">64%</span>
+                        </div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">供应链安全</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="60"></div>
+                                <span class="skill-target" style="left: 80%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">60%</span>
+                        </div>
+                        <div class="skill-row">
+                            <span class="skill-lbl">报告与文档</span>
+                            <div class="skill-track">
+                                <div class="skill-fill" data-level="72"></div>
+                                <span class="skill-target" style="left: 88%" aria-hidden="true"></span>
+                            </div>
+                            <span class="skill-pct">72%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="skill-note">
+                    进度条为<strong>自评</strong>，刻度线是这一阶段的验收目标；数值来自「能否独立复现 + 能否讲清修复」，
+                    而不是刷过多少靶场。
+                </p>
+            </div>
+
+
+            <!-- ── 0x04 · Journey ─────────────────────────────────────── -->
+            <div class="about-block reveal" id="journey">
+                <div class="block-label">// 0x04 · JOURNEY</div>
+                <h2 class="block-title">成长路线 / JOURNEY <span class="block-hint">按「能动手 → 能讲清 → 能体系化」推进</span></h2>
+
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-date">2026.11 · NOW</div>
+                        <div class="timeline-content">
+                            <h4>公开实验台：把过程写下来</h4>
+                            <p>
+                                把漏洞复现、安全运营与 AI 安全的研究整理成体系化笔记，本站同步迭代。
+                                关于页完成第三轮改版：接入文章接口，「最近更新」随发文自动同步；
+                                每篇文章都要求自己给出可复现步骤、影响范围与验证过的修复建议。
+                            </p>
+                            <div class="timeline-tags">
+                                <span class="timeline-tag">写作</span>
+                                <span class="timeline-tag">站点工程</span>
+                                <span class="timeline-tag">AI 安全</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">2025 – 2026</div>
+                        <div class="timeline-content">
+                            <h4>从「会用工具」到「能讲清楚」</h4>
+                            <p>
+                                参加校内外 CTF（Web 方向），开始写完整 write-up：不只贴 payload，
+                                还补上漏洞原理、利用条件、检测思路与修复验证，逐渐形成自己的记录模板。
+                            </p>
+                            <div class="timeline-tags">
+                                <span class="timeline-tag">CTF · Web</span>
+                                <span class="timeline-tag">Write-up</span>
+                                <span class="timeline-tag">Burp Suite</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">2024 – 2025</div>
+                        <div class="timeline-content">
+                            <h4>Python 脚本 → 安全工程</h4>
+                            <p>
+                                用脚本自动化信息收集与报告整理，第一次完整搭起自己的靶场环境
+                                （Kali + Vulhub + Windows AD），也开始理解「攻防是一体两面」。
+                            </p>
+                            <div class="timeline-tags">
+                                <span class="timeline-tag">Python</span>
+                                <span class="timeline-tag">自建靶场</span>
+                                <span class="timeline-tag">Vulhub</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-date">2023 – 2024</div>
+                        <div class="timeline-content">
+                            <h4>入门：从 CTF 杂项开始</h4>
+                            <p>
+                                从杂项与 Web 基础题入手，补齐 HTTP、编码转换、常见漏洞原理这些基本功；
+                                这个阶段的笔记很粗糙，但保留了最初的问题意识。
+                            </p>
+                            <div class="timeline-tags">
+                                <span class="timeline-tag">基础</span>
+                                <span class="timeline-tag">杂项</span>
+                                <span class="timeline-tag">HTTP</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── 0x05 · Field log ───────────────────────────────────── -->
+            <div class="about-block reveal" id="log">
+                <div class="block-label">// 0x05 · FIELD_LOG</div>
+                <h2 class="block-title">实战记录 / FIELD LOG <span class="block-hint">仅收录自建环境与授权范围内的实践</span></h2>
+
+                <div class="log-toolbar" id="log-toolbar" role="group" aria-label="按类型筛选实战记录">
+                    <button type="button" class="log-filter is-active" data-filter="all" aria-pressed="true">全部</button>
+                    <button type="button" class="log-filter" data-filter="src" aria-pressed="false">项目与站点</button>
+                    <button type="button" class="log-filter" data-filter="ctf" aria-pressed="false">CTF</button>
+                    <button type="button" class="log-filter" data-filter="cve" aria-pressed="false">漏洞复现</button>
+                    <button type="button" class="log-filter" data-filter="cert" aria-pressed="false">认证</button>
+                    <button type="button" class="log-filter" data-filter="geek" aria-pressed="false">平台</button>
+                    <span class="log-count" id="log-count" role="status" aria-live="polite">显示 6 / 6</span>
+                </div>
+
+                <div class="achievements-grid" id="log-grid">
+                    <div class="achievement-card type-src" data-cat="src">
+                        <div class="ach-top">
+                            <div class="ach-type">SITE // SELF_BUILT</div>
+                            <span class="ach-status is-live">已上线</span>
+                        </div>
+                        <div class="ach-title">本站：从零搭建的个人博客</div>
+                        <div class="ach-meta">
+                            静态前端 + Express / SQLite 后端 + SMTP 邮件通知 + Vercel 部署。
+                            文章系统、留言板、友链、主题与配色切换均为自建；上线前补了输入校验、CSRF 与限流。
+                        </div>
+                        <div class="ach-note">// 技术栈：Node.js · Express · SQLite · Vercel</div>
+                    </div>
+
+                    <div class="achievement-card type-geek" data-cat="src">
+                        <div class="ach-top">
+                            <div class="ach-type">LAB // SELF_HOSTED</div>
+                            <span class="ach-status is-wip">维护中</span>
+                        </div>
+                        <div class="ach-title">自建靶场与实验环境</div>
+                        <div class="ach-meta">
+                            Kali + Vulhub 复现环境，加上一套 Windows AD 域用于内网横向练习；
+                            整个环境隔离在本地 NAT 网段，随用快照还原，不触碰任何真实目标。
+                        </div>
+                        <div class="ach-note">// 关键词：隔离 · 快照 · 可复现</div>
+                    </div>
+
+                    <div class="achievement-card type-ctf" data-cat="ctf">
+                        <div class="ach-top">
+                            <div class="ach-type">CTF // WEB_TRACK</div>
+                            <span class="ach-status is-wip">进行中</span>
+                        </div>
+                        <div class="ach-title">校内外 CTF · Web 方向</div>
+                        <div class="ach-meta">
+                            以 Web 为主线：信息收集 → SQLi / XSS / SSRF 利用 → getshell → 权限维持。
+                            赛后把完整链路整理成可复现的解题笔记，标记出自己卡住的环节。
+                        </div>
+                        <div class="ach-note">// 关键词：Web 渗透 · 利用链 · write-up</div>
+                    </div>
+
+                    <div class="achievement-card type-cve" data-cat="cve">
+                        <div class="ach-top">
+                            <div class="ach-type">CVE // REPRODUCE</div>
+                            <span class="ach-status">持续更新</span>
+                        </div>
+                        <div class="ach-title">漏洞复现笔记</div>
+                        <div class="ach-meta">
+                            关注近年 N-day 的复现条件与影响面，并验证补丁是否真正生效。
+                            所有实验都在自己搭建的靶场中完成，不做无授权测试。
+                        </div>
+                        <div class="ach-note">// 原则：先授权，再动手</div>
+                    </div>
+
+                    <div class="achievement-card type-cert" data-cat="cert">
+                        <div class="ach-top">
+                            <div class="ach-type">CERT // ROADMAP</div>
+                            <span class="ach-status">路线推进</span>
+                        </div>
+                        <div class="ach-title">认证路线</div>
+                        <div class="ach-meta">按「能动手 → 能体系化」的节奏推进：</div>
+                        <div>
+                            <span class="cert-badge earned"><span class="cert-dot"></span>eJPT · 已取得</span><br>
+                            <span class="cert-badge pending"><span class="cert-dot"></span>OSCP · 2026 目标</span><br>
+                            <span class="cert-badge pending"><span class="cert-dot"></span>OSEP · 2027 计划</span>
+                        </div>
+                    </div>
+
+                    <div class="achievement-card type-geek" data-cat="geek">
+                        <div class="ach-top">
+                            <div class="ach-type">GEEK // PLATFORM</div>
+                            <span class="ach-status">持续使用</span>
+                        </div>
+                        <div class="ach-title">常在的平台</div>
+                        <div class="ach-meta">练习、看题解、读别人的思路：</div>
+                        <div class="geek-badge-row">
+                            <span class="geek-chip">GitHub</span>
+                            <span class="geek-chip">HackTheBox</span>
+                            <span class="geek-chip">TryHackMe</span>
+                            <span class="geek-chip">CTFtime</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── 0x06 · Principles + FAQ ────────────────────────────── -->
+            <div class="about-block reveal" id="principles">
+                <div class="block-label">// 0x06 · PRINCIPLES</div>
+                <h2 class="block-title">协作原则 / PRINCIPLES <span class="block-hint">写文章与做实验的底线</span></h2>
+
+                <div class="principle-grid">
+                    <article class="principle-card">
+                        <div class="principle-num">P-01</div>
+                        <h3>先授权，再动手</h3>
+                        <p>只在自建环境或书面授权范围内测试。文章里的演示数据、域名与日志均来自实验环境，不做无授权探测。</p>
+                    </article>
+                    <article class="principle-card">
+                        <div class="principle-num">P-02</div>
+                        <h3>复现要能回滚</h3>
+                        <p>记录版本、配置、payload 与修复前后的对比，让别人按笔记能重跑一遍；不能复现的过程不算结论。</p>
+                    </article>
+                    <article class="principle-card">
+                        <div class="principle-num">P-03</div>
+                        <h3>结论要有证据</h3>
+                        <p>不写「可能存在」这类模糊判断，给出请求响应、日志片段或截图，并明确标注仍未验证的部分。</p>
+                    </article>
+                    <article class="principle-card">
+                        <div class="principle-num">P-04</div>
+                        <h3>修复优先于炫技</h3>
+                        <p>能落地的加固方案（配置、检测规则、代码修复）比利用链本身更值得写，也更容易被别人复用。</p>
+                    </article>
+                </div>
+
+                <div class="faq-list">
+                    <details class="faq-item">
+                        <summary>站内的文章可以转载吗？</summary>
+                        <div class="faq-body">
+                            可以，请保留作者信息并注明出处与原文链接，不要拆分或曲解原意。
+                            <strong>商业用途</strong>或整站搬运请先发邮件沟通。
+                        </div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>会接渗透测试或安全评估吗？</summary>
+                        <div class="faq-body">
+                            目前以学习和授权项目为主。可以邮件说明<strong>测试范围、目标类型与时间窗口</strong>，
+                            我再判断是否合适；没有书面授权的目标一律不接。
+                        </div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>靶场环境能分享吗？</summary>
+                        <div class="faq-body">
+                            环境都基于公开镜像搭建，编排与配置脚本整理在 GitHub。
+                            涉及具体练习目标的配置不会公开，避免影响他人的解题体验。
+                        </div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>文章里的利用代码该怎么用？</summary>
+                        <div class="faq-body">
+                            仅限<strong>授权测试与教学环境</strong>。对未授权目标使用造成的一切后果由使用者自负，
+                            本站不提供任何针对真实目标的攻击支持。
+                        </div>
+                    </details>
+                    <details class="faq-item">
+                        <summary>发现文章有错误，或者想补充内容？</summary>
+                        <div class="faq-body">
+                            欢迎通过<a href="mailto:3351708803@qq.com">邮件</a>或
+                            <a href="https://github.com/YanMo5" target="_blank" rel="noopener">GitHub issue</a> 指出，
+                            附上复现步骤或依据即可；核对后我会更新正文并在文末注明修订。
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <!-- ── 0x07 · Contact ─────────────────────────────────────── -->
+            <div class="about-block reveal" id="contact">
+                <div class="block-label">// 0x07 · COMMS</div>
+                <h2 class="block-title">联系方式 / CONTACT <span class="block-hint">邮件优先 · 通常 1–2 天内回复</span></h2>
+
+                <p class="ab-intro">
+                    有问题想讨论、发现文章里有错误，或者想聊聊安全方向，都欢迎直接找我。
+                    邮件是最稳的方式，其次是留言板（不需要注册）。
+                </p>
+
+                <div class="comms-meta">
+                    <span class="comms-meta-item"><span class="comms-meta-k">响应时间</span><span class="comms-meta-v">1–2 天（工作日）</span></span>
+                    <span class="comms-meta-item"><span class="comms-meta-k">时区</span><span class="comms-meta-v">UTC+8</span></span>
+                    <span class="comms-meta-item"><span class="comms-meta-k">适合的话题</span><span class="comms-meta-v">技术讨论 · 勘误 · 授权项目</span></span>
+                </div>
+
+                <div class="comms-grid">
+                    <div class="comms-card tier-1">
+                        <span class="comms-tier-label">PRIMARY</span>
+                        <div class="comms-icon">MAIL</div>
+                        <div class="comms-name">Email</div>
+                        <div class="comms-handle" data-copy="3351708803@qq.com" id="copy-email" role="button" tabindex="0" title="点击复制邮箱">3351708803@qq.com</div>
+                        <div class="comms-desc">技术讨论、文章勘误与授权项目优先走邮件；附上环境信息和复现步骤会更快定位问题。</div>
+                        <span class="comms-badge">首选 · 可附截图与日志</span>
+                        <div class="comms-copy-feedback" id="fb-email">COPIED</div>
+                    </div>
+
+                    <div class="comms-card tier-1">
+                        <span class="comms-tier-label">PRIMARY</span>
+                        <div class="comms-icon">GIT</div>
+                        <div class="comms-name">GitHub</div>
+                        <a class="comms-handle" href="https://github.com/YanMo5" target="_blank" rel="noopener">github.com/YanMo5</a>
+                        <div class="comms-desc">本站源码、脚本与实验配置都在这里；发现 bug 或文章错误，直接提 issue 也可以。</div>
+                        <span class="comms-badge">代码 · issue</span>
+                    </div>
+
+                    <div class="comms-card tier-2">
+                        <span class="comms-tier-label">FAST</span>
+                        <div class="comms-icon">QQ</div>
+                        <div class="comms-name">QQ</div>
+                        <div class="comms-handle" data-copy="3351708803" id="copy-qq" role="button" tabindex="0" title="点击复制 QQ 号">3351708803</div>
+                        <div class="comms-desc">日常交流与快速提问，加好友时请简单说明来意；敏感信息不要走即时聊天。</div>
+                        <span class="comms-badge">即时 · 非正式</span>
+                        <div class="comms-copy-feedback" id="fb-qq">COPIED</div>
+                    </div>
+
+                    <div class="comms-card tier-2">
+                        <span class="comms-tier-label">ON_SITE</span>
+                        <div class="comms-icon">MSG</div>
+                        <div class="comms-name">留言板</div>
+                        <a class="comms-handle" href="/src/pages/guestbook.html">/src/pages/guestbook.html</a>
+                        <div class="comms-desc">不需要登录就能留言，适合公开讨论与提问；请勿粘贴漏洞细节或个人隐私。</div>
+                        <span class="comms-badge">站内 · 无需注册</span>
+                    </div>
+
+                    <div class="comms-card tier-3">
+                        <span class="comms-tier-label">FORM</span>
+                        <div class="comms-icon">FORM</div>
+                        <div class="comms-name">联系表单</div>
+                        <a class="comms-handle" href="/src/pages/contact.html">/src/pages/contact.html</a>
+                        <div class="comms-desc">正式问题、合作意向或较长的描述用表单，便于归档与后续跟进。</div>
+                        <span class="comms-badge">结构化 · 可留邮箱</span>
+                    </div>
+
+                    <div class="comms-card tier-3">
+                        <span class="comms-tier-label">FRIENDS</span>
+                        <div class="comms-icon">LINK</div>
+                        <div class="comms-name">友链申请</div>
+                        <a class="comms-handle" href="/src/pages/link-apply.html">/src/pages/link-apply.html</a>
+                        <div class="comms-desc">同是写技术博客的朋友，先看友链页的要求，再提交站点信息即可。</div>
+                        <span class="comms-badge">站点互换</span>
+                    </div>
+                </div>
+
+                <p class="ab-note">
+                    <strong>关于加密沟通：</strong>目前没有公开 PGP 公钥。若涉及敏感信息（未公开漏洞、账号数据等），
+                    请先用邮件说明来意，我会单独回复可用于加密通信的公钥与指纹；
+                    请不要在公开留言里粘贴密钥、漏洞细节或任何个人隐私。
+                </p>
+            </div>
+
+            <!-- CTA -->
+            <div class="about-cta reveal">
+                <div class="about-cta-text">
+                    <strong>想看具体怎么打、怎么防？</strong>
+                    <span>文章区按 Web 安全 / 安全运营 / AI 安全分类整理；有具体问题，邮件或留言都行。</span>
+                </div>
+                <div class="about-cta-actions">
+                    <a href="/src/pages/articles.html" class="btn">阅读文章 →</a>
+                    <a href="/src/pages/contact.html" class="btn ghost-btn">联系我 →</a>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo的个人博客</h3>
+                <p>大学生安全学习记录 | Web安全 | CTF | AI安全探索</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" rel="noopener" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="/src/pages/link-apply.html" class="footer-link">前往友链申请页面</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+        </div>
+    </footer>
+
+
+    <script src="/src/js/date-utils.js"></script>
+    <script src="/src/js/local-api.js"></script>
+    <script src="/src/js/palette-manager.js"></script>
+    <script src="/src/js/music-box.js" defer></script>
+    <script src="/src/js/ux-enhancements.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            /* ── canvas 不认 var()，先把主题色解析成真实 rgb ── */
+            function colorOf(value, fallback) {
+                var probe = document.createElement('span');
+                probe.style.cssText = 'position:absolute;left:-9999px;top:0;color:' + value;
+                document.body.appendChild(probe);
+                var resolved = getComputedStyle(probe).color || '';
+                probe.remove();
+                var m = resolved.match(/rgba?\(([^)]+)\)/);
+                if (!m) return fallback;
+                var parts = m[1].split(',').map(function (num) { return parseFloat(num); });
+                return [parts[0] || 0, parts[1] || 0, parts[2] || 0];
+            }
+
+            function rgba(c, a) {
+                return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
+            }
+
+            var palette = {
+                accent: colorOf('var(--lm-accent, #6ea8fe)', [110, 168, 254]),
+                accent2: colorOf('var(--lm-accent-2, #a78bfa)', [167, 139, 250]),
+                text: colorOf('var(--lm-text, #e8eef9)', [232, 238, 249])
+            };
+
+            /* ── 能力雷达图 ───────────────────────────────────── */
+            (function drawRadar() {
+                var canvas = document.getElementById('radar-canvas');
+                var tooltip = document.getElementById('radar-tooltip');
+                var wrap = canvas ? canvas.closest('.radar-wrap') : null;
+                if (!canvas || !wrap) return;
+
+                var ctx = canvas.getContext('2d');
+                var SIZE = 320;
+                var dpr = Math.min(window.devicePixelRatio || 1, 2);
+                canvas.width = Math.round(SIZE * dpr);
+                canvas.height = Math.round(SIZE * dpr);
+                /* 显示尺寸交给 CSS（width/max-width/height:auto），避免窄屏被拉成非正方形 */
+                /* 以 CSS 像素为坐标系绘制，Retina 屏下不糊 */
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                var cx = SIZE / 2, cy = SIZE / 2, R = 108, levels = 5;
+                var axes = [
+                    { label: 'Web 渗透', current: 0.80, target: 0.90 },
+                    { label: '漏洞复现', current: 0.76, target: 0.88 },
+                    { label: 'Python', current: 0.84, target: 0.92 },
+                    { label: '蓝队分析', current: 0.66, target: 0.82 },
+                    { label: '应急响应', current: 0.60, target: 0.78 },
+                    { label: 'AI 安全', current: 0.64, target: 0.82 },
+                    { label: '报告文档', current: 0.72, target: 0.88 },
+                    { label: '二进制', current: 0.50, target: 0.72 }
+                ];
+                var n = axes.length;
+                var hovered = -1;
+
+                function pt(i, r) {
+                    var angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+                    return { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+                }
+
+                function drawScene(progress) {
+                    ctx.clearRect(0, 0, SIZE, SIZE);
+
+                    /* 网格环 */
+                    for (var l = 1; l <= levels; l++) {
+                        ctx.beginPath();
+                        for (var i = 0; i < n; i++) {
+                            var gp = pt(i, R * l / levels);
+                            if (i === 0) { ctx.moveTo(gp.x, gp.y); } else { ctx.lineTo(gp.x, gp.y); }
+                        }
+                        ctx.closePath();
+                        ctx.strokeStyle = rgba(palette.accent, l === levels ? 0.22 : 0.1);
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+
+                    /* 轴线 */
+                    for (var j = 0; j < n; j++) {
+                        var sp = pt(j, R);
+                        ctx.beginPath();
+                        ctx.moveTo(cx, cy);
+                        ctx.lineTo(sp.x, sp.y);
+                        ctx.strokeStyle = rgba(palette.accent, j === hovered ? 0.42 : 0.12);
+                        ctx.lineWidth = j === hovered ? 1.6 : 1;
+                        ctx.stroke();
+                    }
+
+
+                    /* 目标层（虚线幽灵） */
+                    ctx.beginPath();
+                    for (var k = 0; k < n; k++) {
+                        var tp = pt(k, R * axes[k].target * progress);
+                        if (k === 0) { ctx.moveTo(tp.x, tp.y); } else { ctx.lineTo(tp.x, tp.y); }
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = rgba(palette.accent2, 0.07);
+                    ctx.fill();
+                    ctx.setLineDash([3, 4]);
+                    ctx.strokeStyle = rgba(palette.accent2, 0.35);
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    /* 当前水平 */
+                    ctx.beginPath();
+                    for (var m = 0; m < n; m++) {
+                        var cp = pt(m, R * axes[m].current * progress);
+                        if (m === 0) { ctx.moveTo(cp.x, cp.y); } else { ctx.lineTo(cp.x, cp.y); }
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = rgba(palette.accent, 0.12);
+                    ctx.fill();
+                    ctx.strokeStyle = rgba(palette.accent, 0.95);
+                    ctx.lineWidth = 1.6;
+                    ctx.stroke();
+
+                    /* 顶点 */
+                    for (var v = 0; v < n; v++) {
+                        var dp = pt(v, R * axes[v].current * progress);
+                        ctx.beginPath();
+                        ctx.arc(dp.x, dp.y, v === hovered ? 5 : 3, 0, Math.PI * 2);
+                        ctx.fillStyle = v === hovered ? rgba(palette.text, 1) : rgba(palette.accent, 1);
+                        ctx.fill();
+                    }
+
+                    /* 轴标签 */
+                    ctx.font = '11px "Roboto Mono", monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    for (var t = 0; t < n; t++) {
+                        var lp = pt(t, R + 18);
+                        ctx.fillStyle = t === hovered ? rgba(palette.text, 1) : rgba(palette.accent, 0.62);
+                        ctx.fillText(axes[t].label, lp.x, lp.y);
+                    }
+                }
+
+                /* 入场动画 */
+                var progress = 0;
+                var rafId = null;
+
+                function animate() {
+                    progress = Math.min(progress + 0.04, 1);
+                    drawScene(progress);
+                    if (progress < 1) rafId = requestAnimationFrame(animate);
+                    else rafId = null;
+                }
+
+                rafId = requestAnimationFrame(animate);
+
+                document.addEventListener('yanmo:themechange', function () {
+                    palette = {
+                        accent: colorOf('var(--lm-accent, #6ea8fe)', [110, 168, 254]),
+                        accent2: colorOf('var(--lm-accent-2, #a78bfa)', [167, 139, 250]),
+                        text: colorOf('var(--lm-text, #e8eef9)', [232, 238, 249])
+                    };
+                    drawScene(1);
+                });
+
+                document.addEventListener('visibilitychange', function () {
+                    if (document.hidden) {
+                        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+                    } else if (progress < 1 && !rafId) {
+                        rafId = requestAnimationFrame(animate);
+                    }
+                });
+
+                /* 悬停提示：按 canvas 实际显示尺寸换算坐标 */
+                canvas.addEventListener('mousemove', function (event) {
+                    if (!tooltip) return;
+                    var rect = canvas.getBoundingClientRect();
+                    var scale = SIZE / rect.width;
+                    var px = (event.clientX - rect.left) * scale;
+                    var py = (event.clientY - rect.top) * scale;
+                    var found = -1;
+                    for (var i = 0; i < n; i++) {
+                        var node = pt(i, R * axes[i].current);
+                        if (Math.hypot(px - node.x, py - node.y) < 14) { found = i; break; }
+                    }
+
+                    if (found !== hovered) {
+                        hovered = found;
+                        drawScene(1);
+                    }
+
+                    if (found >= 0) {
+                        var axis = axes[found];
+                        var wrapRect = wrap.getBoundingClientRect();
+                        tooltip.textContent = axis.label + ' · 当前 ' + Math.round(axis.current * 100) +
+                            '% / 目标 ' + Math.round(axis.target * 100) + '%';
+                        tooltip.style.left = (event.clientX - wrapRect.left + 12) + 'px';
+                        tooltip.style.top = (event.clientY - wrapRect.top - 26) + 'px';
+                        tooltip.style.display = 'block';
+                    } else {
+                        tooltip.style.display = 'none';
+                    }
+                });
+
+                canvas.addEventListener('mouseleave', function () {
+                    hovered = -1;
+                    if (tooltip) tooltip.style.display = 'none';
+                    drawScene(1);
+                });
+            })();
+
+
+            /* ── 技能条：滚动到可见再填充 ─────────────────────── */
+            var fills = document.querySelectorAll('.skill-fill[data-level]');
+
+            function fillBars() {
+                Array.prototype.forEach.call(fills, function (bar, index) {
+                    var level = Math.max(0, Math.min(Number(bar.getAttribute('data-level')) || 0, 100));
+                    setTimeout(function () { bar.style.width = level + '%'; }, 120 + index * 70);
+                });
+            }
+
+            if (fills.length) {
+                var firstTrack = fills[0].closest('.skill-bars');
+                if ('IntersectionObserver' in window && firstTrack) {
+                    var barObserver = new IntersectionObserver(function (entries, observer) {
+                        if (entries.some(function (entry) { return entry.isIntersecting; })) {
+                            fillBars();
+                            observer.disconnect();
+                        }
+                    }, { threshold: 0.15 });
+                    barObserver.observe(firstTrack);
+                } else {
+                    fillBars();
+                }
+            }
+
+            /* ── 统计数字 ─────────────────────────────────────── */
+            var countersStarted = false;
+
+            function startCounters() {
+                if (countersStarted) return;
+                countersStarted = true;
+
+                Array.prototype.forEach.call(document.querySelectorAll('.stat-number[data-target]'), function (node) {
+                    var target = Number(node.getAttribute('data-target')) || 0;
+                    var suffix = node.getAttribute('data-suffix') || '';
+                    var start = performance.now();
+                    var duration = 900;
+
+                    (function tick(now) {
+                        var p = Math.min((now - start) / duration, 1);
+                        node.textContent = Math.round(target * p) + suffix;
+                        if (p < 1) requestAnimationFrame(tick);
+                    })(start);
+                });
+            }
+
+            /* 文章数优先取真实数据，拿不到就回落到 data-target */
+            var articleStat = document.querySelector('.stat-number[data-dynamic="articles"]');
+
+            if (articleStat) {
+                var fallbackTimer = setTimeout(startCounters, 1200);
+
+                fetch('/api/articles', { headers: { Accept: 'application/json' } })
+                    .then(function (res) { return res.ok ? res.json() : null; })
+                    .then(function (list) {
+                        if (Array.isArray(list) && list.length) {
+                            articleStat.setAttribute('data-target', String(list.length));
+                            articleStat.setAttribute('data-suffix', '');
+                        }
+                    })
+                    .catch(function () { /* 离线或接口不可用时保持默认值 */ })
+                    .then(function () {
+                        clearTimeout(fallbackTimer);
+                        startCounters();
+                    });
+            } else {
+                startCounters();
+            }
+
+            /* ── 最近更新：读取文章接口，取最新 3 篇 ───────────── */
+            (function initLatest() {
+                var grid = document.getElementById('latest-grid');
+                var status = document.getElementById('latest-status');
+                if (!grid) return;
+
+                var MAX_CARDS = 3;
+
+                function escapeHtml(value) {
+                    return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+                        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+                    });
+                }
+
+                function plainText(value) {
+                    return String(value == null ? '' : value)
+                        .replace(/<[^>]*>/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .trim();
+                }
+
+                function excerptOf(value, limit) {
+                    var text = plainText(value);
+                    if (!text) return '暂无摘要，点击卡片进入正文查看。';
+                    return text.length > limit ? text.slice(0, limit) + '…' : text;
+                }
+
+                function readDate(value) {
+                    if (!value) return '--';
+                    if (typeof window.formatLocalDate === 'function') {
+                        return window.formatLocalDate(value);
+                    }
+                    return String(value).slice(0, 10);
+                }
+
+                function setStatus(text) {
+                    if (status) status.textContent = text;
+                }
+
+                function renderEmpty(message) {
+                    grid.innerHTML = '<div class="latest-empty">' + escapeHtml(message) +
+                        '<br>可以先到 <a href="/src/pages/articles.html">文章列表</a> 看看已发布的文章。</div>';
+                    grid.setAttribute('aria-busy', 'false');
+                    setStatus('文章接口暂不可用 · 展示静态引导');
+                }
+
+                function renderCards(items) {
+                    grid.innerHTML = items.map(function (item) {
+                        var id = item && item.id != null ? String(item.id) : '';
+                        var href = id ? '/src/pages/post.html?id=' + encodeURIComponent(id) : '/src/pages/articles.html';
+                        return '<a class="latest-card" href="' + href + '">' +
+                            '<div class="latest-top">' +
+                                '<span class="latest-cat">' + escapeHtml((item && item.category) || '未分类') + '</span>' +
+                                '<span class="latest-date">' + escapeHtml(readDate(item && item.created_at)) + '</span>' +
+                            '</div>' +
+                            '<div class="latest-title">' + escapeHtml((item && item.title) || '未命名文章') + '</div>' +
+                            '<div class="latest-excerpt">' + escapeHtml(excerptOf(item && item.content, 88)) + '</div>' +
+                            '</a>';
+                    }).join('');
+                    grid.setAttribute('aria-busy', 'false');
+                }
+
+                fetch('/api/articles', { headers: { Accept: 'application/json' } })
+                    .then(function (res) { return res.ok ? res.json() : null; })
+                    .then(function (list) {
+                        if (!Array.isArray(list) || !list.length) {
+                            renderEmpty('文章接口里还没有内容。');
+                            return;
+                        }
+                        var items = list.slice(0, MAX_CARDS);
+                        renderCards(items);
+                        setStatus('共 ' + list.length + ' 篇文章 · 这里显示最近 ' + items.length + ' 篇');
+                    })
+                    .catch(function () {
+                        renderEmpty('当前处于离线或静态预览状态。');
+                    });
+            })();
+
+            /* ── 复制（邮箱 / QQ） ─────────────────────────────── */
+            function copyText(text) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    return navigator.clipboard.writeText(text);
+                }
+
+                return new Promise(function (resolve, reject) {
+                    var area = document.createElement('textarea');
+                    area.value = text;
+                    area.setAttribute('readonly', '');
+                    area.style.cssText = 'position:fixed;left:-9999px;top:0';
+                    document.body.appendChild(area);
+                    area.select();
+                    try {
+                        document.execCommand('copy') ? resolve() : reject(new Error('copy failed'));
+                    } catch (err) {
+                        reject(err);
+                    }
+                    document.body.removeChild(area);
+                });
+            }
+
+            Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (el) {
+                var triggerCopy = function () {
+                    var feedback = document.getElementById('fb-' + el.id.replace('copy-', ''));
+                    copyText(el.getAttribute('data-copy')).then(function () {
+                        if (feedback) {
+                            feedback.style.opacity = '1';
+                            setTimeout(function () { feedback.style.opacity = '0'; }, 1400);
+                        }
+                    }).catch(function () { /* 用户拒绝剪贴板权限时静默处理 */ });
+                };
+
+                el.addEventListener('click', triggerCopy);
+                el.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        triggerCopy();
+                    }
+                });
+            });
+
+
+            /* ── 实战记录筛选（无 JS 时保持全部可见） ─────────── */
+            (function initLogFilter() {
+                var toolbar = document.getElementById('log-toolbar');
+                var grid = document.getElementById('log-grid');
+                var count = document.getElementById('log-count');
+                if (!toolbar || !grid) return;
+
+                var buttons = Array.prototype.slice.call(toolbar.querySelectorAll('.log-filter'));
+                var cards = Array.prototype.slice.call(grid.querySelectorAll('.achievement-card'));
+                if (!buttons.length || !cards.length) return;
+
+                function applyFilter(filter) {
+                    var shown = 0;
+                    cards.forEach(function (card) {
+                        var match = filter === 'all' || card.getAttribute('data-cat') === filter;
+                        card.classList.toggle('is-hidden', !match);
+                        if (match) shown++;
+                    });
+                    if (count) {
+                        count.textContent = '显示 ' + shown + ' / ' + cards.length;
+                    }
+                }
+
+                toolbar.addEventListener('click', function (event) {
+                    var btn = event.target.closest('.log-filter');
+                    if (!btn || !toolbar.contains(btn)) return;
+
+                    var filter = btn.getAttribute('data-filter') || 'all';
+                    buttons.forEach(function (item) {
+                        var active = item === btn;
+                        item.classList.toggle('is-active', active);
+                        item.setAttribute('aria-pressed', active ? 'true' : 'false');
+                    });
+                    applyFilter(filter);
+                });
+            })();
+
+            /* ── 页内导航：平滑滚动 + 滚动高亮 ────────────────── */
+            var quickLinks = Array.prototype.slice.call(document.querySelectorAll('.about-quicknav a'));
+            var sections = quickLinks.map(function (link) {
+                return document.querySelector(link.getAttribute('href'));
+            }).filter(Boolean);
+
+            quickLinks.forEach(function (link) {
+                link.addEventListener('click', function (event) {
+                    var target = document.querySelector(link.getAttribute('href'));
+                    if (!target) return;
+                    event.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (window.history && history.replaceState) {
+                        history.replaceState(null, '', link.getAttribute('href'));
+                    }
+                });
+            });
+
+            if ('IntersectionObserver' in window && sections.length) {
+                var spy = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (!entry.isIntersecting) return;
+                        quickLinks.forEach(function (link) {
+                            var isCurrent = link.getAttribute('href') === '#' + entry.target.id;
+                            link.classList.toggle('is-active', isCurrent);
+                            if (isCurrent) {
+                                link.setAttribute('aria-current', 'true');
+                            } else {
+                                link.removeAttribute('aria-current');
+                            }
+                        });
+                    });
+                }, { rootMargin: '-40% 0px -52% 0px', threshold: 0 });
+
+                sections.forEach(function (section) { spy.observe(section); });
+            }
+        });
+    </script>
+</body>
+
+</html>

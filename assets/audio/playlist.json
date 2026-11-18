@@ -1,0 +1,16 @@
+{
+  "title": "YANMO RADIO",
+  "note": "把音频文件放到 /assets/audio/ 目录，然后在这里登记：src 是相对站点根目录的路径（也可写 https 外链）。tracks 为空时音乐盒只提供内置「雨声」环境音。",
+  "tracks": [
+    {
+      "title": "Lumina Drift",
+      "artist": "内置示例音轨",
+      "src": "/assets/audio/demo-lumina-drift.wav"
+    },
+    {
+      "title": "Terminal Rain",
+      "artist": "内置示例音轨",
+      "src": "/assets/audio/demo-terminal-rain.wav"
+    }
+  ]
+}

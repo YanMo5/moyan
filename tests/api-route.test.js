@@ -96,6 +96,51 @@ describe('POST /api/login', () => {
         expect(cookie).toMatch(/yanmo_admin_session=/);
         expect(cookie).toMatch(/HttpOnly/);
         expect(cookie).toMatch(/SameSite=Lax/);
+        expect(res._headers['x-content-type-options']).toBe('nosniff');
+        expect(res._headers['cache-control']).toContain('no-store');
+    });
+
+    it('returns the same generic error for wrong username and wrong password', async () => {
+        const wrongUsernameReq = makeReq({
+            method: 'POST',
+            path: '/login',
+            body: { username: 'nobody', password: 'wrong' }
+        });
+        const wrongUsernameRes = makeRes();
+        await handler(wrongUsernameReq, wrongUsernameRes);
+
+        const wrongPasswordReq = makeReq({
+            method: 'POST',
+            path: '/login',
+            body: { username: 'testadmin', password: 'wrong' }
+        });
+        const wrongPasswordRes = makeRes();
+        await handler(wrongPasswordReq, wrongPasswordRes);
+
+        expect(wrongUsernameRes._status).toBe(401);
+        expect(wrongPasswordRes._status).toBe(401);
+        expect(wrongUsernameRes._body.message).toBe(wrongPasswordRes._body.message);
+    });
+
+    it('rejects malformed CSRF tokens with 403 instead of crashing', async () => {
+        const loginReq = makeReq({
+            method: 'POST',
+            path: '/login',
+            body: { username: 'testadmin', password: 'TestPass123!' }
+        });
+        const loginRes = makeRes();
+        await handler(loginReq, loginRes);
+        const cookie = loginRes._headers['set-cookie'].split(';')[0];
+
+        const req = makeReq({
+            method: 'POST',
+            path: '/change-password',
+            headers: { cookie, 'x-csrf-token': 'short' },
+            body: { new_password: 'ValidPass123!' }
+        });
+        const res = makeRes();
+        await handler(req, res);
+        expect(res._status).toBe(403);
     });
 
     it('H-01: session cookie includes Secure flag in cloud mode', async () => {
@@ -272,5 +317,7 @@ describe('Rate limiting on login', () => {
         const res = makeRes();
         await handler(req, res);
         expect(res._status).toBe(429);
+        expect(res._headers['retry-after']).toBeTruthy();
+        expect(res._body.retry_after_seconds).toBeGreaterThan(0);
     });
 });

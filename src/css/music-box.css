@@ -1,0 +1,452 @@
+/* ============================================================
+   music-box.css — 站点音乐盒
+   ------------------------------------------------------------
+   组件由 js/music-box.js 注入：左下角悬浮按钮 + 展开式迷你播放器。
+   这里只用旧主题变量（--theme-* / --text-color / --primary-color-*），
+   因此「赛博」皮肤下呈现原生终端观感；「Lumina」皮肤的细化样式
+   放在 css/theme-lumina.css §24，以 html[data-skin="lumina"] 提升权重。
+   ============================================================ */
+
+.music-box {
+    position: fixed;
+    left: clamp(16px, 3vw, 30px);
+    bottom: clamp(84px, 12vh, 108px);
+    z-index: 997;
+    font-family: var(--font-mono, 'Roboto Mono', monospace);
+    color: var(--text-color);
+}
+
+/* ── 悬浮按钮 ───────────────────────────────────────────────── */
+
+.music-fab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border: 1px solid var(--theme-border);
+    border-radius: 50%;
+    background: var(--theme-surface);
+    color: var(--primary-color);
+    box-shadow: var(--theme-glow);
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.music-fab:hover,
+.music-fab:focus-visible {
+    border-color: var(--theme-border-hover);
+    box-shadow: var(--theme-glow-strong);
+    transform: translateY(-2px);
+}
+
+.music-fab .mb-disc {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: 0.82rem;
+    line-height: 1;
+    transition: transform 0.6s linear;
+}
+
+.music-box.is-playing .music-fab .mb-disc {
+    animation: mb-spin 3.6s linear infinite;
+}
+
+@keyframes mb-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 播放中：按钮右上角呼吸点 */
+.music-box.is-playing .music-fab::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--theme-success, #00ff00);
+    box-shadow: 0 0 8px var(--theme-success, #00ff00);
+    animation: mb-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes mb-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.45; transform: scale(0.7); }
+}
+
+/* ── 面板 ───────────────────────────────────────────────────── */
+
+.mb-panel {
+    position: absolute;
+    left: 0;
+    bottom: calc(100% + 12px);
+    display: none;
+    width: min(320px, calc(100vw - 32px));
+    padding: 0.85rem 0.9rem 0.7rem;
+    border: 1px solid var(--theme-border);
+    border-radius: 14px;
+    background: rgba(var(--bg-color-r), var(--bg-color-g), var(--bg-color-b), 0.96);
+    box-shadow: var(--theme-glow-strong, 0 18px 40px -20px rgba(0, 0, 0, 0.8));
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+}
+
+.music-box.is-open .mb-panel {
+    display: block;
+    animation: mb-slide-in 0.22s ease both;
+}
+
+@keyframes mb-slide-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.mb-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid var(--theme-border);
+}
+
+.mb-brand {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--primary-color);
+    text-transform: uppercase;
+}
+
+.mb-close {
+    padding: 0 0.3rem;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    opacity: 0.66;
+    cursor: pointer;
+}
+
+.mb-close:hover,
+.mb-close:focus-visible {
+    opacity: 1;
+    background: rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.12);
+}
+
+.mb-now {
+    padding: 0.6rem 0 0.35rem;
+    min-height: 2.6rem;
+}
+
+.mb-now-title {
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mb-now-sub {
+    margin-top: 0.18rem;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    color: var(--text-color);
+    opacity: 0.62;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── 进度 / 时间 ────────────────────────────────────────────── */
+
+.mb-progress-wrap {
+    padding: 0.1rem 0 0.35rem;
+}
+
+.mb-progress,
+.mb-volume {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    margin: 0.35rem 0;
+    border-radius: 999px;
+    background:
+        linear-gradient(to right,
+            var(--primary-color) 0%,
+            var(--primary-color) var(--mb-fill, 0%),
+            rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.2) var(--mb-fill, 0%),
+            rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.2) 100%);
+    cursor: pointer;
+}
+
+.mb-progress::-webkit-slider-thumb,
+.mb-volume::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border: none;
+    border-radius: 50%;
+    background: var(--primary-color);
+}
+
+.mb-progress::-moz-range-thumb,
+.mb-volume::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: none;
+    border-radius: 50%;
+    background: var(--primary-color);
+}
+
+.mb-progress:focus-visible,
+.mb-volume:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 3px;
+}
+
+.mb-time {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.64rem;
+    letter-spacing: 0.06em;
+    opacity: 0.6;
+}
+
+/* ── 控制按钮 ───────────────────────────────────────────────── */
+
+.mb-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.35rem 0 0.5rem;
+}
+
+.mb-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid var(--theme-border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-color);
+    font-size: 0.82rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.mb-btn:hover,
+.mb-btn:focus-visible {
+    border-color: var(--theme-border-hover);
+    color: var(--primary-color);
+}
+
+.mb-play {
+    width: 42px;
+    height: 42px;
+    border-color: var(--primary-color);
+    background: rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.14);
+    color: var(--primary-color);
+    font-size: 0.9rem;
+}
+
+.mb-play:hover,
+.mb-play:focus-visible {
+    background: rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.26);
+    color: var(--primary-color);
+}
+
+/* ── 模式行 / 音量行 ────────────────────────────────────────── */
+
+.mb-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding-bottom: 0.3rem;
+}
+
+.mb-chip {
+    flex: 1 1 0;
+    padding: 0.3rem 0.35rem;
+    border: 1px solid var(--theme-border);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.mb-chip:hover,
+.mb-chip:focus-visible {
+    border-color: var(--theme-border-hover);
+}
+
+.mb-chip[aria-pressed="true"] {
+    border-color: var(--primary-color);
+    background: rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.18);
+    color: var(--primary-color);
+}
+
+.mb-vol-row {
+    gap: 0.55rem;
+    padding-bottom: 0.45rem;
+}
+
+.mb-vol-row .mb-btn {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    font-size: 0.72rem;
+}
+
+.mb-volume {
+    flex: 1 1 auto;
+    margin: 0;
+}
+
+/* ── 提示 / 播放列表 ────────────────────────────────────────── */
+
+.mb-hint {
+    font-size: 0.66rem;
+    line-height: 1.5;
+    color: var(--theme-warning, #ffaa00);
+    padding-bottom: 0.3rem;
+}
+
+.mb-hint:empty {
+    display: none;
+}
+
+.mb-list {
+    max-height: 148px;
+    margin: 0;
+    padding: 0.3rem 0 0;
+    list-style: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-top: 1px solid var(--theme-border);
+}
+
+.mb-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.mb-list::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.3);
+}
+
+.mb-track {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    width: 100%;
+    padding: 0.34rem 0.4rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.72rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.mb-track:hover,
+.mb-track:focus-visible {
+    background: rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.12);
+}
+
+.mb-track[aria-current="true"] {
+    color: var(--primary-color);
+    background: rgba(var(--primary-color-r), var(--primary-color-g), var(--primary-color-b), 0.16);
+}
+
+.mb-track-index {
+    flex: 0 0 auto;
+    font-size: 0.62rem;
+    opacity: 0.55;
+}
+
+.mb-track-title {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mb-track-artist {
+    flex: 0 0 auto;
+    max-width: 40%;
+    font-size: 0.62rem;
+    opacity: 0.6;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mb-empty {
+    padding: 0.5rem 0.4rem;
+    font-size: 0.68rem;
+    line-height: 1.6;
+    opacity: 0.7;
+}
+
+/* ── 小屏 ───────────────────────────────────────────────────── */
+
+@media (max-width: 560px) {
+    .music-box {
+        left: 16px;
+        bottom: 84px;
+    }
+
+    .music-fab {
+        width: 42px;
+        height: 42px;
+    }
+
+    .mb-panel {
+        width: calc(100vw - 32px);
+        max-width: 300px;
+    }
+
+    .mb-list {
+        max-height: 120px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .music-box.is-playing .music-fab .mb-disc,
+    .music-box.is-playing .music-fab::after,
+    .music-box.is-open .mb-panel {
+        animation: none;
+    }
+}
+
+@media print {
+    .music-box {
+        display: none !important;
+    }
+}

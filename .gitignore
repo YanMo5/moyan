@@ -1,12 +1,15 @@
 # Dependencies
 node_modules/
 */node_modules/
+.venv/
+venv/
 
 # Databases (SQLite)
 *.db
 *.sqlite
 *.sqlite3
 server/blog.db
+data/*.db
 
 # Logs
 *.log
@@ -18,16 +21,38 @@ debug.log
 *.tmp
 *.bak
 
-# Test artifacts (keep test source, ignore test dbs)
+# Temporary debug / screenshot artifacts
+tmp-*
+tmp_*
+.server.*.log
+
+# Python / pytest caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Test artifacts (keep test source, ignore generated test dbs / credentials)
 tests/*.db
+tests/*.db-journal
+tests/*.db-wal
+tests/*.db-shm
+tests/test_*_credentials.json
+tests/test_*_password.txt
+tests/no-env-for-tests.env
 
 # Temporary test page
-pages/test.html
+src/pages/test.html
 
 # Environment
 .env
 .env.local
 .env.*.local
+
+# Runtime credentials and generated state
+data/admin-credentials.json
+data/admin-password.txt
+data/cloud-data.json
+data/views.txt
 
 # OS files
 .DS_Store
@@ -41,3 +66,9 @@ Thumbs.db
 # Build output
 dist/
 .cache/
+
+# Generated browser/test artifacts
+tmp-verify-*.png
+tmp-verify-*.jpg
+test-results/
+playwright-report/

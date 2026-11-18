@@ -1,21 +1,27 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const mailer = require('../lib/mailer.cjs');
 
 let Pool = null;
 
 const SESSION_COOKIE_NAME = 'yanmo_admin_session';
 const CSRF_HEADER_NAME = 'x-csrf-token';
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
-const PASSWORD_HASH_ITERATIONS = 210000;
-const LOGIN_WINDOW_MS = 10 * 60 * 1000;
-const LOGIN_MAX_ATTEMPTS = 5;
-const LOGIN_LOCK_MS = 15 * 60 * 1000;
+const SESSION_TTL_MS = parseEnvInt('SESSION_TTL_MS', 12 * 60 * 60 * 1000, 5 * 60 * 1000, 7 * 24 * 60 * 60 * 1000);
+const PASSWORD_HASH_ITERATIONS = parseEnvInt('PASSWORD_HASH_ITERATIONS', 600000, 100000, 2000000);
+const LOGIN_WINDOW_MS = parseEnvInt('LOGIN_WINDOW_MS', 10 * 60 * 1000, 60 * 1000, 60 * 60 * 1000);
+const LOGIN_MAX_ATTEMPTS = parseEnvInt('LOGIN_MAX_ATTEMPTS', 5, 3, 20);
+const LOGIN_LOCK_MS = parseEnvInt('LOGIN_LOCK_MS', 15 * 60 * 1000, 60 * 1000, 24 * 60 * 60 * 1000);
+const MAX_LOGIN_USERNAME_LENGTH = 64;
+const MAX_LOGIN_PASSWORD_LENGTH = 256;
+const MIN_ADMIN_PASSWORD_LENGTH = 10;
+const MAX_ADMIN_PASSWORD_LENGTH = 128;
 
 const rootDir = path.join(__dirname, '..');
-const dataFile = path.join(rootDir, 'cloud_data.json');
-const adminPasswordFile = path.join(rootDir, 'admin_password.txt');
-const adminCredentialsFile = path.join(rootDir, 'admin_credentials.json');
+const dataDir = path.join(rootDir, 'data');
+const dataFile = path.join(dataDir, 'cloud-data.json');
+const adminPasswordFile = path.join(dataDir, 'admin-password.txt');
+const adminCredentialsFile = path.join(dataDir, 'admin-credentials.json');
 
 let memoryData = null;
 let memoryCredentials = null;
@@ -23,6 +29,20 @@ let dataStorageMode = 'memory';
 const loginFailures = new Map();
 let dbPool = null;
 let dbSchemaReady = false;
+let envCredentialsCache = null;
+let envCredentialsCacheKey = '';
+
+function parseEnvInt(name, fallback, min, max) {
+    const raw = process.env[name];
+    if (raw === undefined || raw === '') {
+        return fallback;
+    }
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) {
+        return fallback;
+    }
+    return Math.min(max, Math.max(min, Math.floor(parsed)));
+}
 
 function now() {
     return new Date().toISOString().slice(0, 19).replace('T', ' ');
@@ -30,6 +50,16 @@ function now() {
 
 function toSafeText(value) {
     return String(value || '').trim();
+}
+
+/** 常量时间比较，避免通过响应时间推断用户名 / 签名 / CSRF Token。 */
+function safeCompareStrings(left, right) {
+    const a = Buffer.from(String(left == null ? '' : left));
+    const b = Buffer.from(String(right == null ? '' : right));
+    if (a.length !== b.length) {
+        return false;
+    }
+    return crypto.timingSafeEqual(a, b);
 }
 
 function isValidHttpUrl(value) {
@@ -415,12 +445,69 @@ function getEnvCredentials() {
     const envUsername = toSafeText(process.env.ADMIN_USERNAME);
     const envPassword = toSafeText(process.env.ADMIN_PASSWORD);
     if (!envUsername || !envPassword) {
+        envCredentialsCache = null;
+        envCredentialsCacheKey = '';
         return null;
     }
-    return {
+
+    // 环境变量凭据也缓存哈希结果，避免每次登录/鉴权都重复执行 PBKDF2。
+    const cacheKey = `${envUsername}\u0000${envPassword}`;
+    if (envCredentialsCache && envCredentialsCacheKey === cacheKey) {
+        return envCredentialsCache;
+    }
+    envCredentialsCache = {
         username: envUsername,
-        ...hashPassword(envPassword)
+        ...hashPassword(envPassword),
+        // 环境变量密码在冷启动后会生成新的随机盐，用确定性的指纹保证已签名 Cookie 跨实例仍可校验。
+        credential_version: crypto.createHash('sha256')
+            .update(`${envUsername}\u0000${envPassword}`)
+            .digest('hex')
+            .slice(0, 16)
     };
+    envCredentialsCacheKey = cacheKey;
+    return envCredentialsCache;
+}
+
+/** 凭据指纹写入签名 Cookie；改密/改账号后旧 Token 自动失效。 */
+function getCredentialVersion(credentials) {
+    if (credentials && credentials.credential_version) {
+        return String(credentials.credential_version);
+    }
+    return crypto.createHash('sha256')
+        .update(`${String(credentials.username || '')}\u0000${String(credentials.password_hash || '')}\u0000${Number(credentials.password_iterations || 0)}`)
+        .digest('hex')
+        .slice(0, 16);
+}
+
+/**
+ * 管理员新密码强度校验。
+ * 返回空字符串表示通过，否则返回可直接展示给用户的中文提示。
+ */
+function validateAdminPasswordStrength(password, username) {
+    const value = String(password || '');
+    const normalizedUsername = String(username || '').trim().toLowerCase();
+    if (value.length < MIN_ADMIN_PASSWORD_LENGTH) {
+        return `新密码至少需要 ${MIN_ADMIN_PASSWORD_LENGTH} 位`;
+    }
+    if (value.length > MAX_ADMIN_PASSWORD_LENGTH) {
+        return `新密码不能超过 ${MAX_ADMIN_PASSWORD_LENGTH} 位`;
+    }
+    if (value.toLowerCase() === 'admin') {
+        return '不能使用默认密码';
+    }
+    if (normalizedUsername && value.toLowerCase() === normalizedUsername) {
+        return '新密码不能与管理员账号相同';
+    }
+    const classes = [
+        /[a-z]/,
+        /[A-Z]/,
+        /\d/,
+        /[^A-Za-z0-9]/
+    ].filter(pattern => pattern.test(value)).length;
+    if (classes < 3) {
+        return '新密码需包含大写字母、小写字母、数字、符号中的至少三类';
+    }
+    return '';
 }
 
 // C-01 fix: local-mode detection is based solely on the runtime environment,
@@ -491,7 +578,11 @@ function readLegacyAdminPassword() {
         if (!fs.existsSync(adminPasswordFile)) {
             return 'admin';
         }
-        return toSafeText(fs.readFileSync(adminPasswordFile, 'utf8')) || 'admin';
+        const legacyPassword = toSafeText(fs.readFileSync(adminPasswordFile, 'utf8'));
+        if (!legacyPassword || legacyPassword === 'managed_by_hash_credentials') {
+            return 'admin';
+        }
+        return legacyPassword;
     } catch (error) {
         return 'admin';
     }
@@ -508,7 +599,12 @@ function saveAdminCredentials(username, passwordRecord) {
     memoryCredentials = payload;
 
     try {
-        fs.writeFileSync(adminCredentialsFile, JSON.stringify(payload), 'utf8');
+        fs.writeFileSync(adminCredentialsFile, JSON.stringify(payload), { encoding: 'utf8', mode: 0o600 });
+        try {
+            fs.chmodSync(adminCredentialsFile, 0o600);
+        } catch (chmodError) {
+            // Windows / read-only filesystems may not support chmod.
+        }
         fs.writeFileSync(adminPasswordFile, 'managed_by_hash_credentials', 'utf8');
     } catch (error) {
         // Cloud/serverless environments may be read-only. Keep credentials in memory.
@@ -527,15 +623,10 @@ function getAdminCredentials() {
         return memoryCredentials;
     }
 
-    const defaultCredentials = {
-        username: 'admin',
-        ...hashPassword(readLegacyAdminPassword())
-    };
-
     try {
         if (fs.existsSync(adminCredentialsFile)) {
             const parsed = JSON.parse(fs.readFileSync(adminCredentialsFile, 'utf8'));
-            const username = toSafeText(parsed && parsed.username) || defaultCredentials.username;
+            const username = toSafeText(parsed && parsed.username) || 'admin';
             const passwordSalt = toSafeText(parsed && parsed.password_salt);
             const passwordHash = toSafeText(parsed && parsed.password_hash);
             const passwordIterations = Number(parsed && parsed.password_iterations) || PASSWORD_HASH_ITERATIONS;
@@ -557,6 +648,10 @@ function getAdminCredentials() {
         // Ignore parse/read errors and fall back to defaults.
     }
 
+    const defaultCredentials = {
+        username: 'admin',
+        ...hashPassword(readLegacyAdminPassword())
+    };
     return saveAdminCredentials(defaultCredentials.username, defaultCredentials);
 }
 
@@ -571,7 +666,11 @@ function parseCookies(req) {
         }
         const key = pair.slice(0, index).trim();
         const value = pair.slice(index + 1).trim();
-        out[key] = decodeURIComponent(value);
+        try {
+            out[key] = decodeURIComponent(value);
+        } catch (error) {
+            out[key] = value;
+        }
     });
     return out;
 }
@@ -598,9 +697,11 @@ function signToken(content) {
     return crypto.createHmac('sha256', sessionSecret()).update(content).digest('hex');
 }
 
-function createSessionToken(username) {
+function createSessionToken(username, credentialVersion) {
     const payload = {
         u: String(username),
+        v: String(credentialVersion || ''),
+        iat: Date.now(),
         exp: Date.now() + SESSION_TTL_MS,
         csrf: crypto.randomBytes(24).toString('hex')
     };
@@ -622,13 +723,22 @@ function verifySessionToken(token) {
     }
 
     const [encoded, signature] = parts;
-    if (signToken(encoded) !== signature) {
+    if (!safeCompareStrings(signToken(encoded), signature)) {
         return null;
     }
 
     try {
         const payload = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
         if (!payload || Number(payload.exp || 0) <= Date.now()) {
+            return null;
+        }
+
+        // 签名有效还不够：Token 必须仍对应当前凭据，改密/改账号后旧 Token 立即失效。
+        const credentials = getAdminCredentials();
+        if (!payload.u || !safeCompareStrings(payload.u, credentials.username)) {
+            return null;
+        }
+        if (!payload.v || !safeCompareStrings(payload.v, getCredentialVersion(credentials))) {
             return null;
         }
         return payload;
@@ -665,7 +775,7 @@ function requireAdmin(req, res) {
 function requireAdminCsrf(req, res, session) {
     const provided = toSafeText(req.headers[CSRF_HEADER_NAME]);
     const expected = toSafeText(session && session.csrf);
-    if (!expected || !provided || provided !== expected) {
+    if (!expected || !provided || !safeCompareStrings(provided, expected)) {
         res.status(403).json({ error: 'CSRF token 无效或缺失' });
         return false;
     }
@@ -742,6 +852,13 @@ module.exports = async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    if (!IS_LOCAL_MODE) {
+        res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    }
 
     const method = String(req.method || 'GET').toUpperCase();
     const routePath = getRoutePath(req);
@@ -880,22 +997,40 @@ module.exports = async function handler(req, res) {
 
         const lockRemaining = checkLoginLock(clientIp);
         if (lockRemaining > 0) {
+            writeAuditLog(data, 'admin_login', 'blocked', clientIp, toSafeText(body.username), `retry_after=${lockRemaining}`);
+            await saveData(data);
+            res.setHeader('Retry-After', String(lockRemaining));
             return res.status(429).json({
                 success: false,
-                message: `Too many attempts. Retry after ${lockRemaining}s.`
+                message: `Too many attempts. Retry after ${lockRemaining}s.`,
+                retry_after_seconds: lockRemaining
             });
         }
 
         const username = toSafeText(body.username);
         const password = String(body.password || '');
-        const credentials = getAdminCredentials();
+        const fieldsValid = username.length > 0
+            && username.length <= MAX_LOGIN_USERNAME_LENGTH
+            && password.length > 0
+            && password.length <= MAX_LOGIN_PASSWORD_LENGTH;
 
-        const valid = username === credentials.username && verifyPassword(
+        if (!fieldsValid) {
+            recordLoginFailure(clientIp);
+            writeAuditLog(data, 'admin_login', 'failed', clientIp, username, 'invalid_field_length');
+            await saveData(data);
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        let credentials = getAdminCredentials();
+        // 用户名与密码都做常量时间比较；密码校验不因用户名错误而短路。
+        const usernameMatches = safeCompareStrings(username, credentials.username);
+        const passwordMatches = verifyPassword(
             password,
             credentials.password_salt,
             credentials.password_hash,
             credentials.password_iterations
         );
+        const valid = usernameMatches && passwordMatches;
 
         if (!valid) {
             recordLoginFailure(clientIp);
@@ -906,7 +1041,12 @@ module.exports = async function handler(req, res) {
 
         clearLoginFailures(clientIp);
 
-        const sessionInfo = createSessionToken(credentials.username);
+        // 旧凭据使用较低迭代次数时，趁登录成功透明升级哈希强度（环境变量凭据除外）。
+        if (!credentials.credential_version && Number(credentials.password_iterations || 0) < PASSWORD_HASH_ITERATIONS) {
+            credentials = saveAdminCredentials(credentials.username, hashPassword(password));
+        }
+
+        const sessionInfo = createSessionToken(credentials.username, getCredentialVersion(credentials));
         setSessionCookie(res, sessionInfo.token);
         writeAuditLog(data, 'admin_login', 'success', clientIp, credentials.username, 'login_success');
         await saveData(data);
@@ -964,6 +1104,21 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ success: false, message: 'No updates were provided' });
         }
 
+        if (newUsername && newUsername.length > MAX_LOGIN_USERNAME_LENGTH) {
+            writeAuditLog(data, 'credentials_change', 'failed', clientIp, session.u, 'username_too_long');
+            await saveData(data);
+            return res.status(400).json({ success: false, message: `管理员账号不能超过 ${MAX_LOGIN_USERNAME_LENGTH} 位` });
+        }
+
+        if (newPassword) {
+            const strengthError = validateAdminPasswordStrength(newPassword, newUsername || credentials.username);
+            if (strengthError) {
+                writeAuditLog(data, 'credentials_change', 'failed', clientIp, session.u, 'weak_password');
+                await saveData(data);
+                return res.status(400).json({ success: false, message: strengthError });
+            }
+        }
+
         const finalUsername = newUsername || credentials.username;
         const finalPassword = newPassword ? hashPassword(newPassword) : {
             password_salt: credentials.password_salt,
@@ -972,9 +1127,17 @@ module.exports = async function handler(req, res) {
         };
 
         const saved = saveAdminCredentials(finalUsername, finalPassword);
+        // 旧签名 Cookie 因凭据指纹变化而失效；立即给当前浏览器签发新 Token，避免改密后被登出。
+        const sessionInfo = createSessionToken(saved.username, getCredentialVersion(saved));
+        setSessionCookie(res, sessionInfo.token);
         writeAuditLog(data, 'credentials_change', 'success', clientIp, session.u, `username=${saved.username}`);
         await saveData(data);
-        return res.status(200).json({ success: true, message: 'Credentials updated successfully', username: saved.username });
+        return res.status(200).json({
+            success: true,
+            message: 'Credentials updated successfully',
+            username: saved.username,
+            csrf_token: sessionInfo.csrf
+        });
     }
 
     if (routePath === '/reset-admin-credentials' && method === 'POST') {
@@ -1008,6 +1171,7 @@ module.exports = async function handler(req, res) {
         }
 
         saveAdminCredentials('admin', hashPassword('admin'));
+        clearSessionCookie(res);
         writeAuditLog(data, 'credentials_reset', 'success', clientIp, session.u, 'reset_to_default');
         await saveData(data);
         return res.status(200).json({ success: true, message: 'Credentials reset to default', username: 'admin' });
@@ -1022,17 +1186,48 @@ module.exports = async function handler(req, res) {
         if (!name || !email || !subject || !message) {
             return res.status(400).json({ error: '请完整填写联系表单' });
         }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ error: '邮箱格式不正确' });
+        }
 
-        data.contact_messages.unshift({
+        const inserted = {
             id: nextId(data.contact_messages),
             name,
             email,
             subject,
             message,
             created_at: now()
-        });
+        };
+        data.contact_messages.unshift(inserted);
         await saveData(data);
-        return res.status(201).json({ success: true, message: '消息已发送' });
+
+        const forwarded = String((req.headers && req.headers['x-forwarded-for']) || '').split(',')[0].trim();
+        const mailResult = await mailer.sendContactNotification({
+            name,
+            email,
+            subject,
+            message,
+            received_at: inserted.created_at,
+            client_ip: forwarded
+        });
+
+        return res.status(201).json({
+            success: true,
+            id: inserted.id,
+            mailed: mailResult.ok === true,
+            mail_reason: mailResult.ok ? null : (mailResult.reason || 'send_failed'),
+            message: mailResult.ok
+                ? '消息已发送到站长邮箱，感谢您的来信！'
+                : '留言已保存到站内，但站点的邮件通知暂未开启。'
+        });
+    }
+
+    if (routePath === '/mail-status' && method === 'GET') {
+        const session = requireAdmin(req, res);
+        if (!session) {
+            return;
+        }
+        return res.status(200).json(mailer.getStatus());
     }
 
     if (routePath === '/contact' && method === 'GET') {

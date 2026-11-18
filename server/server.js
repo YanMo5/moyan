@@ -6,30 +6,135 @@ const fs = require('fs');
 const crypto = require('crypto');
 const rssPoller = require('./rss-poller');
 
+/**
+ * 轻量 .env 加载（无第三方依赖）。
+ * 本地开发时从项目根目录 .env 读取 SMTP_* 等配置；已存在的真实环境变量优先。
+ */
+function loadEnvFile(filePath) {
+    try {
+        if (!fs.existsSync(filePath)) return;
+        const raw = fs.readFileSync(filePath, 'utf8');
+        raw.split(/\r?\n/).forEach((line) => {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) return;
+            const eq = trimmed.indexOf('=');
+            if (eq <= 0) return;
+            const key = trimmed.slice(0, eq).trim();
+            let value = trimmed.slice(eq + 1).trim();
+            if (
+                (value.startsWith('"') && value.endsWith('"')) ||
+                (value.startsWith("'") && value.endsWith("'"))
+            ) {
+                value = value.slice(1, -1);
+            }
+            if (key && process.env[key] === undefined) {
+                process.env[key] = value;
+            }
+        });
+        console.log('[env] 已加载 ' + filePath);
+    } catch (error) {
+        console.warn('[env] 读取 .env 失败：' + error.message);
+    }
+}
+
+loadEnvFile(process.env.ENV_FILE || path.join(__dirname, '..', '.env'));
+
+const mailer = require('../lib/mailer.cjs');
+
 const app = express();
 const port = parseInt(process.env.PORT || '3000', 10);
+
+/**
+ * 只有显式开启 TRUST_PROXY 时才信任 X-Forwarded-For。
+ * 否则攻击者可以伪造该头，为每次请求换一个“IP”，从而绕过登录限流。
+ */
+const TRUST_PROXY = isTruthyEnv(process.env.TRUST_PROXY);
+const SESSION_COOKIE_SECURE = isTruthyEnv(process.env.SESSION_COOKIE_SECURE) || process.env.NODE_ENV === 'production';
+app.set('trust proxy', TRUST_PROXY);
+app.disable('x-powered-by');
+
+const AUTH_NO_STORE_PATHS = new Set([
+    '/api/login',
+    '/api/logout',
+    '/api/change-password',
+    '/api/reset-admin-credentials'
+]);
 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
+    res.header('X-Content-Type-Options', 'nosniff');
+    res.header('X-Frame-Options', 'SAMEORIGIN');
+    res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    if (SESSION_COOKIE_SECURE) {
+        res.header('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    }
+    // 认证/管理响应绝不缓存，避免共享设备或代理缓存泄露 CSRF token、审计日志等敏感信息。
+    const requestPath = String(req.path || '').toLowerCase().replace(/\/+$/, '') || '/';
+    const needsNoStore = AUTH_NO_STORE_PATHS.has(requestPath)
+        || requestPath.startsWith('/api/admin')
+        || requestPath === '/api/mail-status';
+    if (needsNoStore) {
+        res.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        res.header('Pragma', 'no-cache');
+        res.header('Expires', '0');
+    }
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
     next();
 });
+
 const rootDir = path.join(__dirname, '..');
-const adminPasswordFile = process.env.ADMIN_PASSWORD_FILE || path.join(rootDir, 'admin_password.txt');
-const adminCredentialsFile = process.env.ADMIN_CREDENTIALS_FILE || path.join(rootDir, 'admin_credentials.json');
+const adminPasswordFile = process.env.ADMIN_PASSWORD_FILE || path.join(rootDir, 'data', 'admin-password.txt');
+const adminCredentialsFile = process.env.ADMIN_CREDENTIALS_FILE || path.join(rootDir, 'data', 'admin-credentials.json');
 const SESSION_COOKIE_NAME = 'yanmo_admin_session';
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const SESSION_TTL_MS = parseEnvInt('SESSION_TTL_MS', 12 * 60 * 60 * 1000, 5 * 60 * 1000, 7 * 24 * 60 * 60 * 1000);
+const SESSION_IDLE_TTL_MS = parseEnvInt('SESSION_IDLE_TTL_MS', 2 * 60 * 60 * 1000, 5 * 60 * 1000, SESSION_TTL_MS);
 const CSRF_HEADER_NAME = 'x-csrf-token';
-const PASSWORD_HASH_ITERATIONS = 210000;
-const LOGIN_WINDOW_MS = 10 * 60 * 1000;
-const LOGIN_MAX_ATTEMPTS = 5;
-const LOGIN_LOCK_MS = 15 * 60 * 1000;
+const PASSWORD_HASH_ITERATIONS = parseEnvInt('PASSWORD_HASH_ITERATIONS', 600000, 100000, 2000000);
+const LOGIN_WINDOW_MS = parseEnvInt('LOGIN_WINDOW_MS', 10 * 60 * 1000, 60 * 1000, 60 * 60 * 1000);
+const LOGIN_MAX_ATTEMPTS = parseEnvInt('LOGIN_MAX_ATTEMPTS', 5, 3, 20);
+const LOGIN_LOCK_MS = parseEnvInt('LOGIN_LOCK_MS', 15 * 60 * 1000, 60 * 1000, 24 * 60 * 60 * 1000);
+const MAX_LOGIN_USERNAME_LENGTH = 64;
+const MAX_LOGIN_PASSWORD_LENGTH = 256;
+const MIN_ADMIN_PASSWORD_LENGTH = 10;
+const MAX_ADMIN_PASSWORD_LENGTH = 128;
 const adminSessions = new Map();
 const loginFailures = new Map();
+
+function isTruthyEnv(value) {
+    return ['1', 'true', 'yes', 'on'].includes(String(value || '').trim().toLowerCase());
+}
+
+function parseEnvInt(name, fallback, min, max) {
+    const raw = process.env[name];
+    if (raw === undefined || raw === '') {
+        return fallback;
+    }
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed)) {
+        return fallback;
+    }
+    return Math.min(max, Math.max(min, Math.floor(parsed)));
+}
+
+/** 常量时间比较，避免通过响应时间判断用户名/Token 的前缀。 */
+function safeCompareStrings(left, right) {
+    const a = Buffer.from(String(left == null ? '' : left));
+    const b = Buffer.from(String(right == null ? '' : right));
+    if (a.length !== b.length) {
+        return false;
+    }
+    return crypto.timingSafeEqual(a, b);
+}
+
+function buildSessionCookie(value, maxAgeSeconds) {
+    return `${SESSION_COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax` +
+        `${SESSION_COOKIE_SECURE ? '; Secure' : ''}; Max-Age=${maxAgeSeconds}`;
+}
 
 function isValidHttpUrl(value) {
     try {
@@ -40,13 +145,68 @@ function isValidHttpUrl(value) {
     }
 }
 
+function isSessionExpired(sessionData, at = Date.now()) {
+    if (!sessionData) {
+        return true;
+    }
+    if (Number(sessionData.expiresAt || 0) <= at) {
+        return true;
+    }
+    const lastSeenAt = Number(sessionData.lastSeenAt || sessionData.createdAt || 0);
+    return lastSeenAt > 0 && at - lastSeenAt > SESSION_IDLE_TTL_MS;
+}
+
 function cleanupExpiredSessions() {
     const now = Date.now();
     for (const [sid, sessionData] of adminSessions.entries()) {
-        if (!sessionData || Number(sessionData.expiresAt || 0) <= now) {
+        if (isSessionExpired(sessionData, now)) {
             adminSessions.delete(sid);
         }
     }
+}
+
+/** 改密后让其他已登录会话立即失效，避免旧 Cookie 长期可用。 */
+function invalidateOtherAdminSessions(currentSid) {
+    for (const sid of Array.from(adminSessions.keys())) {
+        if (sid !== currentSid) {
+            adminSessions.delete(sid);
+        }
+    }
+}
+
+function invalidateAllAdminSessions() {
+    adminSessions.clear();
+}
+
+/**
+ * 管理员新密码强度校验。
+ * 返回空字符串表示通过，否则返回可直接展示给用户的中文提示。
+ */
+function validateAdminPasswordStrength(password, username) {
+    const value = String(password || '');
+    const normalizedUsername = String(username || '').trim().toLowerCase();
+    if (value.length < MIN_ADMIN_PASSWORD_LENGTH) {
+        return `新密码至少需要 ${MIN_ADMIN_PASSWORD_LENGTH} 位`;
+    }
+    if (value.length > MAX_ADMIN_PASSWORD_LENGTH) {
+        return `新密码不能超过 ${MAX_ADMIN_PASSWORD_LENGTH} 位`;
+    }
+    if (value.toLowerCase() === 'admin') {
+        return '不能使用默认密码';
+    }
+    if (normalizedUsername && value.toLowerCase() === normalizedUsername) {
+        return '新密码不能与管理员账号相同';
+    }
+    const classes = [
+        /[a-z]/,
+        /[A-Z]/,
+        /\d/,
+        /[^A-Za-z0-9]/
+    ].filter(pattern => pattern.test(value)).length;
+    if (classes < 3) {
+        return '新密码需包含大写字母、小写字母、数字、符号中的至少三类';
+    }
+    return '';
 }
 
 function hashPassword(password, saltHex, iterations = PASSWORD_HASH_ITERATIONS) {
@@ -85,18 +245,26 @@ function parseCookies(req) {
         }
         const key = pair.slice(0, eqIdx).trim();
         const value = pair.slice(eqIdx + 1).trim();
-        parsed[key] = decodeURIComponent(value);
+        try {
+            parsed[key] = decodeURIComponent(value);
+        } catch (error) {
+            parsed[key] = value;
+        }
     }
     return parsed;
 }
 
-function createAdminSession() {
+function createAdminSession(username) {
     cleanupExpiredSessions();
+    const now = Date.now();
     const sid = crypto.randomBytes(24).toString('hex');
     const csrfToken = crypto.randomBytes(24).toString('hex');
     adminSessions.set(sid, {
-        expiresAt: Date.now() + SESSION_TTL_MS,
-        csrfToken: csrfToken
+        createdAt: now,
+        lastSeenAt: now,
+        expiresAt: now + SESSION_TTL_MS,
+        csrfToken: csrfToken,
+        username: String(username || '')
     });
     return { sid, csrfToken };
 }
@@ -114,14 +282,28 @@ function requireAdmin(req, res, next) {
     const cookies = parseCookies(req);
     const sid = cookies[SESSION_COOKIE_NAME];
     if (!sid) {
+        writeAdminAuditLog({
+            action: 'admin_auth_required',
+            status: 'denied',
+            clientIp: getClientIdentifier(req),
+            detail: 'missing_or_expired_session'
+        });
         return res.status(401).json({ error: '请先登录管理员账户' });
     }
     const sessionData = adminSessions.get(sid);
-    if (!sessionData || Number(sessionData.expiresAt || 0) <= Date.now()) {
+    if (isSessionExpired(sessionData)) {
         adminSessions.delete(sid);
+        writeAdminAuditLog({
+            action: 'admin_auth_required',
+            status: 'denied',
+            clientIp: getClientIdentifier(req),
+            detail: 'missing_or_expired_session'
+        });
         return res.status(401).json({ error: '请先登录管理员账户' });
     }
 
+    // 滑动续期：每次请求刷新空闲计时，但绝对过期时间保持不变。
+    sessionData.lastSeenAt = Date.now();
     req.adminSession = sessionData;
     req.adminSessionId = sid;
     return next();
@@ -134,7 +316,17 @@ function requireAdminCsrf(req, res, next) {
 
     const provided = String(req.headers[CSRF_HEADER_NAME] || '').trim();
     const expected = String(req.adminSession.csrfToken || '').trim();
-    if (!provided || !expected || !crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected))) {
+    const tokenMatches = provided.length > 0
+        && expected.length > 0
+        && safeCompareStrings(provided, expected);
+    if (!tokenMatches) {
+        writeAdminAuditLog({
+            action: 'csrf_check',
+            status: 'denied',
+            username: req.adminSession.username,
+            clientIp: getClientIdentifier(req),
+            detail: 'invalid_or_missing_token'
+        });
         return res.status(403).json({ error: 'CSRF token 无效或缺失' });
     }
 
@@ -142,11 +334,12 @@ function requireAdminCsrf(req, res, next) {
 }
 
 function getClientIdentifier(req) {
-    const forwarded = String(req.headers['x-forwarded-for'] || '').trim();
+    // 仅当显式信任反向代理时才读取转发头，避免伪造 X-Forwarded-For 绕过限流。
+    const forwarded = TRUST_PROXY ? String(req.headers['x-forwarded-for'] || '').trim() : '';
     if (forwarded) {
         return forwarded.split(',')[0].trim() || 'unknown';
     }
-    return String(req.ip || req.socket.remoteAddress || 'unknown');
+    return String(req.ip || (req.socket && req.socket.remoteAddress) || 'unknown');
 }
 
 function clearLoginFailures(clientId) {
@@ -191,7 +384,10 @@ function readLegacyAdminPassword() {
     }
 
     const legacyPassword = fs.readFileSync(adminPasswordFile, 'utf8').trim();
-    return legacyPassword || 'admin';
+    if (!legacyPassword || legacyPassword === 'managed_by_hash_credentials') {
+        return 'admin';
+    }
+    return legacyPassword;
 }
 
 function saveAdminCredentials(username, password) {
@@ -201,20 +397,20 @@ function saveAdminCredentials(username, password) {
         password_hash: String(password.password_hash || ''),
         password_iterations: Number(password.password_iterations || PASSWORD_HASH_ITERATIONS)
     };
-    fs.writeFileSync(adminCredentialsFile, JSON.stringify(payload), 'utf8');
+    fs.writeFileSync(adminCredentialsFile, JSON.stringify(payload), { encoding: 'utf8', mode: 0o600 });
+    try {
+        fs.chmodSync(adminCredentialsFile, 0o600);
+    } catch (error) {
+        // Windows / read-only filesystems may not support chmod.
+    }
     fs.writeFileSync(adminPasswordFile, 'managed_by_hash_credentials', 'utf8');
 }
 
 function getAdminCredentials() {
-    const defaultCredentials = {
-        username: 'admin',
-        ...hashPassword(readLegacyAdminPassword())
-    };
-
     if (fs.existsSync(adminCredentialsFile)) {
         try {
             const parsed = JSON.parse(fs.readFileSync(adminCredentialsFile, 'utf8'));
-            const username = String((parsed && parsed.username) || '').trim() || defaultCredentials.username;
+            const username = String((parsed && parsed.username) || '').trim() || 'admin';
             const passwordSalt = String((parsed && parsed.password_salt) || '').trim();
             const passwordHash = String((parsed && parsed.password_hash) || '').trim();
             const passwordIterations = Number((parsed && parsed.password_iterations) || PASSWORD_HASH_ITERATIONS);
@@ -237,6 +433,11 @@ function getAdminCredentials() {
         }
     }
 
+    // 仅在确实需要回退时计算默认凭据的哈希，避免每次登录都做一次无用的 PBKDF2。
+    const defaultCredentials = {
+        username: 'admin',
+        ...hashPassword(readLegacyAdminPassword())
+    };
     saveAdminCredentials(defaultCredentials.username, defaultCredentials);
     return defaultCredentials;
 }
@@ -244,11 +445,60 @@ function getAdminCredentials() {
 // 配置中间件
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, '..', 'pages')));
-app.use(express.static(path.join(__dirname, '..')));
+// 站点入口：加载页（原根目录 index.html 已归入 src/pages/）
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'src', 'pages', 'loading.html'));
+});
+
+// 旧地址兼容：/index.html 与已移除的根目录跳转壳，301 到规范页面
+const legacyPageRedirects = {
+    '/index.html': '/src/pages/index.html',
+    '/admin.html': '/src/pages/admin.html',
+    '/admin-dashboard.html': '/src/pages/admin-dashboard.html',
+    '/link-apply.html': '/src/pages/link-apply.html'
+};
+app.get(Object.keys(legacyPageRedirects), (req, res) => {
+    res.redirect(301, legacyPageRedirects[req.path]);
+});
+
+// 旧地址兼容：/pages/* 重定向到 /src/pages/*（页面已统一收纳到 src/）
+app.use('/pages', (req, res) => {
+    const suffix = req.originalUrl.replace(/^\/pages/, '');
+    res.redirect(301, '/src/pages' + suffix);
+});
+
+// 站点根目录即仓库根目录，但静态资源只暴露前端目录：
+//   /src/pages/**  业务页面（同时通过根级页面静态目录提供 /admin.html 等短地址）
+//   /src/css/**    样式
+//   /src/js/**     前端脚本
+//   /assets/**     图片 / 音频 / 第三方库
+// 绝不能把仓库根目录整体 static 暴露，否则 /data/admin-credentials.json、/server/server.js 等会被直接下载。
+app.use(express.static(path.join(__dirname, '..', 'src', 'pages')));
+app.use('/src', express.static(path.join(__dirname, '..', 'src')));
+app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
+
+/*
+ * 文章详情：一个标题一个页面 —— /post/<id>
+ * 模板仍是 src/pages/post.html（前端从路径里取 id），
+ * 同时保留旧的 /post.html?id=<id> 地址以兼容外链。
+ */
+app.get(['/post/:key', '/post/:key/'], (req, res) => {
+    const key = String(req.params.key || '');
+    // 只接受数字 id。像 /post/about.html 这种（旧版相对链接残留、手输错误）
+    // 一律回文章列表，避免"点首页却还是文章页"的错乱。
+    if (!/^\d+$/.test(key)) {
+        return res.redirect(302, '/src/pages/articles.html');
+    }
+    res.sendFile(path.join(__dirname, '..', 'src', 'pages', 'post.html'));
+});
+
+// 只有 /post 没有编号时，回到文章列表
+app.get('/post', (req, res) => {
+    res.redirect('/src/pages/articles.html');
+});
 
 // 连接数据库
-const dbPath = process.env.DB_PATH || path.join(__dirname, 'blog.db');
+const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'blog.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database:', err.message);
@@ -308,6 +558,18 @@ const db = new sqlite3.Database(dbPath, (err) => {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
+
+            db.run(`
+                CREATE TABLE IF NOT EXISTS admin_audit_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    username TEXT DEFAULT '',
+                    client_ip TEXT DEFAULT '',
+                    detail TEXT DEFAULT '',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
             
             // 插入示例文章数据
             db.get('SELECT COUNT(*) as count FROM articles', [], (err, row) => {
@@ -357,6 +619,41 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
+function parsePositiveInt(value, fallback, minValue, maxValue) {
+    const parsed = Number.parseInt(String(value), 10);
+    if (!Number.isFinite(parsed)) {
+        return fallback;
+    }
+    return Math.min(maxValue, Math.max(minValue, parsed));
+}
+
+function writeAdminAuditLog({ action, status, username = '', clientIp = '', detail = '' }) {
+    db.run(
+        'INSERT INTO admin_audit_logs (action, status, username, client_ip, detail) VALUES (?, ?, ?, ?, ?)',
+        [
+            String(action || '').slice(0, 120),
+            String(status || '').slice(0, 20),
+            String(username || '').slice(0, 80),
+            String(clientIp || '').slice(0, 80),
+            String(detail || '').slice(0, 500)
+        ],
+        (err) => {
+            if (err) {
+                console.error('[audit]', err.message);
+            }
+        }
+    );
+}
+
+function csvEscape(value) {
+    let text = value === null || value === undefined ? '' : String(value);
+    // 防止 Excel / 表格软件把用户可控字段当成公式执行
+    if (/^[=+\-@\t\r]/.test(text)) {
+        text = "'" + text;
+    }
+    return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
 // 处理留言提交
 app.post('/api/messages', (req, res) => {
     const { name, email, message, subject } = req.body;
@@ -377,29 +674,59 @@ app.post('/api/messages', (req, res) => {
 });
 
 // 处理“联系我”页面提交（带 subject 主题字段）
+// 流程：先落库 → 再尝试 SMTP 通知站长 → 如实告知前端是否真的发出去了
 app.post('/api/contact', (req, res) => {
-    const { name, email, subject, message } = req.body;
+    const body = req.body || {};
+    const name = String(body.name || '').trim();
+    const email = String(body.email || '').trim();
+    const subject = String(body.subject || '').trim();
+    const message = String(body.message || '').trim();
+
     if (!name || !email || !message) {
-        return res.status(400).json({ error: 'All fields are required' });
+        return res.status(400).json({ success: false, error: '请完整填写姓名、邮箱和留言内容' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ success: false, error: '邮箱格式不正确' });
+    }
+    if (message.length > 8000) {
+        return res.status(400).json({ success: false, error: '留言内容过长，请控制在 8000 字以内' });
     }
 
     db.run(
         'INSERT INTO messages (name, email, subject, message) VALUES (?, ?, ?, ?)',
-        [name, email, subject || '', message],
-        function(err) {
+        [name, email, subject, message],
+        async function(err) {
             if (err) {
-                console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
+                console.error('[500]', err.message); return res.status(500).json({ success: false, error: 'Internal server error' });
             }
-            res.status(201).json({
-                id: this.lastID,
+
+            const insertedId = this.lastID;
+            const mailResult = await mailer.sendContactNotification({
                 name,
                 email,
-                subject: subject || '',
+                subject,
                 message,
-                message: '消息已收到，感谢您的来信！'
+                received_at: new Date().toISOString(),
+                client_ip: getClientIdentifier(req)
+            });
+
+            return res.status(201).json({
+                success: true,
+                id: insertedId,
+                mailed: mailResult.ok === true,
+                mail_reason: mailResult.ok ? null : (mailResult.reason || 'send_failed'),
+                message: mailResult.ok
+                    ? '消息已发送到站长邮箱，感谢您的来信！'
+                    : '留言已保存到站内，但站点的邮件通知暂未开启。'
             });
         }
     );
+});
+
+// 邮件通道自检（仅管理员）：快速确认 SMTP 是否配好、能否连上
+app.get('/api/mail-status', requireAdmin, async (req, res) => {
+    const status = mailer.getStatus();
+    res.status(200).json(status);
 });
 
 // 处理友链申请
@@ -511,6 +838,13 @@ app.put('/api/links/:id', requireAdmin, requireAdminCsrf, (req, res) => {
             [status, safeCategory, id],
             function(err) {
                 if (err) { console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' }); }
+                writeAdminAuditLog({
+                    action: 'link_status_update',
+                    status: 'success',
+                    username: req.adminSession.username,
+                    clientIp: getClientIdentifier(req),
+                    detail: `link_id=${id},status=${status}`
+                });
                 res.json({ id, status, category: safeCategory });
             }
         );
@@ -520,6 +854,13 @@ app.put('/api/links/:id', requireAdmin, requireAdminCsrf, (req, res) => {
             [status, id],
             function(err) {
                 if (err) { console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' }); }
+                writeAdminAuditLog({
+                    action: 'link_status_update',
+                    status: 'success',
+                    username: req.adminSession.username,
+                    clientIp: getClientIdentifier(req),
+                    detail: `link_id=${id},status=${status}`
+                });
                 res.json({ id, status });
             }
         );
@@ -537,6 +878,13 @@ app.delete('/api/messages/:id', requireAdmin, requireAdminCsrf, (req, res) => {
             if (err) {
                 console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
             }
+            writeAdminAuditLog({
+                action: 'message_delete',
+                status: 'success',
+                username: req.adminSession.username,
+                clientIp: getClientIdentifier(req),
+                detail: `message_id=${id}`
+            });
             res.json({ id, deleted: true });
         }
     );
@@ -553,6 +901,13 @@ app.delete('/api/links/:id', requireAdmin, requireAdminCsrf, (req, res) => {
             if (err) {
                 console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
             }
+            writeAdminAuditLog({
+                action: 'link_delete',
+                status: 'success',
+                username: req.adminSession.username,
+                clientIp: getClientIdentifier(req),
+                detail: `link_id=${id}`
+            });
             res.json({ id, deleted: true });
         }
     );
@@ -598,6 +953,13 @@ app.post('/api/articles', requireAdmin, requireAdminCsrf, (req, res) => {
             if (err) {
                 console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
             }
+            writeAdminAuditLog({
+                action: 'article_create',
+                status: 'success',
+                username: req.adminSession.username,
+                clientIp: getClientIdentifier(req),
+                detail: `article_id=${this.lastID}`
+            });
             res.status(201).json({ id: this.lastID, title, content, category });
         }
     );
@@ -619,6 +981,13 @@ app.put('/api/articles/:id', requireAdmin, requireAdminCsrf, (req, res) => {
             if (err) {
                 console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
             }
+            writeAdminAuditLog({
+                action: 'article_update',
+                status: 'success',
+                username: req.adminSession.username,
+                clientIp: getClientIdentifier(req),
+                detail: `article_id=${id}`
+            });
             res.json({ id, title, content, category });
         }
     );
@@ -632,6 +1001,13 @@ app.delete('/api/articles/:id', requireAdmin, requireAdminCsrf, (req, res) => {
         if (err) {
             console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
         }
+        writeAdminAuditLog({
+            action: 'article_delete',
+            status: 'success',
+            username: req.adminSession.username,
+            clientIp: getClientIdentifier(req),
+            detail: `article_id=${id}`
+        });
         res.json({ id, deleted: true });
     });
 });
@@ -663,14 +1039,125 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
+// 审计日志：分页 + 按动作/状态/关键词筛选（仅管理员）
+app.get('/api/admin-audit-logs', requireAdmin, (req, res) => {
+    const actionFilter = String(req.query.action || '').trim();
+    const statusFilter = String(req.query.status || '').trim();
+    const keyword = String(req.query.keyword || '').trim();
+    const page = parsePositiveInt(req.query.page, 1, 1, 100000);
+    const pageSize = parsePositiveInt(req.query.page_size, 20, 1, 100);
+
+    const whereClauses = [];
+    const whereValues = [];
+    if (actionFilter) {
+        whereClauses.push('action = ?');
+        whereValues.push(actionFilter);
+    }
+    if (statusFilter) {
+        whereClauses.push('status = ?');
+        whereValues.push(statusFilter);
+    }
+    if (keyword) {
+        whereClauses.push('(username LIKE ? OR client_ip LIKE ? OR detail LIKE ? OR action LIKE ? OR status LIKE ?)');
+        const likeValue = `%${keyword}%`;
+        whereValues.push(likeValue, likeValue, likeValue, likeValue, likeValue);
+    }
+    const whereSql = whereClauses.length ? ` WHERE ${whereClauses.join(' AND ')}` : '';
+
+    db.get(`SELECT COUNT(*) AS total FROM admin_audit_logs${whereSql}`, whereValues, (countErr, countRow) => {
+        if (countErr) {
+            console.error('[500]', countErr.message);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+
+        const total = Number(countRow && countRow.total) || 0;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const safePage = Math.min(page, totalPages);
+        const offset = (safePage - 1) * pageSize;
+        db.all(
+            `SELECT id, action, status, username, client_ip, detail, created_at
+             FROM admin_audit_logs${whereSql}
+             ORDER BY id DESC LIMIT ? OFFSET ?`,
+            [...whereValues, pageSize, offset],
+            (queryErr, rows) => {
+                if (queryErr) {
+                    console.error('[500]', queryErr.message);
+                    return res.status(500).json({ error: 'Internal server error' });
+                }
+                res.json({
+                    items: rows || [],
+                    page: safePage,
+                    page_size: pageSize,
+                    total,
+                    total_pages: totalPages
+                });
+            }
+        );
+    });
+});
+
+// 审计日志 CSV 导出（仅管理员，最多 1000 条，UTF-8 BOM 方便 Excel 打开）
+app.get('/api/admin-audit-logs/export', requireAdmin, (req, res) => {
+    const actionFilter = String(req.query.action || '').trim();
+    const statusFilter = String(req.query.status || '').trim();
+    const keyword = String(req.query.keyword || '').trim();
+
+    const whereClauses = [];
+    const whereValues = [];
+    if (actionFilter) {
+        whereClauses.push('action = ?');
+        whereValues.push(actionFilter);
+    }
+    if (statusFilter) {
+        whereClauses.push('status = ?');
+        whereValues.push(statusFilter);
+    }
+    if (keyword) {
+        whereClauses.push('(username LIKE ? OR client_ip LIKE ? OR detail LIKE ? OR action LIKE ? OR status LIKE ?)');
+        const likeValue = `%${keyword}%`;
+        whereValues.push(likeValue, likeValue, likeValue, likeValue, likeValue);
+    }
+    const whereSql = whereClauses.length ? ` WHERE ${whereClauses.join(' AND ')}` : '';
+
+    db.all(
+        `SELECT id, action, status, username, client_ip, detail, created_at
+         FROM admin_audit_logs${whereSql}
+         ORDER BY id DESC LIMIT 1000`,
+        whereValues,
+        (err, rows) => {
+            if (err) {
+                console.error('[500]', err.message);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+
+            const header = ['id', 'action', 'status', 'username', 'client_ip', 'detail', 'created_at'];
+            const lines = [header.map(csvEscape).join(',')];
+            (rows || []).forEach(row => {
+                lines.push(header.map(key => csvEscape(row[key])).join(','));
+            });
+
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', 'attachment; filename="admin-audit-logs.csv"');
+            res.send('\uFEFF' + lines.join('\r\n') + '\r\n');
+        }
+    );
+});
+
 // 管理员登录
 app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    const credentials = getAdminCredentials();
+    const body = req.body || {};
     const clientId = getClientIdentifier(req);
 
     const retryAfter = checkLoginLock(clientId);
     if (retryAfter > 0) {
+        writeAdminAuditLog({
+            action: 'admin_login',
+            status: 'blocked',
+            username: String(body.username || ''),
+            clientIp: clientId,
+            detail: `retry_after=${retryAfter}`
+        });
+        res.setHeader('Retry-After', String(retryAfter));
         return res.status(429).json({
             success: false,
             message: '登录失败次数过多，请稍后再试',
@@ -678,21 +1165,56 @@ app.post('/api/login', (req, res) => {
         });
     }
 
-    const isValid = (
-        String(username || '') === credentials.username
-        && verifyPassword(
-            String(password || ''),
-            credentials.password_salt,
-            credentials.password_hash,
-            credentials.password_iterations
-        )
+    const username = String(body.username || '').trim();
+    const password = String(body.password || '');
+    const fieldsValid = username.length > 0
+        && username.length <= MAX_LOGIN_USERNAME_LENGTH
+        && password.length > 0
+        && password.length <= MAX_LOGIN_PASSWORD_LENGTH;
+
+    if (!fieldsValid) {
+        recordLoginFailure(clientId);
+        writeAdminAuditLog({
+            action: 'admin_login',
+            status: 'failed',
+            username,
+            clientIp: clientId,
+            detail: 'invalid_field_length'
+        });
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    const credentials = getAdminCredentials();
+    // 用户名与密码都做常量时间比较；密码校验不因用户名错误而短路，
+    // 避免攻击者通过响应耗时判断管理员账号是否存在。
+    const usernameMatches = safeCompareStrings(username, credentials.username);
+    const passwordMatches = verifyPassword(
+        password,
+        credentials.password_salt,
+        credentials.password_hash,
+        credentials.password_iterations
     );
+    const isValid = usernameMatches && passwordMatches;
 
     if (isValid) {
         clearLoginFailures(clientId);
-        const sessionInfo = createAdminSession();
-        const securePart = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-        res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionInfo.sid)}; Path=/; HttpOnly; SameSite=Lax${securePart}; Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`);
+        // 旧凭据使用较低迭代次数时，趁登录成功透明升级哈希强度。
+        if (Number(credentials.password_iterations || 0) < PASSWORD_HASH_ITERATIONS) {
+            try {
+                saveAdminCredentials(credentials.username, hashPassword(password));
+            } catch (error) {
+                console.warn('[auth] 凭据哈希升级失败：' + error.message);
+            }
+        }
+        const sessionInfo = createAdminSession(credentials.username);
+        res.setHeader('Set-Cookie', buildSessionCookie(sessionInfo.sid, Math.floor(SESSION_TTL_MS / 1000)));
+        writeAdminAuditLog({
+            action: 'admin_login',
+            status: 'success',
+            username: credentials.username,
+            clientIp: clientId,
+            detail: 'login_ok'
+        });
         res.json({
             success: true,
             message: 'Login successful',
@@ -701,12 +1223,20 @@ app.post('/api/login', (req, res) => {
         });
     } else {
         recordLoginFailure(clientId);
+        writeAdminAuditLog({
+            action: 'admin_login',
+            status: 'failed',
+            username,
+            clientIp: clientId,
+            detail: 'invalid_credentials'
+        });
         res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 });
 
 app.post('/api/change-password', requireAdmin, requireAdminCsrf, (req, res) => {
-    const { current_password: currentPassword, new_username: rawNewUsername, new_password: rawNewPassword } = req.body;
+    const body = req.body || {};
+    const { current_password: currentPassword, new_username: rawNewUsername, new_password: rawNewPassword } = body;
     const credentials = getAdminCredentials();
 
     if (!verifyPassword(
@@ -715,6 +1245,13 @@ app.post('/api/change-password', requireAdmin, requireAdminCsrf, (req, res) => {
         credentials.password_hash,
         credentials.password_iterations
     )) {
+        writeAdminAuditLog({
+            action: 'credentials_change',
+            status: 'failed',
+            username: req.adminSession.username,
+            clientIp: getClientIdentifier(req),
+            detail: 'current_password_incorrect'
+        });
         return res.status(401).json({ success: false, message: 'Current password is incorrect' });
     }
 
@@ -723,6 +1260,31 @@ app.post('/api/change-password', requireAdmin, requireAdminCsrf, (req, res) => {
 
     if (!newUsername && !newPassword) {
         return res.status(400).json({ success: false, message: 'No updates were provided' });
+    }
+
+    if (newUsername && newUsername.length > MAX_LOGIN_USERNAME_LENGTH) {
+        writeAdminAuditLog({
+            action: 'credentials_change',
+            status: 'failed',
+            username: req.adminSession.username,
+            clientIp: getClientIdentifier(req),
+            detail: 'username_too_long'
+        });
+        return res.status(400).json({ success: false, message: `管理员账号不能超过 ${MAX_LOGIN_USERNAME_LENGTH} 位` });
+    }
+
+    if (newPassword) {
+        const strengthError = validateAdminPasswordStrength(newPassword, newUsername || credentials.username);
+        if (strengthError) {
+            writeAdminAuditLog({
+                action: 'credentials_change',
+                status: 'failed',
+                username: req.adminSession.username,
+                clientIp: getClientIdentifier(req),
+                detail: 'weak_password'
+            });
+            return res.status(400).json({ success: false, message: strengthError });
+        }
     }
 
     const finalUsername = newUsername || credentials.username;
@@ -734,13 +1296,38 @@ app.post('/api/change-password', requireAdmin, requireAdminCsrf, (req, res) => {
             password_iterations: credentials.password_iterations
         };
     saveAdminCredentials(finalUsername, finalPassword);
+    // 凭据修改后，其他设备上的旧会话立即失效；当前会话保留并同步新账号名。
+    invalidateOtherAdminSessions(req.adminSessionId);
+    req.adminSession.username = finalUsername;
+    // 轮换 CSRF Token，避免改密前泄露的 Token 继续可用。
+    const newCsrfToken = crypto.randomBytes(24).toString('hex');
+    req.adminSession.csrfToken = newCsrfToken;
+    writeAdminAuditLog({
+        action: 'credentials_change',
+        status: 'success',
+        username: finalUsername,
+        clientIp: getClientIdentifier(req),
+        detail: `new_username=${finalUsername}`
+    });
 
-    return res.json({ success: true, message: 'Credentials updated successfully', username: finalUsername });
+    return res.json({
+        success: true,
+        message: 'Credentials updated successfully',
+        username: finalUsername,
+        csrf_token: newCsrfToken
+    });
 });
 
 app.post('/api/logout', requireAdmin, requireAdminCsrf, (req, res) => {
+    writeAdminAuditLog({
+        action: 'admin_logout',
+        status: 'success',
+        username: req.adminSession.username,
+        clientIp: getClientIdentifier(req),
+        detail: 'logout_ok'
+    });
     clearAdminSession(req);
-    res.setHeader('Set-Cookie', `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`);
+    res.setHeader('Set-Cookie', buildSessionCookie('', 0));
     res.json({ success: true, message: 'Logged out' });
 });
 
@@ -753,15 +1340,38 @@ app.post('/api/reset-admin-credentials', requireAdmin, requireAdminCsrf, (req, r
         remoteAddress.endsWith('127.0.0.1');
 
     if (!isLocal) {
+        writeAdminAuditLog({
+            action: 'credentials_reset',
+            status: 'denied',
+            username: req.adminSession.username,
+            clientIp: getClientIdentifier(req),
+            detail: 'non_local_request'
+        });
         return res.status(403).json({ success: false, message: 'Only localhost is allowed' });
     }
 
     const confirmText = String((req.body && req.body.confirm_text) || '').trim();
     if (confirmText !== 'RESET_ADMIN') {
+        writeAdminAuditLog({
+            action: 'credentials_reset',
+            status: 'failed',
+            username: req.adminSession.username,
+            clientIp: getClientIdentifier(req),
+            detail: 'invalid_confirmation_text'
+        });
         return res.status(400).json({ success: false, message: 'Invalid confirmation text' });
     }
 
     saveAdminCredentials('admin', hashPassword('admin'));
+    invalidateAllAdminSessions();
+    res.setHeader('Set-Cookie', buildSessionCookie('', 0));
+    writeAdminAuditLog({
+        action: 'credentials_reset',
+        status: 'success',
+        username: req.adminSession.username,
+        clientIp: getClientIdentifier(req),
+        detail: 'reset_to_default'
+    });
     return res.json({ success: true, message: 'Credentials reset to default', username: 'admin' });
 });
 

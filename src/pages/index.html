@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+        <script src="/src/js/theme-boot.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YanMo // Cyber Gateway</title>
+    <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
+    <link rel="shortcut icon" href="/assets/images/site-avatar.png">
+    <meta name="description" content="YanMo — Cybersecurity student, CTF learner, web security researcher.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/css/styles.css">
+    <link rel="stylesheet" href="/src/css/beautify.css">
+    <style>
+        /* ── Canvas BG ─────────────────────────────────────── */
+        #cyber-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ── Layout skeleton ────────────────────────────────── */
+        body.cyber-mode { background: var(--bg-color); color: var(--text-color); }
+        body { overflow-x: hidden; }
+        main  { position: relative; z-index: 1; }
+
+        .section-wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 clamp(1rem, 4vw, 2.5rem);
+        }
+
+        /* ── Hero ───────────────────────────────────────────── */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            padding: clamp(5rem, 12vh, 9rem) clamp(1.5rem, 6vw, 4rem);
+            position: relative;
+            z-index: 1;
+        }
+        .hero-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            letter-spacing: 0.25em;
+            color: var(--theme-tertiary);
+            margin-bottom: 1.2rem;
+            opacity: 0.8;
+        }
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.4rem, 6vw, 5rem);
+            font-weight: 700;
+            line-height: 1.08;
+            text-shadow: 0 0 30px rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.45);
+            margin-bottom: 1.6rem;
+        }
+        .hero-slogan-wrap {
+            font-family: var(--font-mono);
+            font-size: clamp(0.85rem, 1.4vw, 1.1rem);
+            color: var(--theme-primary);
+            min-height: 1.8em;
+            margin-bottom: 2.8rem;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        #hero-slogan   { white-space: nowrap; overflow: hidden; }
+        #hero-cursor   { display: inline-block; width: 10px; height: 1.1em; background: var(--theme-primary); opacity: 1; animation: blink-cur 0.75s step-end infinite; vertical-align: text-bottom; }
+        @keyframes blink-cur { 0%,100%{opacity:1} 50%{opacity:0} }
+
+        .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .btn-primary {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            letter-spacing: 0.1em;
+            padding: 0.65rem 1.6rem;
+            border: 1px solid var(--theme-primary);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.07);
+            color: var(--theme-primary);
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, box-shadow 0.2s;
+            display: inline-block;
+        }
+        .btn-primary:hover { background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.18); box-shadow: 0 0 14px rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.35); }
+        .btn-ghost {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            letter-spacing: 0.1em;
+            padding: 0.65rem 1.6rem;
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.25);
+            background: transparent;
+            color: var(--theme-primary);
+            cursor: pointer;
+            text-decoration: none;
+            transition: border-color 0.2s, color 0.2s;
+            display: inline-block;
+        }
+        .btn-ghost:hover { border-color: var(--theme-primary); color: var(--theme-primary); }
+
+        /* ── Section common ─────────────────────────────────── */
+        .cyber-section {
+            padding: clamp(3rem, 8vh, 5.5rem) 0;
+            border-top: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.07);
+        }
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.25em;
+            color: var(--theme-tertiary);
+            opacity: 0.7;
+        }
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1rem, 2.2vw, 1.45rem);
+            font-weight: 700;
+            color: var(--theme-primary);
+        }
+
+        .cyber-badge {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 2px;
+            letter-spacing: 0.08em;
+        }
+        .badge-cyan   { background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.12); color: var(--theme-primary); border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.25); }
+        .badge-green  { background: rgba(0,255,128,0.12); color: var(--theme-tertiary); border: 1px solid rgba(0,255,128,0.25); }
+        .badge-purple { background: rgba(var(--p-secondary-r),var(--p-secondary-g),var(--p-secondary-b),0.12); color: var(--p-secondary); border: 1px solid rgba(var(--p-secondary-r),var(--p-secondary-g),var(--p-secondary-b),0.25); }
+
+        /* ── Cyber Grid layout (3-col) ──────────────────────── */
+        .cyber-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.4rem;
+        }
+        @media (max-width: 900px) { .cyber-grid-3 { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 580px) { .cyber-grid-3 { grid-template-columns: 1fr; } }
+
+        .cyber-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.4rem;
+            max-width: 1200px;
+        }
+        @media (max-width: 720px) { .cyber-grid-2 { grid-template-columns: 1fr; } }
+
+        /* ── GitHub Arsenal ─────────────────────────────────── */
+        .widget-panel {
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.12);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.02);
+            padding: 1.4rem;
+        }
+        .widget-title {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.18em;
+            color: var(--theme-tertiary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.08);
+        }
+        .widget-loading { font-family: var(--font-mono); font-size: 0.75rem; color: var(--theme-primary); opacity: 0.5; }
+
+        #github-arsenal { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+        @media (max-width: 700px) { #github-arsenal { grid-template-columns: 1fr; } }
+
+        .repo-card {
+            display: block;
+            text-decoration: none;
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.1);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.025);
+            padding: 0.9rem;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .repo-card:hover { border-color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.4); background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.07); }
+        .repo-name { font-family: var(--font-mono); font-size: 0.8rem; color: var(--theme-primary); margin-bottom: 0.3rem; }
+        .repo-icon { margin-right: 0.3rem; color: var(--theme-tertiary); }
+        .repo-desc { font-size: 0.72rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.5); margin-bottom: 0.5rem; line-height: 1.5; }
+        .repo-meta { display: flex; gap: 0.7rem; font-family: var(--font-mono); font-size: 0.67rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.45); }
+
+        /* ── Zero-Day Alert Widget ──────────────────────────── */
+        #zeroday-feed { display: flex; flex-direction: column; gap: 0.6rem; }
+        .alert-item {
+            padding: 0.7rem 0.9rem;
+            border-left: 3px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.2);
+            background: rgba(var(--bg-color-r),var(--bg-color-g),var(--bg-color-b),0.2);
+            font-family: var(--font-mono);
+        }
+        .alert-item.sev-crit { border-left-color: #ff4c4c; }
+        .alert-item.sev-high { border-left-color: #ff9900; }
+        .alert-item.sev-med  { border-left-color: #ffdd00; }
+        .alert-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem; }
+        .alert-id    { font-size: 0.75rem; color: var(--theme-primary); }
+        .alert-desc  { font-size: 0.68rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.55); line-height: 1.5; }
+        .sev-badge-crit { color: #ff4c4c; font-size: 0.75rem; font-weight: 700; }
+        .sev-badge-high { color: #ff9900; font-size: 0.75rem; font-weight: 700; }
+        .sev-badge-med  { color: #ffdd00; font-size: 0.75rem; font-weight: 700; }
+
+        /* ── CVE Wall of Fame ───────────────────────────────── */
+        #cve-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 0.8rem; }
+        .cve-entry {
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.1);
+            background: rgba(var(--bg-color-r),var(--bg-color-g),var(--bg-color-b),0.25);
+            padding: 1rem;
+            transition: border-color 0.2s;
+        }
+        .cve-entry:hover { border-color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.4); }
+        .cve-top    { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.25rem; }
+        .cve-name   { font-family: 'Orbitron', sans-serif; font-size: 0.8rem; color: var(--theme-primary); }
+        .score-red    { color: #ff4c4c; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; }
+        .score-orange { color: #ff9900; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; }
+        .score-yellow { color: #ffdd00; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; }
+        .cve-id   { font-family: var(--font-mono); font-size: 0.68rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.4); margin-bottom: 0.4rem; }
+        .cve-note { font-size: 0.72rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.55); line-height: 1.5; }
+
+        /* ── CLI Terminal Overlay ───────────────────────────── */
+        #cli-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.82);
+            z-index: 9000;
+            align-items: center;
+            justify-content: center;
+            -webkit-backdrop-filter: blur(4px);
+            backdrop-filter: blur(4px);
+        }
+        #cli-overlay.active { display: flex; }
+        #cli-terminal {
+            width: min(700px, 96vw);
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.35);
+            background: rgba(var(--bg-color-r),var(--bg-color-g),var(--bg-color-b),0.97);
+            box-shadow: 0 0 60px rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.15);
+            display: flex;
+            flex-direction: column;
+            max-height: 70vh;
+        }
+        .cli-titlebar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.12);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.04);
+        }
+        .cli-titlebar-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.18em;
+            color: var(--theme-tertiary);
+        }
+        #cli-close-btn {
+            background: none;
+            border: 1px solid rgba(255,76,76,0.4);
+            color: #ff4c4c;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            cursor: pointer;
+        }
+        #cli-output {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.9rem 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            line-height: 1.7;
+        }
+        .cli-input-row {
+            display: flex;
+            align-items: center;
+            padding: 0.55rem 1rem;
+            border-top: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.1);
+            gap: 0.5rem;
+        }
+        .cli-ps { font-family: var(--font-mono); font-size: 0.78rem; color: var(--theme-tertiary); white-space: nowrap; }
+        #cli-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--theme-primary);
+            caret-color: var(--theme-primary);
+        }
+        .cli-comment { color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.35); }
+        .cli-key     { color: var(--theme-tertiary); }
+        .cli-val     { color: var(--theme-primary); }
+        .cli-ok      { color: var(--theme-tertiary); }
+        .cli-err     { color: #ff4c4c; }
+        .cli-muted   { color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.4); }
+        .cli-prompt  { color: var(--theme-tertiary); }
+        .cli-line    { margin-bottom: 2px; }
+
+        /* CLI open button in nav */
+        #cli-open-btn {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            padding: 0.3rem 0.9rem;
+            border: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.3);
+            background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.05);
+            color: var(--theme-primary);
+            cursor: pointer;
+            letter-spacing: 0.1em;
+            transition: background 0.2s;
+        }
+        #cli-open-btn:hover { background: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.14); }
+
+        /* ── Scroll reveal ──────────────────────────────────── */
+        .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.55s ease, transform 0.55s ease; }
+        .reveal.visible { opacity: 1; transform: none; }
+
+        /* ── Cyber mode overrides (index-specific) ─────────── */
+        body.cyber-mode {
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+        body.cyber-mode .hero-title { color: var(--theme-primary); text-shadow: 0 0 20px var(--theme-primary); }
+        body.cyber-mode .section-title { color: var(--theme-primary); }
+        body.cyber-mode .cve-name { color: var(--theme-primary); }
+
+        /* ── Layout helpers (replaces inline styles) ────────── */
+        .mt-widget  { margin-top: 1rem; }
+        .section-header--widget { margin-bottom: 0.8rem; }
+        .nvd-source {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.3);
+            margin-top: 0.8rem;
+        }
+        .btn-ghost--sm { font-size: 0.72rem; }
+
+        /* ── Footer ─────────────────────────────────────────── */
+        .site-footer {
+            border-top: 1px solid rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.08);
+            padding: 2rem clamp(1.5rem, 6vw, 4rem);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .footer-copy { font-family: var(--font-mono); font-size: 0.7rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.35); }
+        .footer-links { display: flex; gap: 1.2rem; }
+        .footer-links a { font-family: var(--font-mono); font-size: 0.7rem; color: rgba(var(--primary-color-r),var(--primary-color-g),var(--primary-color-b),0.45); text-decoration: none; }
+        .footer-links a:hover { color: var(--theme-primary); }
+    </style>
+    <link rel="stylesheet" href="/src/css/music-box.css">
+    <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+</head>
+<body>
+    <!-- Canvas Background -->
+    <canvas id="cyber-canvas" aria-hidden="true"></canvas>
+
+    <!-- Nav -->
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
+            </div>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="/src/pages/index.html" class="active"><span class="shimmer"></span>首页</a></li>
+                    <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于我</a></li>
+                    <li><a href="/src/pages/contact.html"><span class="shimmer"></span>联系</a></li>
+                    <li><a href="/src/pages/guestbook.html"><span class="shimmer"></span>留言板</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><button type="button" id="cli-open-btn" title="Ctrl+K">[ TERMINAL ]</button></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- ── Hero ─────────────────────────────────────────── -->
+        <section class="hero" aria-label="Hero">
+            <p class="hero-eyebrow">// YANMO CYBER GATEWAY // INITIALIZING...</p>
+            <h1 class="hero-title glitch-text" data-text="YANMO">YANMO</h1>
+            <div class="hero-slogan-wrap">
+                <span id="hero-slogan"></span><span id="hero-cursor"></span>
+            </div>
+            <div class="hero-actions">
+                <a href="/src/pages/articles.html" class="btn-primary">VIEW_WRITEUPS →</a>
+                <a href="/src/pages/about.html"    class="btn-ghost">WHOAMI</a>
+                <button type="button" id="cli-open-btn-hero" class="btn-ghost">OPEN_TERMINAL [$]</button>
+            </div>
+        </section>
+
+        <!-- ── Arsenal + Zero-Day (2-col) ───────────────────── -->
+        <section class="cyber-section reveal" aria-label="GitHub Arsenal and Zero-Day Feed">
+            <div class="section-wrap">
+                <div class="cyber-grid-2">
+                    <!-- GitHub Arsenal -->
+                    <div class="widget-panel">
+                        <div class="section-header section-header--widget">
+                            <span class="section-label">// 01</span>
+                            <h2 class="section-title">OPEN_SOURCE_ARSENAL</h2>
+                        </div>
+                        <div id="github-arsenal">
+                            <div class="widget-loading">[ FETCHING REPOS... ]</div>
+                        </div>
+                        <div class="mt-widget">
+                            <a href="https://github.com/YanMo5" target="_blank" rel="noopener" class="btn-ghost btn-ghost--sm">GITHUB_PROFILE →</a>
+                        </div>
+                    </div>
+
+                    <!-- Zero-Day Alert Feed -->
+                    <div class="widget-panel">
+                        <div class="section-header section-header--widget">
+                            <span class="section-label">// 02</span>
+                            <h2 class="section-title">ZERO-DAY_ALERT_FEED</h2>
+                        </div>
+                        <div id="zeroday-feed">
+                            <div class="widget-loading">[ QUERYING NVD... ]</div>
+                        </div>
+                        <p class="nvd-source">
+                            SOURCE: NIST NVD API v2 · AUTO-REFRESH
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── CVE Wall of Fame ──────────────────────────────── -->
+        <section class="cyber-section reveal" aria-label="CVE Wall of Fame">
+            <div class="section-wrap">
+                <div class="section-header">
+                    <span class="section-label">// 03</span>
+                    <h2 class="section-title">CVE_HALL_OF_FAME</h2>
+                </div>
+                <div id="cve-wall"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ── CLI Terminal Overlay ──────────────────────────────── -->
+    <div id="cli-overlay" role="dialog" aria-modal="true" aria-label="Terminal navigation">
+        <div id="cli-terminal">
+            <div class="cli-titlebar">
+                <span class="cli-titlebar-label">YANMO_TERMINAL // Ctrl+K · Tab · ↑↓</span>
+                <button type="button" id="cli-close-btn">[X] ESC</button>
+            </div>
+            <div id="cli-output"></div>
+            <div class="cli-input-row">
+                <span class="cli-ps">yanmo@cyber:~$</span>
+                <input id="cli-input" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="type 'help'" aria-label="Terminal input">
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Footer ────────────────────────────────────────────── -->
+    <footer class="site-footer">
+        <span class="footer-copy">© 2025 YanMo // ALL_RIGHTS_RESERVED // EDUCATIONAL_USE_ONLY</span>
+        <nav class="footer-links" aria-label="Footer navigation">
+            <a href="/src/pages/about.html">ABOUT</a>
+            <a href="/src/pages/articles.html">POSTS</a>
+            <a href="/src/pages/contact.html">CONTACT</a>
+            <a href="https://github.com/YanMo5" target="_blank" rel="noopener">GITHUB</a>
+        </nav>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/src/js/utils.js"></script>
+    <script src="/src/js/palette-manager.js"></script>
+    <script src="/src/js/music-box.js" defer></script>
+    <script src="/src/js/ux-enhancements.js"></script>
+    <script src="/src/js/local-api.js"></script>
+    <script src="/src/js/home-page.js"></script>
+    <script>
+        document.getElementById('cli-open-btn-hero')
+            ?.addEventListener('click', () => window.YanMoCLI?.open());
+    </script>
+</body>
+</html>

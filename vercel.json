@@ -46,7 +46,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; form-action 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests;"
+          "value": "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https:; connect-src 'self' https:; form-action 'self'; base-uri 'self'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests;"
         }
       ]
     },
@@ -68,7 +68,7 @@
       ]
     },
     {
-      "source": "/(css|images)/(.*)",
+      "source": "/assets/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -77,7 +77,7 @@
       ]
     },
     {
-      "source": "/js/(.*)",
+      "source": "/src/(css|js)/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -92,8 +92,44 @@
       "dest": "/api/[...route].js"
     },
     {
+      "src": "/(server|data|lib|config|tests|docs)(/.*)?$",
+      "status": 404
+    },
+    {
+      "src": "/(package\\.json|package-lock\\.json|vercel\\.json|README\\.md|LICENSE|\\.env\\.example)$",
+      "status": 404
+    },
+    {
+      "src": "/\\..*",
+      "status": 404
+    },
+    {
+      "src": "/(admin|admin-dashboard|link-apply)\\.html",
+      "dest": "/src/pages/$1.html"
+    },
+    {
+      "src": "/index.html",
+      "dest": "/src/pages/index.html"
+    },
+    {
+      "src": "/",
+      "dest": "/src/pages/loading.html"
+    },
+    {
       "src": "/pages/(.*)",
-      "dest": "/pages/$1"
+      "dest": "/src/pages/$1"
+    },
+    {
+      "src": "/post",
+      "dest": "/src/pages/articles.html"
+    },
+    {
+      "src": "/post/(\\d+)",
+      "dest": "/src/pages/post.html"
+    },
+    {
+      "src": "/post/(.+)",
+      "dest": "/src/pages/articles.html"
     },
     {
       "handle": "filesystem"
@@ -104,7 +140,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/src/pages/loading.html"
     }
   ]
 }
