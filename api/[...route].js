@@ -27,7 +27,7 @@ const ARTICLE_COVER_MAX_BYTES = 240000;
 
 const rootDir = path.join(__dirname, '..');
 const dataDir = path.join(rootDir, 'data');
-const dataFile = path.join(dataDir, 'cloud-data.json');
+const dataFile = path.join(dataDir, 'cloud-data.json');
 const adminPasswordFile = path.join(dataDir, 'admin-password.txt');
 const adminCredentialsFile = path.join(dataDir, 'admin-credentials.json');
 
@@ -94,6 +94,123 @@ function sortByCreatedAtDesc(items) {
     return (items || []).slice().sort((a, b) => {
         return String(b && b.created_at || '').localeCompare(String(a && a.created_at || ''));
     });
+}
+
+const TOOL_TONES = ['blue', 'cyan', 'green', 'orange', 'purple', 'gray'];
+
+function mapToolRow(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        category: row.category,
+        version: row.version,
+        size: row.size,
+        description: row.description,
+        glyph: row.glyph,
+        tone: row.tone,
+        downloadUrl: row.download_url || row.downloadUrl || '',
+        panUrl: row.pan_url || row.panUrl || '',
+        panCode: row.pan_code || row.panCode || '',
+        source: row.source,
+        updatedAt: row.updated_at || row.updatedAt || '',
+        sortOrder: Number(row.sort_order != null ? row.sort_order : row.sortOrder) || 0
+    };
+}
+
+function parseToolPayload(body) {
+    if (!validation.isPlainObject(body)) return { error: '请求格式不正确' };
+    const name = validation.trimmed(body.name, 120);
+    const category = validation.trimmed(body.category, 40);
+    if (!name || !category) return { error: '工具名称和分类不能为空' };
+
+    const readUrl = (value, label) => {
+        const raw = validation.trimmed(value, 2048);
+        if (!raw) return '';
+        const parsed = validation.httpUrl(raw, 2048);
+        if (!parsed) return { error: label + '必须是有效的 http/https 公网地址' };
+        return parsed;
+    };
+    const downloadUrl = readUrl(body.downloadUrl, '官方下载地址');
+    if (downloadUrl && typeof downloadUrl === 'object') return downloadUrl;
+    const panUrl = readUrl(body.panUrl, '网盘地址');
+    if (panUrl && typeof panUrl === 'object') return panUrl;
+
+    const tone = validation.trimmed(body.tone, 20);
+    return {
+        value: {
+            name,
+            category,
+            version: validation.trimmed(body.version, 40),
+            size: validation.trimmed(body.size, 40),
+            description: validation.trimmed(body.description, 600),
+            glyph: validation.trimmed(body.glyph, 4),
+            tone: TOOL_TONES.includes(tone) ? tone : 'blue',
+            downloadUrl,
+            panUrl,
+            panCode: validation.trimmed(body.panCode, 40),
+            source: validation.trimmed(body.source, 40),
+            updatedAt: validation.trimmed(body.updatedAt, 40) || new Date().toISOString().slice(0, 10)
+        }
+    };
+}
+
+function resolveAlbumId(data, rawId) {
+    const parsed = Number(rawId);
+    if (Number.isSafeInteger(parsed) && parsed > 0) {
+        const found = data.daily_albums.find((album) => Number(album.id) === parsed);
+        return found ? found.id : null;
+    }
+    if (!data.daily_albums.length) {
+        data.daily_albums.push({
+            id: nextId(data.daily_albums),
+            title: '默认相册',
+            description: '未分类的日常照片',
+            created_at: now()
+        });
+    }
+    return data.daily_albums[0].id;
+}
+
+function albumWithCounts(data, album) {
+    const photos = (data.daily_posts || []).filter((post) => Number(post.album_id) === Number(album.id));
+    return {
+        ...album,
+        photo_count: photos.length,
+        cover_image: photos.length ? photos[0].image_data : null
+    };
+}
+
+function readToolsSeed() {
+    try {
+        return require('../src/data/tools.json');
+    } catch (error) {
+        return null;
+    }
+}
+
+function loadSeedTools() {
+    try {
+        const parsed = readToolsSeed();
+        const items = parsed && Array.isArray(parsed.tools) ? parsed.tools : [];
+        return items.map((tool, index) => ({
+            id: index + 1,
+            name: toSafeText(tool.name),
+            category: toSafeText(tool.category),
+            version: toSafeText(tool.version),
+            size: toSafeText(tool.size),
+            description: toSafeText(tool.description),
+            glyph: toSafeText(tool.glyph),
+            tone: toSafeText(tool.tone) || 'blue',
+            downloadUrl: toSafeText(tool.downloadUrl),
+            panUrl: toSafeText(tool.panUrl),
+            panCode: toSafeText(tool.panCode),
+            source: toSafeText(tool.source),
+            updatedAt: toSafeText(tool.updatedAt),
+            sortOrder: index
+        }));
+    } catch (error) {
+        return [];
+    }
 }
 
 function baseData() {
@@ -163,6 +280,8 @@ function baseData() {
             }
         ],
         daily_posts: [],
+        daily_albums: [],
+        tools: [],
         contact_messages: [],
         stats: {
             total_views: 1200
@@ -178,6 +297,8 @@ function normalizeData(raw) {
         links: Array.isArray(safe.links) ? safe.links : [],
         articles: Array.isArray(safe.articles) ? safe.articles : [],
         daily_posts: Array.isArray(safe.daily_posts) ? safe.daily_posts : [],
+        daily_albums: Array.isArray(safe.daily_albums) ? safe.daily_albums : [],
+        tools: Array.isArray(safe.tools) ? safe.tools : [],
         contact_messages: Array.isArray(safe.contact_messages) ? safe.contact_messages : [],
         stats: {
             total_views: Number(safe.stats && safe.stats.total_views) || 0
@@ -226,7 +347,38 @@ async function ensureDbSchema(pool) {
             id BIGSERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             email TEXT NOT NULL,
+            subject TEXT DEFAULT '',
             message TEXT NOT NULL,
+            is_read BOOLEAN NOT NULL DEFAULT FALSE,
+            source TEXT DEFAULT 'guestbook',
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        ALTER TABLE messages ADD COLUMN IF NOT EXISTS subject TEXT DEFAULT '';
+        ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_read BOOLEAN NOT NULL DEFAULT FALSE;
+        ALTER TABLE messages ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'guestbook';
+
+        CREATE TABLE IF NOT EXISTS tools (
+            id BIGSERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL DEFAULT '',
+            version TEXT DEFAULT '',
+            size TEXT DEFAULT '',
+            description TEXT DEFAULT '',
+            glyph TEXT DEFAULT '',
+            tone TEXT DEFAULT 'blue',
+            download_url TEXT DEFAULT '',
+            pan_url TEXT DEFAULT '',
+            pan_code TEXT DEFAULT '',
+            source TEXT DEFAULT '',
+            updated_at TEXT DEFAULT '',
+            sort_order INTEGER DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS daily_albums (
+            id BIGSERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT DEFAULT '',
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
 
@@ -255,8 +407,11 @@ async function ensureDbSchema(pool) {
             id BIGSERIAL PRIMARY KEY,
             caption TEXT NOT NULL DEFAULT '',
             image_data TEXT NOT NULL,
+            album_id BIGINT DEFAULT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
+
+        ALTER TABLE daily_posts ADD COLUMN IF NOT EXISTS album_id BIGINT DEFAULT NULL;
 
         CREATE TABLE IF NOT EXISTS contact_messages (
             id BIGSERIAL PRIMARY KEY,
@@ -300,21 +455,47 @@ async function loadData() {
         try {
             await ensureDbSchema(pool);
 
-            const [messagesResult, linksResult, articlesResult, dailyResult, contactMessagesResult, auditLogsResult, statsResult] = await Promise.all([
-                pool.query('SELECT id, name, email, message, created_at FROM messages ORDER BY created_at DESC, id DESC'),
+            let [messagesResult, linksResult, articlesResult, dailyResult, contactMessagesResult, auditLogsResult, statsResult, toolsResult, albumsResult] = await Promise.all([
+                pool.query('SELECT id, name, email, subject, message, is_read, source, created_at FROM messages ORDER BY created_at DESC, id DESC'),
                 pool.query('SELECT id, site_name, site_url, site_description, site_avatar, status, created_at FROM links ORDER BY created_at DESC, id DESC'),
                 pool.query('SELECT id, title, content, category, cover_image, created_at FROM articles ORDER BY created_at DESC, id DESC'),
-                pool.query('SELECT id, caption, image_data, created_at FROM daily_posts ORDER BY created_at DESC, id DESC'),
+                pool.query('SELECT id, caption, image_data, album_id, created_at FROM daily_posts ORDER BY created_at DESC, id DESC'),
                 pool.query('SELECT id, name, email, subject, message, created_at FROM contact_messages ORDER BY created_at DESC, id DESC'),
                 pool.query('SELECT id, action, status, username, client_ip, detail, created_at FROM audit_logs ORDER BY created_at DESC, id DESC'),
-                pool.query('SELECT total_views FROM site_stats WHERE id = 1 LIMIT 1')
+                pool.query('SELECT total_views FROM site_stats WHERE id = 1 LIMIT 1'),
+                pool.query('SELECT * FROM tools ORDER BY sort_order ASC, id ASC'),
+                pool.query('SELECT id, title, description, created_at FROM daily_albums ORDER BY created_at DESC, id DESC')
             ]);
+
+            if (!toolsResult.rows.length) {
+                const seed = readToolsSeed();
+                const seedItems = seed && Array.isArray(seed.tools) ? seed.tools : [];
+                try {
+                    for (let i = 0; i < seedItems.length; i += 1) {
+                        const tool = seedItems[i] || {};
+                        await pool.query(
+                            'INSERT INTO tools (name, category, version, size, description, glyph, tone, download_url, pan_url, pan_code, source, updated_at, sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)',
+                            [
+                                toSafeText(tool.name), toSafeText(tool.category), toSafeText(tool.version), toSafeText(tool.size),
+                                toSafeText(tool.description), toSafeText(tool.glyph), toSafeText(tool.tone) || 'blue',
+                                toSafeText(tool.downloadUrl), toSafeText(tool.panUrl), toSafeText(tool.panCode),
+                                toSafeText(tool.source), toSafeText(tool.updatedAt) || new Date().toISOString().slice(0, 10), i
+                            ]
+                        );
+                    }
+                    toolsResult = await pool.query('SELECT * FROM tools ORDER BY sort_order ASC, id ASC');
+                } catch (seedError) {
+                    // 播种失败不阻断读取
+                }
+            }
 
             const dbData = normalizeData({
                 messages: messagesResult.rows,
                 links: linksResult.rows,
                 articles: articlesResult.rows,
                 daily_posts: dailyResult.rows,
+                daily_albums: albumsResult.rows,
+                tools: toolsResult.rows,
                 contact_messages: contactMessagesResult.rows,
                 audit_logs: auditLogsResult.rows,
                 stats: {
@@ -329,7 +510,9 @@ async function loadData() {
                 dailyResult.rows.length,
                 contactMessagesResult.rows.length,
                 auditLogsResult.rows.length,
-                Number(statsResult.rows[0] && statsResult.rows[0].total_views) || 0
+                Number(statsResult.rows[0] && statsResult.rows[0].total_views) || 0,
+                toolsResult.rows.length,
+                albumsResult.rows.length
             ].some(value => Number(value) > 0);
 
             if (!hasDbRows && fs.existsSync(dataFile)) {
@@ -355,6 +538,7 @@ async function loadData() {
         if (fs.existsSync(dataFile)) {
             const parsed = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
             memoryData = normalizeData(parsed);
+            if (!memoryData.tools.length) memoryData.tools = loadSeedTools();
             dataStorageMode = 'file';
             return memoryData;
         }
@@ -363,6 +547,7 @@ async function loadData() {
     }
 
     memoryData = baseData();
+    if (!memoryData.tools.length) memoryData.tools = loadSeedTools();
     dataStorageMode = 'memory';
     return memoryData;
 }
@@ -377,12 +562,12 @@ async function saveData(data) {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
-            await client.query('TRUNCATE TABLE messages, links, articles, daily_posts, contact_messages, audit_logs, site_stats RESTART IDENTITY');
+            await client.query('TRUNCATE TABLE messages, links, articles, daily_posts, daily_albums, tools, contact_messages, audit_logs, site_stats RESTART IDENTITY');
 
             for (const item of memoryData.messages) {
                 await client.query(
-                    'INSERT INTO messages (id, name, email, message, created_at) VALUES ($1, $2, $3, $4, $5)',
-                    [Number(item.id) || null, item.name, item.email, item.message, item.created_at]
+                    'INSERT INTO messages (id, name, email, subject, message, is_read, source, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+                    [Number(item.id) || null, item.name, item.email, item.subject || '', item.message, item.is_read === true, item.source || 'guestbook', item.created_at]
                 );
             }
 
@@ -402,8 +587,22 @@ async function saveData(data) {
 
             for (const item of memoryData.daily_posts) {
                 await client.query(
-                    'INSERT INTO daily_posts (id, caption, image_data, created_at) VALUES ($1, $2, $3, $4)',
-                    [Number(item.id) || null, item.caption || '', item.image_data, item.created_at]
+                    'INSERT INTO daily_posts (id, caption, image_data, album_id, created_at) VALUES ($1, $2, $3, $4, $5)',
+                    [Number(item.id) || null, item.caption || '', item.image_data, item.album_id == null ? null : Number(item.album_id), item.created_at]
+                );
+            }
+
+            for (const item of memoryData.daily_albums) {
+                await client.query(
+                    'INSERT INTO daily_albums (id, title, description, created_at) VALUES ($1, $2, $3, $4)',
+                    [Number(item.id) || null, item.title, item.description || '', item.created_at || new Date().toISOString()]
+                );
+            }
+
+            for (const item of memoryData.tools) {
+                await client.query(
+                    'INSERT INTO tools (id, name, category, version, size, description, glyph, tone, download_url, pan_url, pan_code, source, updated_at, sort_order) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)',
+                    [Number(item.id) || null, item.name, item.category || '', item.version || '', item.size || '', item.description || '', item.glyph || '', item.tone || 'blue', item.downloadUrl || item.download_url || '', item.panUrl || item.pan_url || '', item.panCode || item.pan_code || '', item.source || '', item.updatedAt || item.updated_at || '', Number(item.sortOrder != null ? item.sortOrder : item.sort_order) || 0]
                 );
             }
 
@@ -965,6 +1164,8 @@ module.exports = async function handler(req, res) {
             email,
             subject,
             message,
+            is_read: false,
+            source: 'guestbook',
             moderation: 'auto-passed',
             created_at: now()
         };
@@ -1036,10 +1237,16 @@ module.exports = async function handler(req, res) {
             return res.status(400).json({ error: '请上传有效的图片文件' });
         }
 
+        const albumId = resolveAlbumId(data, body.album_id);
+        if (!albumId) {
+            return res.status(400).json({ error: '相册不存在，请先创建相册' });
+        }
+
         const item = {
             id: nextId(data.daily_posts),
             caption,
             image_data: imageData,
+            album_id: albumId,
             created_at: now()
         };
         data.daily_posts.unshift(item);
@@ -1483,6 +1690,125 @@ module.exports = async function handler(req, res) {
         return res.status(200).send(`\uFEFF${csvLines.join('\n')}`);
     }
 
+    if (routePath === '/admin/links' && method === 'GET') {
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(200).json(sortByCreatedAtDesc(data.links));
+    }
+
+    if (routePath === '/admin/visitors' && method === 'GET') {
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(200).json({
+            total: 0,
+            unique_ips: 0,
+            today_total: 0,
+            today_unique: 0,
+            top_regions: [],
+            items: [],
+            page: 1,
+            page_size: 10,
+            total_pages: 1,
+            note: 'Vercel 部署不采集逐条访客日志，该功能仅本地 Node 部署可用'
+        });
+    }
+
+    if (routePath === '/tools' && method === 'GET') {
+        res.setHeader('Cache-Control', 'no-store');
+        const tools = (data.tools || []).slice().sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0) || Number(a.id) - Number(b.id));
+        return res.status(200).json(tools.map(mapToolRow));
+    }
+
+    if (routePath === '/tools' && method === 'POST') {
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        if (!requireAdminCsrf(req, res, session)) return;
+        const parsed = parseToolPayload(body);
+        if (parsed.error) return res.status(400).json({ error: parsed.error });
+        const item = Object.assign({ id: nextId(data.tools), sortOrder: data.tools.length }, parsed.value);
+        data.tools.push(item);
+        writeAuditLog(data, 'tool_create', 'success', clientIp, session.u || 'admin', 'tool_id=' + item.id);
+        await saveData(data);
+        return res.status(201).json(mapToolRow(item));
+    }
+
+    const toolIdMatch = routePath.match(/^\/tools\/(\d+)$/);
+    if (toolIdMatch) {
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        if (!requireAdminCsrf(req, res, session)) return;
+        const toolId = Number(toolIdMatch[1]);
+        const index = data.tools.findIndex((item) => Number(item.id) === toolId);
+        if (index < 0) return res.status(404).json({ error: 'tool not found' });
+        if (method === 'PUT') {
+            const parsed = parseToolPayload(body);
+            if (parsed.error) return res.status(400).json({ error: parsed.error });
+            data.tools[index] = Object.assign({}, data.tools[index], parsed.value, { id: toolId });
+            writeAuditLog(data, 'tool_update', 'success', clientIp, session.u || 'admin', 'tool_id=' + toolId);
+            await saveData(data);
+            return res.status(200).json(mapToolRow(data.tools[index]));
+        }
+        if (method === 'DELETE') {
+            data.tools.splice(index, 1);
+            writeAuditLog(data, 'tool_delete', 'success', clientIp, session.u || 'admin', 'tool_id=' + toolId);
+            await saveData(data);
+            return res.status(200).json({ id: toolId, deleted: true });
+        }
+    }
+
+    if (routePath === '/albums' && method === 'GET') {
+        res.setHeader('Cache-Control', 'no-store');
+        return res.status(200).json((data.daily_albums || []).map((album) => albumWithCounts(data, album)));
+    }
+
+    if (routePath === '/albums' && method === 'POST') {
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        if (!requireAdminCsrf(req, res, session)) return;
+        if (!validation.isPlainObject(body)) return res.status(400).json({ error: '请求格式不正确' });
+        const title = validation.trimmed(body.title, 80);
+        const description = validation.trimmed(body.description, 600);
+        if (!title) return res.status(400).json({ error: '相册名称不能为空' });
+        const item = { id: nextId(data.daily_albums), title, description, created_at: now() };
+        data.daily_albums.unshift(item);
+        writeAuditLog(data, 'album_create', 'success', clientIp, session.u || 'admin', 'album_id=' + item.id);
+        await saveData(data);
+        return res.status(201).json(albumWithCounts(data, item));
+    }
+
+    const albumIdMatch = routePath.match(/^\/albums\/(\d+)$/);
+    if (albumIdMatch) {
+        const albumId = Number(albumIdMatch[1]);
+        const albumIndex = data.daily_albums.findIndex((item) => Number(item.id) === albumId);
+        if (albumIndex < 0) return res.status(404).json({ error: 'album not found' });
+        if (method === 'GET') {
+            const photos = (data.daily_posts || []).filter((post) => Number(post.album_id) === albumId);
+            return res.status(200).json({ album: albumWithCounts(data, data.daily_albums[albumIndex]), photos });
+        }
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        if (!requireAdminCsrf(req, res, session)) return;
+        if (method === 'PUT') {
+            if (!validation.isPlainObject(body)) return res.status(400).json({ error: '请求格式不正确' });
+            const title = validation.trimmed(body.title, 80);
+            const description = validation.trimmed(body.description, 600);
+            if (!title) return res.status(400).json({ error: '相册名称不能为空' });
+            data.daily_albums[albumIndex] = Object.assign({}, data.daily_albums[albumIndex], { title, description });
+            writeAuditLog(data, 'album_update', 'success', clientIp, session.u || 'admin', 'album_id=' + albumId);
+            await saveData(data);
+            return res.status(200).json(albumWithCounts(data, data.daily_albums[albumIndex]));
+        }
+        if (method === 'DELETE') {
+            data.daily_posts = data.daily_posts.filter((post) => Number(post.album_id) !== albumId);
+            data.daily_albums.splice(albumIndex, 1);
+            writeAuditLog(data, 'album_delete', 'success', clientIp, session.u || 'admin', 'album_id=' + albumId);
+            await saveData(data);
+            return res.status(200).json({ id: albumId, deleted: true });
+        }
+    }
+
     const linkIdMatch = routePath.match(/^\/links\/(\d+)$/);
     if (linkIdMatch) {
         const session = requireAdmin(req, res);
@@ -1519,6 +1845,22 @@ module.exports = async function handler(req, res) {
     }
 
     const messageIdMatch = routePath.match(/^\/messages\/(\d+)$/);
+    if (messageIdMatch && method === 'PATCH') {
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        if (!requireAdminCsrf(req, res, session)) return;
+        if (!validation.isPlainObject(body)) return res.status(400).json({ error: '请求格式不正确' });
+        const messageId = Number(messageIdMatch[1]);
+        const item = data.messages.find((msg) => Number(msg.id) === messageId);
+        if (!item) return res.status(404).json({ error: 'message not found' });
+        const raw = body.is_read;
+        const isRead = raw === true || raw === 1 || raw === '1' || raw === 'true';
+        item.is_read = isRead;
+        writeAuditLog(data, 'message_read', 'success', clientIp, session.u || 'admin', 'message_id=' + messageId);
+        await saveData(data);
+        return res.status(200).json(item);
+    }
+
     if (messageIdMatch && method === 'DELETE') {
         const session = requireAdmin(req, res);
         if (!session) {
