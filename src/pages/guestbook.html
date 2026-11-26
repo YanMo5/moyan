@@ -222,55 +222,6 @@
 
                 }
 
-                function bindReplyEvents() {
-                    document.querySelectorAll('.reply-btn').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const messageId = this.dataset.messageId;
-                            const replyForm = document.getElementById(`reply-form-${messageId}`);
-                            replyForm.style.display = replyForm.style.display === 'none' ? 'block' : 'none';
-                        });
-                    });
-
-                    document.querySelectorAll('.cancel-reply-btn').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const messageId = this.dataset.messageId;
-                            const replyForm = document.getElementById(`reply-form-${messageId}`);
-                            replyForm.style.display = 'none';
-                            replyForm.querySelector('.reply-textarea').value = '';
-                        });
-                    });
-
-                    document.querySelectorAll('.submit-reply-btn').forEach(btn => {
-                        btn.addEventListener('click', async function() {
-                            const messageId = this.dataset.messageId;
-                            const replyForm = document.getElementById(`reply-form-${messageId}`);
-                            const textarea = replyForm.querySelector('.reply-textarea');
-                            const content = textarea.value.trim();
-                            
-                            if (!content) return;
-
-                            try {
-                                const response = await fetch(`/api/messages/${messageId}/reply`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ content })
-                                });
-
-                                if (response.ok) {
-                                    showFormFeedback('回复成功！', 'success');
-                                    textarea.value = '';
-                                    replyForm.style.display = 'none';
-                                    setTimeout(loadMessages, 500);
-                                } else {
-                                    showFormFeedback('回复失败，请稍后重试', 'error');
-                                }
-                            } catch (error) {
-                                showFormFeedback('网络错误，请检查连接', 'error');
-                            }
-                        });
-                    });
-                }
-
                 function showFormFeedback(message, type) {
                     const feedback = document.getElementById('form-feedback');
                     feedback.textContent = message;

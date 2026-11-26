@@ -270,43 +270,6 @@
                         </div>`;
                 }
 
-                // B: fire a live HEAD probe per card via /api/check-links result
-                function applyProbeResult(linkId, result) {
-                    const dot = document.getElementById('dot-' + linkId);
-                    const statusEl = document.getElementById('status-' + linkId);
-                    const postEl = document.getElementById('post-' + linkId);
-                    const metaEl = document.getElementById('meta-' + linkId);
-                    if (!dot) return;
-
-                    if (result.online) {
-                        dot.classList.remove('dot-unknown', 'dot-offline');
-                        dot.classList.add('dot-online');
-                        dot.title = 'ONLINE';
-                        if (statusEl) statusEl.textContent = 'ONLINE';
-                    } else {
-                        dot.classList.remove('dot-unknown', 'dot-online');
-                        dot.classList.add('dot-offline');
-                        dot.title = result.error ? ('OFFLINE: ' + result.error) : 'OFFLINE';
-                        if (statusEl) statusEl.textContent = 'OFFLINE';
-                    }
-
-                    if (postEl) {
-                        if (result.latestPostTitle && result.latestPostUrl) {
-                            const safe = escapeHtml(result.latestPostUrl);
-                            const title = result.latestPostTitle;
-                            const short = title.length > 42 ? title.slice(0, 42) + '…' : title;
-                            postEl.innerHTML = `<a class="link-latest-post" href="${safe}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(title)}">▸ ${escapeHtml(short)}</a>`;
-                        } else {
-                            postEl.innerHTML = '<span class="link-latest-post link-latest-post--none">▸ 暂无最新文章</span>';
-                        }
-                    }
-
-                    if (metaEl && result.checkedAt) {
-                        metaEl.textContent = formatSyncLabel(result.checkedAt);
-                        metaEl.title = formatSyncTitle(result.checkedAt);
-                    }
-                }
-
                 function renderLinks() {
                     const container = document.getElementById('links-groups-container');
                     const keyword = String((document.getElementById('links-keyword') || {}).value || '').trim().toLowerCase();
@@ -371,7 +334,7 @@
                                 : (hasDbStatus ? (isOnline ? 'dot-online' : 'dot-offline') : 'dot-unknown');
                             const dotLabel = cached
                                 ? (isOnline ? 'ONLINE' : 'OFFLINE')
-                                : (hasDbStatus ? (isOnline ? 'ONLINE' : 'OFFLINE') : 'PROBING');
+                                : (hasDbStatus ? (isOnline ? 'ONLINE' : 'OFFLINE') : 'UNKNOWN');
 
                             const syncValue = cached ? cached.checkedAt : link.last_checked;
                             const checkedAt = formatSyncLabel(syncValue);
@@ -487,71 +450,6 @@
                     });
                 }
 
-                function markProbeUnknown(links) {
-                    (links || allLinks).forEach(link => {
-                        if (link.status !== 'approved') return;
-                        const dot = document.getElementById('dot-' + link.id);
-                        const statusEl = document.getElementById('status-' + link.id);
-                        if (dot && dot.classList.contains('dot-unknown')) {
-                            dot.title = 'UNKNOWN';
-                        }
-                        if (statusEl && statusEl.textContent === 'PROBING') {
-                            statusEl.textContent = 'UNKNOWN';
-                        }
-                    });
-                }
-
-                // Fetch fresh probe results from /api/check-links, then re-apply to rendered cards
-                async function pollLinkStatus() {
-                    const controller = new AbortController();
-                    const timeout = window.setTimeout(() => controller.abort(), 6000);
-                    try {
-                        const urls = allLinks
-                            .filter(l => l.status === 'approved' && l.site_url)
-                            .map(l => l.site_url);
-                        if (!urls.length) return;
-
-                        const res = await fetch('/api/check-links', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ urls }),
-                            signal: controller.signal,
-                        });
-                        if (!res.ok) {
-                            markProbeUnknown();
-                            return;
-                        }
-                        const results = await res.json(); // { [url]: { online, latestPostTitle, latestPostUrl, checkedAt, error? } }
-                        if (!results || typeof results !== 'object') {
-                            markProbeUnknown();
-                            return;
-                        }
-
-                        // Update cache
-                        Object.assign(probeCache, results);
-
-                        // Apply to each rendered card; missing results become UNKNOWN, not endless PROBING
-                        const missing = [];
-                        allLinks.forEach(link => {
-                            if (link.status !== 'approved' || !link.site_url) return;
-                            const result = results[link.site_url];
-                            if (result) applyProbeResult(link.id, result);
-                            else missing.push(link);
-                        });
-                        if (missing.length) markProbeUnknown(missing);
-
-                        // Update online count in summary
-                        const onlineCount = Object.values(probeCache).filter(r => r.online).length;
-                        const summaryOnline = document.getElementById('links-count-online');
-                        if (summaryOnline) summaryOnline.textContent = String(onlineCount);
-                    } catch (err) {
-                        console.warn('[check-links] probe failed:', err.message);
-                        markProbeUnknown();
-                    } finally {
-                        window.clearTimeout(timeout);
-                    }
-                }
-
                 async function loadApprovedLinks() {
                     try {
                         const response = await fetch('/api/links');
@@ -565,8 +463,6 @@
                             updateSummary(allLinks);
                             renderLinks();
                             probeAllLatencies();
-                            // fire probe immediately after first render
-                            pollLinkStatus();
                         }
                     } catch (error) {
                         console.error('加载友链失败:', error);
@@ -578,9 +474,8 @@
                 if (keywordInputEl) keywordInputEl.addEventListener('input', renderLinks);
 
                 loadApprovedLinks();
-                // Reload DB data every 5 minutes; re-probe every 3 minutes independently
+                // Reload DB data every 5 minutes
                 setInterval(loadApprovedLinks, 5 * 60 * 1000);
-                setInterval(pollLinkStatus,    3 * 60 * 1000);
             </script>
         </section>
     </main>

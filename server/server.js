@@ -524,6 +524,18 @@ async function lookupVisitorRegion(ip) {
     }
 }
 
+function cleanupRetention() {
+    // 与隐私协议保持一致：访客记录 180 天、审计日志 12 个月
+    db.run("DELETE FROM visitors WHERE created_at < datetime('now', '-180 days')", [], function (err) {
+        if (err) console.error('[retention] visitors cleanup failed:', err.message);
+        else if (this && this.changes) console.log('[retention] removed visitors:', this.changes);
+    });
+    db.run("DELETE FROM admin_audit_logs WHERE created_at < datetime('now', '-365 days')", [], function (err) {
+        if (err) console.error('[retention] audit cleanup failed:', err.message);
+        else if (this && this.changes) console.log('[retention] removed audit logs:', this.changes);
+    });
+}
+
 function recordVisitor(req) {
     const ip = normalizeVisitorIp(getClientIdentifier(req));
     const path = String(req.originalUrl || req.path || '/').slice(0, 500);
@@ -2581,5 +2593,9 @@ app.listen(port, () => {
     // 测试进程不启动外部 RSS 探测，避免测试期间访问外网/写入开发库
     if (process.env.NODE_ENV !== 'test') {
         rssPoller.start();
+        // 启动后延迟清理一次，之后每 24 小时按隐私协议删除过期访客/审计记录
+        const retentionTimer = setInterval(cleanupRetention, 24 * 60 * 60 * 1000);
+        if (retentionTimer.unref) retentionTimer.unref();
+        setTimeout(cleanupRetention, 8000).unref?.();
     }
 });
