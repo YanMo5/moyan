@@ -4,23 +4,39 @@
     <meta charset="UTF-8">
         <script src="/src/js/theme-boot.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>联系我 - YanMo的个人博客</title>
+    <title>联系我 - YanMo Labs</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
     <meta name="description" content="欢迎联系YanMo交流课程学习、CTF训练与技术实践。可通过邮箱、QQ或GitHub进行沟通。">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/styles.css">
     <link rel="stylesheet" href="/src/css/beautify.css">
     <link rel="stylesheet" href="/src/css/music-box.css">
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <link rel="stylesheet" href="/src/css/contact-email.css">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="联系我 - YanMo Labs">
+    <meta property="og:description" content="欢迎联系 YanMo 交流课程学习、CTF 训练与技术实践。可通过邮箱、QQ 或 GitHub 沟通。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="联系我 - YanMo Labs">
+    <meta name="twitter:description" content="欢迎联系 YanMo 交流课程学习、CTF 训练与技术实践。可通过邮箱、QQ 或 GitHub 沟通。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
 </head>
 <body class="contact-view">
     <header>
         <nav>
             <div class="logo">
-                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
             </div>
             <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
@@ -29,12 +45,10 @@
             </button>
             <div class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/src/pages/index.html"><span class="shimmer"></span>首页</a></li>
                     <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
-                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于我</a></li>
-                    <li><a href="/src/pages/contact.html" class="active"><span class="shimmer"></span>联系</a></li>
-                    <li><a href="/src/pages/guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html" class="active"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
                     <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
             </div>
@@ -49,7 +63,7 @@
     <main>
         <section class="contact-page reveal">
             <div class="terminal-label">CAMPUS_CONNECT // OPEN_FOR_LEARNING // FRIENDLY_CHANNEL</div>
-            <h1 class="glitch-text" data-text="联系我 / CONTACT">联系我 / CONTACT</h1>
+            <h1 class="glitch-text page-title" data-text="联系我 CONTACT"><span class="page-title-cn">联系我</span><span class="page-title-en">CONTACT</span></h1>
             <p class="contact-lead">如果你也在学习网络安全，欢迎来交流题目思路、课程项目和学习路线。技术互助和经验分享都很欢迎。</p>
             <div class="contact-quick-tips">
                 <span>建议主题：CTF 交流</span>
@@ -71,7 +85,10 @@
                         <div class="contact-icon">MAIL</div>
                         <div class="contact-text">
                             <h3>邮箱 / EMAIL</h3>
-                            <p id="email-display"></p>
+                            <p class="contact-email-line">
+                                <a id="email-display" class="contact-email-link" href="#"></a>
+                                <button type="button" id="email-copy" class="contact-copy-btn" aria-label="复制邮箱地址">复制</button>
+                            </p>
                         </div>
                     </div>
                     <div class="contact-item">
@@ -128,17 +145,53 @@
                     <script>
                         function initContactInfo() {
                             const emailParts = ['3351708803', '@', 'qq.com'];
+                            const emailAddress = emailParts.join('');
                             const qqParts = ['QQ：', '3', '3', '5', '1', '7', '0', '8', '8', '0', '3'];
                             const wechatParts = ['微信：', '1', '5', '2', '0', '6', '5', '6', '1', '7', '7', '3'];
 
-                            document.getElementById('email-display').textContent = emailParts.join('');
+                            const emailDisplay = document.getElementById('email-display');
+                            if (emailDisplay) {
+                                emailDisplay.textContent = emailAddress;
+                                emailDisplay.href = 'mailto:' + emailAddress;
+                            }
                             document.getElementById('qq-display').textContent = qqParts.join('');
                             document.getElementById('wechat-display').textContent = wechatParts.join('');
 
                             const mailLink = document.getElementById('contact-mail-link');
                             if (mailLink) {
-                                mailLink.textContent = emailParts.join('');
-                                mailLink.href = 'mailto:' + emailParts.join('');
+                                mailLink.textContent = emailAddress;
+                                mailLink.href = 'mailto:' + emailAddress;
+                            }
+
+                            const copyButton = document.getElementById('email-copy');
+                            if (copyButton) {
+                                copyButton.addEventListener('click', async function () {
+                                    let copied = false;
+                                    try {
+                                        await navigator.clipboard.writeText(emailAddress);
+                                        copied = true;
+                                    } catch (error) {
+                                        try {
+                                            const area = document.createElement('textarea');
+                                            area.value = emailAddress;
+                                            area.setAttribute('readonly', '');
+                                            area.style.position = 'fixed';
+                                            area.style.opacity = '0';
+                                            document.body.appendChild(area);
+                                            area.select();
+                                            copied = document.execCommand('copy');
+                                            area.remove();
+                                        } catch (fallbackError) {
+                                            copied = false;
+                                        }
+                                    }
+                                    copyButton.textContent = copied ? '已复制' : '复制失败';
+                                    copyButton.classList.toggle('is-copied', copied);
+                                    window.setTimeout(function () {
+                                        copyButton.textContent = '复制';
+                                        copyButton.classList.remove('is-copied');
+                                    }, 1600);
+                                });
                             }
                         }
 
@@ -251,7 +304,7 @@
     <footer>
         <div class="footer-content">
             <div class="footer-info">
-                <h3>YanMo的个人博客</h3>
+                <h3>YanMo Labs</h3>
                 <p>大学生安全学习记录 | Web 安全 | CTF | AI 安全探索</p>
                 <p>—— 技术改变未来，代码创造世界 ——</p>
             </div>
@@ -261,7 +314,7 @@
                     <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
                     <a href="#" class="social-link">Bilibili</a>
                     <a href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer" class="social-link">GitHub</a>
-                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="mailto:3351708803@qq.com" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
                     <a href="#" class="social-link">Discord</a>
                 </div>
             </div>
@@ -271,7 +324,7 @@
             </div>
         </div>
         <div class="footer-copyright">
-            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
         </div>
     </footer>
 

@@ -5,7 +5,7 @@ const Parser = require('rss-parser');
 const http = require('http');
 
 const POLL_INTERVAL = '*/15 * * * *'; // every 15 minutes
-const API_BASE = 'http://127.0.0.1:3000';
+const API_BASE = process.env.API_BASE || ('http://127.0.0.1:' + (process.env.PORT || 3000));
 const FETCH_TIMEOUT_MS = 8000;
 
 const rssParser = new Parser({ timeout: FETCH_TIMEOUT_MS });

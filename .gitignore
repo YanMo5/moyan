@@ -51,6 +51,7 @@ src/pages/test.html
 # Runtime credentials and generated state
 data/admin-credentials.json
 data/admin-password.txt
+data/admin-sessions.json
 data/cloud-data.json
 data/views.txt
 
@@ -72,3 +73,11 @@ tmp-verify-*.png
 tmp-verify-*.jpg
 test-results/
 playwright-report/
+
+# Local scratch / media work dirs (not part of the site)
+_shots/
+_tmp/
+pip-*/
+tmp*
+%SystemDrive%/
+undefined/

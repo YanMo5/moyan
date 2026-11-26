@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <script src="/src/js/theme-boot.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日常 - YanMo Labs</title>
+    <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
+    <link rel="shortcut icon" href="/assets/images/site-avatar.png">
+    <meta name="description" content="YanMo 的日常相册集：点进相册，浏览照片、证书与生活切片。">
+    <link rel="stylesheet" href="/src/css/styles.css">
+    <link rel="stylesheet" href="/src/css/beautify.css">
+    <link rel="stylesheet" href="/src/css/music-box.css">
+    <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <link rel="stylesheet" href="/src/css/daily-album.css">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="日常 - YanMo Labs">
+    <meta property="og:description" content="YanMo 的日常相册集：点进相册，浏览照片、证书与生活切片。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="日常 - YanMo Labs">
+    <meta name="twitter:description" content="YanMo 的日常相册集：点进相册，浏览照片、证书与生活切片。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
+</head>
+<body class="daily-view">
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
+            </div>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html" class="active"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <script src="/src/js/local-api.js"></script>
+    <script src="/src/js/date-utils.js"></script>
+    <script src="/src/js/palette-manager.js"></script>
+    <script src="/src/js/music-box.js" defer></script>
+    <script src="/src/js/ux-enhancements.js"></script>
+
+        <main>
+        <section class="daily-page reveal">
+            <div class="terminal-label">DAILY_LOG // ALBUM_ARCHIVE // OPEN_SHELF</div>
+            <h1 class="page-title"><span class="page-title-cn">日常</span><span class="page-title-en">ALBUM ARCHIVE</span></h1>
+            <p class="daily-description">这里收录我的相册集。点进一本相册，里面才是照片。</p>
+            <a class="daily-tools-link" href="/src/pages/tools.html">工具库 / TOOLBOX <span aria-hidden="true">→</span></a>
+
+            <div id="album-browser">
+                <div class="album-grid" id="album-grid" aria-live="polite" aria-busy="true">
+                    <div class="daily-loading">
+                        <span class="loading-spinner"></span>
+                        <span>正在读取相册集...</span>
+                    </div>
+                </div>
+                <div class="daily-empty" id="album-empty" hidden>
+                    <div class="daily-empty-icon" aria-hidden="true">◌</div>
+                    <h2>还没有相册集</h2>
+                    <p>相册集和照片会在这里慢慢累积。</p>
+                </div>
+            </div>
+
+            <div id="album-detail" hidden>
+                <a class="album-back" href="/src/pages/daily.html">← 全部相册</a>
+                <header class="album-detail-head">
+                    <div>
+                        <span class="album-kicker">// ALBUM</span>
+                        <h2 id="album-title"></h2>
+                        <p id="album-description"></p>
+                    </div>
+                    <div class="album-detail-meta" id="album-meta"></div>
+                </header>
+                <div class="daily-grid" id="daily-grid" aria-live="polite" aria-busy="true"></div>
+                <div class="daily-empty" id="daily-empty" hidden>
+                    <div class="daily-empty-icon" aria-hidden="true">◌</div>
+                    <h2>这本相册还是空的</h2>
+                    <p>照片会慢慢放进来。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="daily-lightbox" id="daily-lightbox" aria-hidden="true" role="dialog" aria-modal="true" aria-label="查看日常照片">
+        <button type="button" class="daily-lb-close" id="daily-lb-close" aria-label="关闭">×</button>
+        <button type="button" class="daily-lb-nav daily-lb-prev" id="daily-lb-prev" aria-label="上一张">‹</button>
+        <figure class="daily-lb-figure">
+            <img id="daily-lb-image" src="" alt="">
+            <figcaption>
+                <time id="daily-lb-date"></time>
+                <p id="daily-lb-caption"></p>
+            </figcaption>
+        </figure>
+        <button type="button" class="daily-lb-nav daily-lb-next" id="daily-lb-next" aria-label="下一张">›</button>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo Labs</h3>
+                <p>大学生安全学习记录 | Web 安全 | CTF | AI 安全探索</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="/src/pages/link-apply.html" class="footer-link">前往友链申请页面</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
+        </div>
+    </footer>
+
+    <script>
+(function () {
+    const albumBrowser = document.getElementById('album-browser');
+    const albumGrid = document.getElementById('album-grid');
+    const albumEmpty = document.getElementById('album-empty');
+    const albumDetail = document.getElementById('album-detail');
+    const albumTitle = document.getElementById('album-title');
+    const albumDescription = document.getElementById('album-description');
+    const albumMeta = document.getElementById('album-meta');
+    const photoGrid = document.getElementById('daily-grid');
+    const photoEmpty = document.getElementById('daily-empty');
+    const lightbox = document.getElementById('daily-lightbox');
+    const lbImage = document.getElementById('daily-lb-image');
+    const lbDate = document.getElementById('daily-lb-date');
+    const lbCaption = document.getElementById('daily-lb-caption');
+    const lbClose = document.getElementById('daily-lb-close');
+    const lbPrev = document.getElementById('daily-lb-prev');
+    const lbNext = document.getElementById('daily-lb-next');
+    let photos = [];
+    let current = 0;
+
+    function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, function (char) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char] || char;
+        });
+    }
+
+    function dateText(value) {
+        try {
+            return formatLocalDate(value);
+        } catch (error) {
+            return String(value || '').slice(0, 10);
+        }
+    }
+
+    function renderAlbums(albums) {
+        albumGrid.setAttribute('aria-busy', 'false');
+        if (!albums.length) {
+            albumGrid.hidden = true;
+            albumEmpty.hidden = false;
+            return;
+        }
+        albumEmpty.hidden = true;
+        albumGrid.hidden = false;
+        albumGrid.innerHTML = albums.map(function (album) {
+            const count = Number(album.photo_count) || 0;
+            const cover = album.cover_image
+                ? '<img src="' + escapeHtml(album.cover_image) + '" alt="' + escapeHtml(album.title) + ' 相册封面" loading="lazy" decoding="async">'
+                : '<span class="album-cover-empty" aria-hidden="true">◌</span>';
+            return '<a class="album-card" href="/src/pages/daily.html?album=' + encodeURIComponent(album.id) + '">' +
+                '<span class="album-cover">' + cover + '</span>' +
+                '<span class="album-body">' +
+                    '<span class="album-count">' + count + ' 张照片</span>' +
+                    '<h2>' + escapeHtml(album.title) + '</h2>' +
+                    (album.description ? '<p>' + escapeHtml(album.description) + '</p>' : '') +
+                    '<time datetime="' + escapeHtml(album.created_at || '') + '">' + dateText(album.created_at) + '</time>' +
+                '</span>' +
+            '</a>';
+        }).join('');
+    }
+
+    function renderPhotos(items) {
+        photos = items;
+        photoGrid.setAttribute('aria-busy', 'false');
+        if (!items.length) {
+            photoGrid.innerHTML = '';
+            photoGrid.hidden = true;
+            photoEmpty.hidden = false;
+            return;
+        }
+        photoEmpty.hidden = true;
+        photoGrid.hidden = false;
+        photoGrid.classList.toggle('is-sparse', items.length < 4);
+        photoGrid.classList.toggle('is-single', items.length === 1);
+        photoGrid.innerHTML = items.map(function (post, index) {
+            const caption = String(post.caption || '').trim();
+            return '<article class="daily-card">' +
+                '<button type="button" class="daily-media" data-index="' + index + '" aria-label="查看照片：' + escapeHtml(caption || '相册照片') + '">' +
+                    '<img src="' + escapeHtml(post.image_data) + '" alt="' + escapeHtml(caption || '相册照片') + '" loading="lazy" decoding="async">' +
+                    '<span class="daily-media-hint" aria-hidden="true">查看原图</span>' +
+                '</button>' +
+                '<div class="daily-body">' +
+                    '<time class="daily-date" datetime="' + escapeHtml(post.created_at) + '">' + dateText(post.created_at) + '</time>' +
+                    (caption ? '<p class="daily-caption">' + escapeHtml(caption) + '</p>' : '<p class="daily-caption daily-caption--muted">这一张，没有写说明。</p>') +
+                '</div>' +
+            '</article>';
+        }).join('');
+
+        photoGrid.querySelectorAll('.daily-media').forEach(function (button) {
+            button.addEventListener('click', function () {
+                openLightbox(Number(button.dataset.index));
+            });
+        });
+    }
+
+    function updateLightbox() {
+        const post = photos[current];
+        if (!post) return;
+        lbImage.src = post.image_data;
+        lbImage.alt = String(post.caption || '相册照片');
+        lbDate.textContent = dateText(post.created_at);
+        lbDate.setAttribute('datetime', String(post.created_at || ''));
+        lbCaption.textContent = String(post.caption || '').trim() || '这一张，没有写说明。';
+        const multiple = photos.length > 1;
+        lbPrev.hidden = !multiple;
+        lbNext.hidden = !multiple;
+    }
+
+    function openLightbox(index) {
+        if (!photos.length) return;
+        current = Math.max(0, Math.min(photos.length - 1, index));
+        updateLightbox();
+        lightbox.classList.add('is-open');
+        lightbox.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('daily-lightbox-open');
+        lbClose.focus({ preventScroll: true });
+    }
+
+    function closeLightbox() {
+        lightbox.classList.remove('is-open');
+        lightbox.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('daily-lightbox-open');
+    }
+
+    function step(delta) {
+        if (photos.length < 2) return;
+        current = (current + delta + photos.length) % photos.length;
+        updateLightbox();
+    }
+
+    lbClose.addEventListener('click', closeLightbox);
+    lbPrev.addEventListener('click', function () { step(-1); });
+    lbNext.addEventListener('click', function () { step(1); });
+    lightbox.addEventListener('click', function (event) {
+        if (event.target === lightbox) closeLightbox();
+    });
+    document.addEventListener('keydown', function (event) {
+        if (!lightbox.classList.contains('is-open')) return;
+        if (event.key === 'Escape') closeLightbox();
+        if (event.key === 'ArrowLeft') step(-1);
+        if (event.key === 'ArrowRight') step(1);
+    });
+
+    async function loadAlbums() {
+        albumGrid.setAttribute('aria-busy', 'true');
+        try {
+            const response = await fetch('/api/albums', { cache: 'no-store' });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const data = await response.json();
+            renderAlbums(Array.isArray(data) ? data : []);
+        } catch (error) {
+            albumGrid.innerHTML = '<div class="daily-empty"><h2>相册集暂时不可用</h2><p>请稍后刷新重试。</p></div>';
+            albumGrid.setAttribute('aria-busy', 'false');
+        }
+    }
+
+    async function loadAlbum(id) {
+        albumBrowser.hidden = true;
+        albumDetail.hidden = false;
+        albumTitle.textContent = '正在读取相册...';
+        albumDescription.textContent = '';
+        albumMeta.textContent = '';
+        try {
+            const response = await fetch('/api/albums/' + encodeURIComponent(id), { cache: 'no-store' });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const data = await response.json();
+            const album = data.album || {};
+            const items = Array.isArray(data.photos) ? data.photos : [];
+            albumTitle.textContent = album.title || '未命名相册';
+            albumDescription.textContent = album.description || '';
+            const count = Number(album.photo_count) || items.length;
+            albumMeta.textContent = count + ' 张照片 · ' + dateText(album.created_at);
+            document.title = (album.title || '相册') + ' - YanMo Labs';
+            renderPhotos(items);
+        } catch (error) {
+            albumTitle.textContent = '相册不可用';
+            albumDescription.textContent = '这本相册可能已被删除，或者链接不正确。';
+            albumMeta.textContent = '';
+            photoGrid.hidden = true;
+            photoEmpty.hidden = false;
+            photoEmpty.innerHTML = '<div class="daily-empty-icon" aria-hidden="true">◌</div><h2>没有找到这本相册</h2><p>返回全部相册继续浏览。</p>';
+        }
+    }
+
+    const albumId = new URLSearchParams(window.location.search).get('album');
+    if (albumId) {
+        loadAlbum(albumId);
+    } else {
+        loadAlbums();
+    }
+})();
+    </script>
+</body>
+</html>

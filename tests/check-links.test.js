@@ -9,19 +9,28 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import crypto from 'crypto';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+const CSRF_TOKEN = 'check-links-csrf-token';
+
 function makeReq({ method = 'POST', body = {}, headers = {}, cookie = '' } = {}) {
+    const mergedHeaders = {
+        'content-type': 'application/json',
+        'origin': 'http://localhost',
+        'host': 'localhost',
+        cookie,
+        ...headers
+    };
+    // Existing suite's signed fixture represents a logged-in admin; give it
+    // the matching CSRF header unless a test explicitly overrides it.
+    if (cookie && mergedHeaders['x-csrf-token'] === undefined) {
+        mergedHeaders['x-csrf-token'] = CSRF_TOKEN;
+    }
     return {
         method,
-        headers: {
-            'content-type': 'application/json',
-            'origin': 'http://localhost',
-            'host': 'localhost',
-            cookie,
-            ...headers
-        },
+        headers: mergedHeaders,
         body
     };
 }
@@ -38,7 +47,16 @@ function makeRes() {
     return res;
 }
 
-const SESSION_COOKIE = 'yanmo_admin_session=fake-valid-session-token';
+process.env.ADMIN_SESSION_SECRET = 'check-links-test-secret';
+process.env.CHECK_LINKS_DNS_CHECK = '0';
+
+const tokenPayload = Buffer.from(JSON.stringify({
+    u: 'admin',
+    exp: Date.now() + 60 * 60 * 1000,
+    csrf: CSRF_TOKEN
+})).toString('base64url');
+const tokenSignature = crypto.createHmac('sha256', process.env.ADMIN_SESSION_SECRET).update(tokenPayload).digest('hex');
+const SESSION_COOKIE = 'yanmo_admin_session=' + encodeURIComponent(tokenPayload + '.' + tokenSignature);
 
 // Import the handler — mock global fetch to prevent real outbound calls
 const fetchMock = vi.fn();
@@ -56,7 +74,29 @@ describe('H-05: Authentication required', () => {
         expect(res._status).toBe(401);
     });
 
-    it('allows request with a session cookie present', async () => {
+    it('returns 403 when the matching CSRF token is missing', async () => {
+        const req = makeReq({
+            body: { urls: ['https://example.com'] },
+            cookie: SESSION_COOKIE,
+            headers: { 'x-csrf-token': '' }
+        });
+        const res = makeRes();
+        await handler(req, res);
+        expect(res._status).toBe(403);
+    });
+
+    it('rejects a cross-origin request', async () => {
+        const req = makeReq({
+            body: { urls: ['https://example.com'] },
+            cookie: SESSION_COOKIE,
+            headers: { origin: 'https://evil.example' }
+        });
+        const res = makeRes();
+        await handler(req, res);
+        expect(res._status).toBe(403);
+    });
+
+    it('allows request with a session cookie and CSRF token present', async () => {
         fetchMock.mockResolvedValueOnce({
             ok: true,
             status: 200,

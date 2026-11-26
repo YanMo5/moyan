@@ -2,6 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const mailer = require('../lib/mailer.cjs');
+const moderation = require('../lib/moderation.cjs');
+const validation = require('../lib/validation.cjs');
+const rateLimit = require('../lib/rate-limit.cjs');
 
 let Pool = null;
 
@@ -16,6 +19,11 @@ const MAX_LOGIN_USERNAME_LENGTH = 64;
 const MAX_LOGIN_PASSWORD_LENGTH = 256;
 const MIN_ADMIN_PASSWORD_LENGTH = 10;
 const MAX_ADMIN_PASSWORD_LENGTH = 128;
+const DAILY_IMAGE_PATTERN = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+const DAILY_IMAGE_MAX_BYTES = 300000;
+const DAILY_CAPTION_MAX = 1000;
+const ARTICLE_COVER_PATTERN = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+const ARTICLE_COVER_MAX_BYTES = 240000;
 
 const rootDir = path.join(__dirname, '..');
 const dataDir = path.join(rootDir, 'data');
@@ -73,6 +81,13 @@ function isValidHttpUrl(value) {
 
 function nextId(items) {
     return (items || []).reduce((max, item) => Math.max(max, Number(item && item.id) || 0), 0) + 1;
+}
+
+function normalizeArticleCover(value) {
+    const cover = toSafeText(value);
+    if (!cover) return '';
+    if (!ARTICLE_COVER_PATTERN.test(cover) || cover.length > ARTICLE_COVER_MAX_BYTES) return null;
+    return cover;
 }
 
 function sortByCreatedAtDesc(items) {
@@ -147,6 +162,7 @@ function baseData() {
                 created_at: '2026-03-10 10:00:00'
             }
         ],
+        daily_posts: [],
         contact_messages: [],
         stats: {
             total_views: 1200
@@ -161,6 +177,7 @@ function normalizeData(raw) {
         messages: Array.isArray(safe.messages) ? safe.messages : [],
         links: Array.isArray(safe.links) ? safe.links : [],
         articles: Array.isArray(safe.articles) ? safe.articles : [],
+        daily_posts: Array.isArray(safe.daily_posts) ? safe.daily_posts : [],
         contact_messages: Array.isArray(safe.contact_messages) ? safe.contact_messages : [],
         stats: {
             total_views: Number(safe.stats && safe.stats.total_views) || 0
@@ -228,6 +245,16 @@ async function ensureDbSchema(pool) {
             title TEXT NOT NULL,
             content TEXT NOT NULL,
             category TEXT NOT NULL,
+            cover_image TEXT DEFAULT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        );
+
+        ALTER TABLE articles ADD COLUMN IF NOT EXISTS cover_image TEXT DEFAULT NULL;
+
+        CREATE TABLE IF NOT EXISTS daily_posts (
+            id BIGSERIAL PRIMARY KEY,
+            caption TEXT NOT NULL DEFAULT '',
+            image_data TEXT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         );
 
@@ -273,10 +300,11 @@ async function loadData() {
         try {
             await ensureDbSchema(pool);
 
-            const [messagesResult, linksResult, articlesResult, contactMessagesResult, auditLogsResult, statsResult] = await Promise.all([
+            const [messagesResult, linksResult, articlesResult, dailyResult, contactMessagesResult, auditLogsResult, statsResult] = await Promise.all([
                 pool.query('SELECT id, name, email, message, created_at FROM messages ORDER BY created_at DESC, id DESC'),
                 pool.query('SELECT id, site_name, site_url, site_description, site_avatar, status, created_at FROM links ORDER BY created_at DESC, id DESC'),
-                pool.query('SELECT id, title, content, category, created_at FROM articles ORDER BY created_at DESC, id DESC'),
+                pool.query('SELECT id, title, content, category, cover_image, created_at FROM articles ORDER BY created_at DESC, id DESC'),
+                pool.query('SELECT id, caption, image_data, created_at FROM daily_posts ORDER BY created_at DESC, id DESC'),
                 pool.query('SELECT id, name, email, subject, message, created_at FROM contact_messages ORDER BY created_at DESC, id DESC'),
                 pool.query('SELECT id, action, status, username, client_ip, detail, created_at FROM audit_logs ORDER BY created_at DESC, id DESC'),
                 pool.query('SELECT total_views FROM site_stats WHERE id = 1 LIMIT 1')
@@ -286,6 +314,7 @@ async function loadData() {
                 messages: messagesResult.rows,
                 links: linksResult.rows,
                 articles: articlesResult.rows,
+                daily_posts: dailyResult.rows,
                 contact_messages: contactMessagesResult.rows,
                 audit_logs: auditLogsResult.rows,
                 stats: {
@@ -297,6 +326,7 @@ async function loadData() {
                 messagesResult.rows.length,
                 linksResult.rows.length,
                 articlesResult.rows.length,
+                dailyResult.rows.length,
                 contactMessagesResult.rows.length,
                 auditLogsResult.rows.length,
                 Number(statsResult.rows[0] && statsResult.rows[0].total_views) || 0
@@ -347,7 +377,7 @@ async function saveData(data) {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
-            await client.query('TRUNCATE TABLE messages, links, articles, contact_messages, audit_logs, site_stats RESTART IDENTITY');
+            await client.query('TRUNCATE TABLE messages, links, articles, daily_posts, contact_messages, audit_logs, site_stats RESTART IDENTITY');
 
             for (const item of memoryData.messages) {
                 await client.query(
@@ -365,8 +395,15 @@ async function saveData(data) {
 
             for (const item of memoryData.articles) {
                 await client.query(
-                    'INSERT INTO articles (id, title, content, category, created_at) VALUES ($1, $2, $3, $4, $5)',
-                    [Number(item.id) || null, item.title, item.content, item.category, item.created_at]
+                    'INSERT INTO articles (id, title, content, category, cover_image, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
+                    [Number(item.id) || null, item.title, item.content, item.category, item.cover_image || null, item.created_at]
+                );
+            }
+
+            for (const item of memoryData.daily_posts) {
+                await client.query(
+                    'INSERT INTO daily_posts (id, caption, image_data, created_at) VALUES ($1, $2, $3, $4)',
+                    [Number(item.id) || null, item.caption || '', item.image_data, item.created_at]
                 );
             }
 
@@ -841,6 +878,16 @@ function parsePositiveInt(value, fallback, min, max) {
     return Math.min(max, Math.max(min, Math.floor(parsed)));
 }
 
+function enforceRateLimit(req, res, action, limit, windowMs, clientIp) {
+    const result = rateLimit.hit(action + '|' + clientIp, limit, windowMs);
+    if (!result.allowed) {
+        res.setHeader('Retry-After', String(result.retryAfter || 60));
+        res.status(429).json({ error: '请求过于频繁，请稍后再试', code: 'RATE_LIMITED' });
+        return false;
+    }
+    return true;
+}
+
 function toCsvLine(values) {
     return values.map(value => {
         const text = String(value == null ? '' : value);
@@ -887,19 +934,38 @@ module.exports = async function handler(req, res) {
     }
 
     if (routePath === '/messages' && method === 'POST') {
-        const name = toSafeText(body.name);
-        const email = toSafeText(body.email);
-        const message = toSafeText(body.message);
+        if (!enforceRateLimit(req, res, 'message', 12, 10 * 60 * 1000, clientIp)) return;
+        if (!validation.isPlainObject(body)) {
+            return res.status(400).json({ error: '请求格式不正确' });
+        }
+
+        const name = validation.trimmed(body.name, 80);
+        const email = validation.trimmed(body.email, 200);
+        const message = validation.trimmed(body.message, 2000);
+        const subject = validation.trimmed(body.subject, 200);
 
         if (!name || !email || !message) {
             return res.status(400).json({ error: '请完整填写留言信息' });
+        }
+        if (!validation.isEmail(email)) {
+            return res.status(400).json({ error: '邮箱格式不正确' });
+        }
+
+        const verdict = moderation.checkMessage({ name, message });
+        if (!verdict.ok) {
+            return res.status(400).json({
+                error: '留言包含不当内容或垃圾信息，请修改后重试',
+                code: 'MESSAGE_REJECTED'
+            });
         }
 
         const item = {
             id: nextId(data.messages),
             name,
             email,
+            subject,
             message,
+            moderation: 'auto-passed',
             created_at: now()
         };
         data.messages.unshift(item);
@@ -908,29 +974,28 @@ module.exports = async function handler(req, res) {
     }
 
     if (routePath === '/links' && method === 'GET') {
-        return res.status(200).json(sortByCreatedAtDesc(data.links));
+        // 公开接口只返回已通过友链，不能把待审核/已拒绝数据暴露出去。
+        return res.status(200).json(sortByCreatedAtDesc(
+            data.links.filter((item) => item && item.status === 'approved')
+        ));
     }
 
     if (routePath === '/links' && method === 'POST') {
-        const siteName = toSafeText(body['site-name'] || body.site_name || body.siteName);
-        const siteUrl = toSafeText(body['site-url'] || body.site_url || body.siteUrl);
-        const siteDescription = toSafeText(body['site-description'] || body.site_description || body.siteDescription);
-        const siteAvatar = toSafeText(body['site-avatar'] || body.site_avatar || body.siteAvatar);
+        if (!enforceRateLimit(req, res, 'link-apply', 10, 60 * 60 * 1000, clientIp)) return;
+        if (!validation.isPlainObject(body)) {
+            return res.status(400).json({ error: '请求格式不正确' });
+        }
+
+        const siteName = validation.trimmed(body['site-name'] || body.site_name || body.siteName, 100);
+        const siteUrl = validation.httpUrl(body['site-url'] || body.site_url || body.siteUrl, 2048);
+        const siteDescription = validation.trimmed(body['site-description'] || body.site_description || body.siteDescription, 500);
+        const siteAvatar = validation.imageDataUrl(body['site-avatar'] || body.site_avatar || body.siteAvatar, 300000);
 
         if (!siteName || !siteUrl || !siteDescription) {
-            return res.status(400).json({ error: '请完整填写友链信息' });
+            return res.status(400).json({ error: '请完整填写有效的友链信息' });
         }
-
-        if (!isValidHttpUrl(siteUrl)) {
-            return res.status(400).json({ error: '请输入有效的网站链接' });
-        }
-
-        if (siteAvatar && !siteAvatar.startsWith('data:image/')) {
-            return res.status(400).json({ error: '头像格式不合法' });
-        }
-
-        if (siteAvatar && siteAvatar.length > 1000000) {
-            return res.status(400).json({ error: '头像文件过大，请控制在 1MB 以内' });
+        if (siteAvatar === null) {
+            return res.status(400).json({ error: '头像格式无效或文件过大' });
         }
 
         const item = {
@@ -947,8 +1012,46 @@ module.exports = async function handler(req, res) {
         return res.status(201).json(item);
     }
 
+    if (routePath === '/daily' && method === 'GET') {
+        const limit = Math.min(12, Math.max(1, parsePositiveInt(req.query && req.query.limit, 12, 1, 12)));
+        const offset = Math.max(0, parsePositiveInt(req.query && req.query.offset, 0, 0, 10000));
+        return res.status(200).json(sortByCreatedAtDesc(data.daily_posts).slice(offset, offset + limit));
+    }
+
+    if (routePath === '/daily' && method === 'POST') {
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        if (!requireAdminCsrf(req, res, session)) return;
+
+        if (!validation.isPlainObject(body)) {
+            return res.status(400).json({ error: '请求格式不正确' });
+        }
+        const caption = validation.trimmed(body.caption, DAILY_CAPTION_MAX);
+        const imageData = validation.imageDataUrl(body.image, DAILY_IMAGE_MAX_BYTES);
+
+        if (imageData === null) {
+            return res.status(400).json({ error: '图片压缩后仍然过大，请换一张更小的图片' });
+        }
+        if (!imageData) {
+            return res.status(400).json({ error: '请上传有效的图片文件' });
+        }
+
+        const item = {
+            id: nextId(data.daily_posts),
+            caption,
+            image_data: imageData,
+            created_at: now()
+        };
+        data.daily_posts.unshift(item);
+        writeAuditLog(data, 'daily_create', 'success', clientIp, session.u || 'admin', 'daily_id=' + item.id);
+        await saveData(data);
+        return res.status(201).json(item);
+    }
+
     if (routePath === '/articles' && method === 'GET') {
-        return res.status(200).json(sortByCreatedAtDesc(data.articles));
+        const limit = parsePositiveInt(req.query && req.query.limit, 0, 0, 50);
+        const articles = sortByCreatedAtDesc(data.articles);
+        return res.status(200).json(limit ? articles.slice(0, limit) : articles);
     }
 
     if (routePath === '/articles' && method === 'POST') {
@@ -960,9 +1063,16 @@ module.exports = async function handler(req, res) {
             return;
         }
 
-        const title = toSafeText(body.title);
-        const content = toSafeText(body.content);
-        const category = toSafeText(body.category);
+        if (!validation.isPlainObject(body)) {
+            return res.status(400).json({ error: '请求格式不正确' });
+        }
+        const title = validation.trimmed(body.title, 200);
+        const content = validation.text(body.content, 200000).trim();
+        const category = validation.trimmed(body.category, 80);
+        const coverImage = normalizeArticleCover(body.cover_image);
+        if (coverImage === null) {
+            return res.status(400).json({ error: '封面图格式无效或体积过大' });
+        }
 
         if (!title || !content || !category) {
             return res.status(400).json({ error: '请完整填写文章信息' });
@@ -973,6 +1083,7 @@ module.exports = async function handler(req, res) {
             title,
             content,
             category,
+            cover_image: coverImage,
             created_at: now()
         };
         data.articles.unshift(item);
@@ -994,6 +1105,9 @@ module.exports = async function handler(req, res) {
         if (!requireCloudAdminEnv(req, res)) {
             return;
         }
+        if (!validation.isPlainObject(body)) {
+            return res.status(400).json({ success: false, message: '请求格式不正确' });
+        }
 
         const lockRemaining = checkLoginLock(clientIp);
         if (lockRemaining > 0) {
@@ -1007,8 +1121,8 @@ module.exports = async function handler(req, res) {
             });
         }
 
-        const username = toSafeText(body.username);
-        const password = String(body.password || '');
+        const username = validation.trimmed(body.username, MAX_LOGIN_USERNAME_LENGTH);
+        const password = String(body.password == null ? '' : body.password);
         const fieldsValid = username.length > 0
             && username.length <= MAX_LOGIN_USERNAME_LENGTH
             && password.length > 0
@@ -1178,15 +1292,19 @@ module.exports = async function handler(req, res) {
     }
 
     if (routePath === '/contact' && method === 'POST') {
-        const name = toSafeText(body.name);
-        const email = toSafeText(body.email);
-        const subject = toSafeText(body.subject);
-        const message = toSafeText(body.message);
+        if (!enforceRateLimit(req, res, 'contact', 8, 10 * 60 * 1000, clientIp)) return;
+        if (!validation.isPlainObject(body)) {
+            return res.status(400).json({ error: '请求格式不正确' });
+        }
+        const name = validation.trimmed(body.name, 80);
+        const email = validation.trimmed(body.email, 200);
+        const subject = validation.trimmed(body.subject, 200);
+        const message = validation.trimmed(body.message, 8000);
 
         if (!name || !email || !subject || !message) {
             return res.status(400).json({ error: '请完整填写联系表单' });
         }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (!validation.isEmail(email)) {
             return res.status(400).json({ error: '邮箱格式不正确' });
         }
 
@@ -1230,6 +1348,44 @@ module.exports = async function handler(req, res) {
         return res.status(200).json(mailer.getStatus());
     }
 
+    if (routePath === '/mail-test' && method === 'POST') {
+        const session = requireAdmin(req, res);
+        if (!session) {
+            return;
+        }
+        if (!requireAdminCsrf(req, res, session)) {
+            return;
+        }
+        const status = mailer.getStatus();
+        if (!status.configured) {
+            return res.status(400).json({
+                ok: false,
+                error: 'SMTP 尚未配置，请先完成 SMTP_HOST / SMTP_USER / SMTP_PASS / CONTACT_TO',
+                reason: 'not_configured'
+            });
+        }
+
+        const result = await mailer.sendContactNotification({
+            name: 'SMTP 自检',
+            email: status.to || status.user || '',
+            subject: 'YanMo 博客 SMTP 测试',
+            message: '这是一封来自后台「邮件通道自检」的测试邮件。收到即表示 SMTP 配置可用。'
+        });
+        if (!result || result.ok !== true) {
+            return res.status(502).json({
+                ok: false,
+                error: (result && (result.error || result.reason)) || '发送失败',
+                reason: (result && result.reason) || 'send_failed'
+            });
+        }
+        return res.json({
+            ok: true,
+            to: status.to || status.user || null,
+            message_id: result.messageId || null,
+            at: new Date().toISOString()
+        });
+    }
+
     if (routePath === '/contact' && method === 'GET') {
         const session = requireAdmin(req, res);
         if (!session) {
@@ -1244,11 +1400,12 @@ module.exports = async function handler(req, res) {
             return;
         }
 
-        const action = toSafeText(req.query.action);
-        const status = toSafeText(req.query.status);
-        const keyword = toSafeText(req.query.keyword).toLowerCase();
+        const action = validation.trimmed(req.query.action, 80);
+        let status = validation.trimmed(req.query.status, 20);
+        if (status && !['success', 'failed', 'denied', 'blocked'].includes(status)) status = '';
+        const keyword = validation.trimmed(req.query.keyword, 100).toLowerCase();
         const page = parsePositiveInt(req.query.page, 1, 1, 100000);
-        const pageSize = parsePositiveInt(req.query.page_size, 20, 1, 200);
+        const pageSize = parsePositiveInt(req.query.page_size, 20, 1, 100);
 
         let items = sortByCreatedAtDesc(data.audit_logs);
         if (action) {
@@ -1285,9 +1442,10 @@ module.exports = async function handler(req, res) {
             return;
         }
 
-        const action = toSafeText(req.query.action);
-        const status = toSafeText(req.query.status);
-        const keyword = toSafeText(req.query.keyword).toLowerCase();
+        const action = validation.trimmed(req.query.action, 80);
+        let status = validation.trimmed(req.query.status, 20);
+        if (status && !['success', 'failed', 'denied', 'blocked'].includes(status)) status = '';
+        const keyword = validation.trimmed(req.query.keyword, 100).toLowerCase();
 
         let items = sortByCreatedAtDesc(data.audit_logs);
         if (action) {
@@ -1382,6 +1540,44 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ id: messageId, deleted: true });
     }
 
+    const dailyIdMatch = routePath.match(/^\/daily\/(\d+)$/);
+    if (dailyIdMatch && method === 'PUT') {
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        if (!requireAdminCsrf(req, res, session)) return;
+
+        const dailyId = Number(dailyIdMatch[1]);
+        const index = data.daily_posts.findIndex(item => Number(item.id) === dailyId);
+        if (index < 0) {
+            return res.status(404).json({ error: 'daily post not found' });
+        }
+
+        data.daily_posts[index] = {
+            ...data.daily_posts[index],
+            caption: validation.trimmed(body.caption, DAILY_CAPTION_MAX)
+        };
+        writeAuditLog(data, 'daily_update', 'success', clientIp, session.u, 'daily_id=' + dailyId);
+        await saveData(data);
+        return res.status(200).json(data.daily_posts[index]);
+    }
+
+    if (dailyIdMatch && method === 'DELETE') {
+        const session = requireAdmin(req, res);
+        if (!session) return;
+        if (!requireAdminCsrf(req, res, session)) return;
+
+        const dailyId = Number(dailyIdMatch[1]);
+        const index = data.daily_posts.findIndex(item => Number(item.id) === dailyId);
+        if (index < 0) {
+            return res.status(404).json({ error: 'daily post not found' });
+        }
+
+        data.daily_posts.splice(index, 1);
+        writeAuditLog(data, 'daily_delete', 'success', clientIp, session.u, 'daily_id=' + dailyId);
+        await saveData(data);
+        return res.status(200).json({ id: dailyId, deleted: true });
+    }
+
     const articleIdMatch = routePath.match(/^\/articles\/(\d+)$/);
     if (articleIdMatch) {
         const articleId = Number(articleIdMatch[1]);
@@ -1392,6 +1588,42 @@ module.exports = async function handler(req, res) {
                 return res.status(404).json({ error: 'article not found' });
             }
             return res.status(200).json(article);
+        }
+
+        if (method === 'PUT') {
+            const session = requireAdmin(req, res);
+            if (!session) return;
+            if (!requireAdminCsrf(req, res, session)) return;
+
+            const index = data.articles.findIndex(item => Number(item.id) === articleId);
+            if (index < 0) {
+                return res.status(404).json({ error: 'article not found' });
+            }
+
+            if (!validation.isPlainObject(body)) {
+                return res.status(400).json({ error: '请求格式不正确' });
+            }
+            const title = validation.trimmed(body.title, 200);
+            const content = validation.text(body.content, 200000).trim();
+            const category = validation.trimmed(body.category, 80);
+            const coverImage = normalizeArticleCover(body.cover_image);
+            if (coverImage === null) {
+                return res.status(400).json({ error: '封面图格式无效或体积过大' });
+            }
+            if (!title || !content || !category) {
+                return res.status(400).json({ error: '请完整填写文章信息' });
+            }
+
+            data.articles[index] = {
+                ...data.articles[index],
+                title,
+                content,
+                category,
+                cover_image: coverImage
+            };
+            writeAuditLog(data, 'article_update', 'success', clientIp, session.u, 'article_id=' + articleId);
+            await saveData(data);
+            return res.status(200).json(data.articles[index]);
         }
 
         if (method === 'DELETE') {

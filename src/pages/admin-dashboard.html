@@ -4,22 +4,66 @@
     <meta charset="UTF-8">
         <script src="/src/js/theme-boot.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理员后台 - YanMo的个人博客</title>
+    <title>管理员后台 - YanMo Labs</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/styles.css">
     <link rel="stylesheet" href="/src/css/beautify.css">
     <link rel="stylesheet" href="/src/css/music-box.css">
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <link rel="stylesheet" href="/src/css/admin-console.css">
+    <meta name="description" content="YanMo 博客管理后台。">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="管理员后台 - YanMo Labs">
+    <meta property="og:description" content="YanMo 博客管理后台。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="管理员后台 - YanMo Labs">
+    <meta name="twitter:description" content="YanMo 博客管理后台。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <meta name="robots" content="noindex, nofollow">
+    <script>
+        // 管理端会话失效时统一回登录页，避免每个按钮下面重复出现“请先登录管理员账户”
+        (function () {
+            if (window.__admin401RedirectInstalled) return;
+            window.__admin401RedirectInstalled = true;
+            const nativeFetch = window.fetch.bind(window);
+            window.fetch = async function (input, init) {
+                const response = await nativeFetch(input, init);
+                if (response.status === 401) {
+                    const url = typeof input === 'string' ? input : (input && input.url) || '';
+                    if (url.indexOf('/api/') !== -1 && url.indexOf('/api/login') === -1) {
+                        try {
+                            sessionStorage.removeItem('yanmo.site.admin.session.v1');
+                            sessionStorage.removeItem('yanmo.site.admin.real-session.v1');
+                            sessionStorage.removeItem('yanmo.site.admin.csrf.v1');
+                            sessionStorage.setItem('yanmo.site.admin.expired.v1', '1');
+                        } catch (error) { /* noop */ }
+                        if (!window.__admin401Redirecting) {
+                            window.__admin401Redirecting = true;
+                            location.href = '/src/pages/admin.html?expired=1';
+                        }
+                    }
+                }
+                return response;
+            };
+        })();
+    </script>
 </head>
-<body>
+<body class="admin-console">
     <header>
         <nav>
             <div class="logo">
-                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
             </div>
             <button class="hamburger">
                 <span></span>
@@ -28,13 +72,10 @@
             </button>
             <div class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/src/pages/admin-dashboard.html" class="active"><span class="shimmer"></span>后台首页</a></li>
-                    <li><a href="#links"><span class="shimmer"></span>友链管理</a></li>
-                    <li><a href="#articles"><span class="shimmer"></span>文章管理</a></li>
-                    <li><a href="#messages"><span class="shimmer"></span>留言管理</a></li>
-                    <li><a href="#audit-logs"><span class="shimmer"></span>审计日志</a></li>
-                    <li><a href="/src/pages/index.html"><span class="shimmer"></span>网站首页</a></li>
-                    <li><a href="#" class="logout"><span class="shimmer"></span>退出登录</a></li>
+                    <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
                 </ul>
             </div>
         </nav>
@@ -64,7 +105,154 @@
             }
             return headers;
         }
+
+        // 自定义确认/输入弹窗：替代 window.confirm / window.prompt
+        let adminDialogResolver = null;
+        let adminDialogLastFocus = null;
+        let adminDialogBound = false;
+
+        function ensureAdminDialogBinding() {
+            if (adminDialogBound) return;
+            const modal = document.getElementById('admin-confirm');
+            if (!modal) return;
+            adminDialogBound = true;
+
+            modal.querySelector('[data-confirm-cancel]').addEventListener('click', () => closeAdminDialog(false));
+            document.getElementById('admin-confirm-cancel').addEventListener('click', () => closeAdminDialog(false));
+            document.getElementById('admin-confirm-ok').addEventListener('click', () => {
+                const field = document.getElementById('admin-confirm-field');
+                const input = document.getElementById('admin-confirm-input');
+                closeAdminDialog(field.hidden ? true : String(input.value || ''));
+            });
+            document.getElementById('admin-confirm-input').addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    document.getElementById('admin-confirm-ok').click();
+                }
+            });
+            document.addEventListener('keydown', (event) => {
+                if (modal.hidden) return;
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    closeAdminDialog(false);
+                }
+            });
+        }
+
+        function closeAdminDialog(result) {
+            const modal = document.getElementById('admin-confirm');
+            if (!modal || modal.hidden) return;
+            modal.hidden = true;
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('admin-confirm-open');
+            const resolver = adminDialogResolver;
+            adminDialogResolver = null;
+            if (adminDialogLastFocus && typeof adminDialogLastFocus.focus === 'function') {
+                adminDialogLastFocus.focus();
+            }
+            adminDialogLastFocus = null;
+            if (resolver) resolver(result);
+        }
+
+        function openAdminDialog(options) {
+            ensureAdminDialogBinding();
+            const modal = document.getElementById('admin-confirm');
+            const title = document.getElementById('admin-confirm-title');
+            const message = document.getElementById('admin-confirm-message');
+            const field = document.getElementById('admin-confirm-field');
+            const input = document.getElementById('admin-confirm-input');
+            const inputLabel = document.getElementById('admin-confirm-input-label');
+            const cancel = document.getElementById('admin-confirm-cancel');
+            const ok = document.getElementById('admin-confirm-ok');
+            if (!modal) return Promise.resolve(false);
+
+            if (adminDialogResolver) closeAdminDialog(false);
+
+            const isPrompt = options.mode === 'prompt';
+            title.textContent = options.title || (isPrompt ? '输入内容' : '确认操作');
+            message.textContent = options.message || '';
+            message.hidden = !options.message;
+            field.hidden = !isPrompt;
+            inputLabel.textContent = options.inputLabel || '输入内容';
+            input.value = isPrompt ? String(options.value || '') : '';
+            input.placeholder = options.placeholder || '';
+            cancel.textContent = options.cancelText || '取消';
+            ok.textContent = options.confirmText || '确定';
+            ok.dataset.danger = isPrompt ? 'false' : 'true';
+            adminDialogLastFocus = document.activeElement;
+
+            modal.hidden = false;
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('admin-confirm-open');
+
+            return new Promise((resolve) => {
+                adminDialogResolver = resolve;
+                window.setTimeout(() => {
+                    if (isPrompt) {
+                        input.focus();
+                        input.select();
+                    } else {
+                        cancel.focus();
+                    }
+                }, 30);
+            });
+        }
+
+        function adminConfirm(options) {
+            return openAdminDialog({ ...(options || {}), mode: 'confirm' });
+        }
+
+        function adminPrompt(options) {
+            return openAdminDialog({ ...(options || {}), mode: 'prompt' }).then((value) => value === false ? null : value);
+        }
+
+        // 服务端重启后内存会话失效，但旧标签页可能还剩 sessionStorage。
+        // 收到 401 时清理本地登录态并回登录页，避免一直显示“加载失败”。
+        (() => {
+            let redirecting = false;
+            const nativeFetch = window.fetch.bind(window);
+            window.fetch = async (...args) => {
+                const response = await nativeFetch(...args);
+                if (response.status === 401 && !redirecting) {
+                    redirecting = true;
+                    try {
+                        sessionStorage.removeItem(REAL_ADMIN_SESSION_KEY);
+                        sessionStorage.removeItem(ADMIN_CSRF_TOKEN_KEY);
+                        sessionStorage.removeItem('yanmo.site.admin.session.v1');
+                    } catch (error) {
+                        // ignore storage failures
+                    }
+                    window.location.replace('admin.html');
+                }
+                return response;
+            };
+        })();
     </script>
+
+    <aside class="admin-rail" aria-label="后台功能导航">
+        <a class="admin-rail-brand" href="/src/pages/index.html">
+            <span class="rail-eyebrow">YANMO // CONTROL_PLANE</span>
+            <strong>ADMIN_CONSOLE</strong>
+            <small>ROOT_ACCESS</small>
+        </a>
+        <nav class="admin-rail-nav">
+            <a href="#articles" class="is-active"><span class="rail-num">01</span><span class="rail-label">文章<small>ARTICLES</small></span></a>
+            <a href="#daily"><span class="rail-num">02</span><span class="rail-label">日常<small>DAILY</small></span></a>
+            <a href="#messages"><span class="rail-num">03</span><span class="rail-label">留言<small>MESSAGES</small></span></a>
+            <a href="#emails"><span class="rail-num">04</span><span class="rail-label">邮件<small>MAILBOX</small></span></a>
+            <a href="#visitors"><span class="rail-num">05</span><span class="rail-label">访客<small>VISITORS</small></span></a>
+            <a href="#links"><span class="rail-num">06</span><span class="rail-label">友链<small>LINKS</small></span></a>
+            <a href="#tools"><span class="rail-num">07</span><span class="rail-label">工具库<small>TOOLS</small></span></a>
+            <a href="#audit-logs"><span class="rail-num">08</span><span class="rail-label">审计<small>AUDIT</small></span></a>
+            <a href="#settings"><span class="rail-num">09</span><span class="rail-label">账户<small>ACCOUNT</small></span></a>
+            <a href="/src/pages/policy.html"><span class="rail-num">10</span><span class="rail-label">协议<small>POLICY</small></span></a>
+            <a href="#pages"><span class="rail-num">11</span><span class="rail-label">页面<small>PAGES</small></span></a>
+        </nav>
+        <div class="admin-rail-foot">
+            <a href="/src/pages/index.html">← 返回站点</a>
+            <span>SECURE_SESSION // ROOT</span>
+        </div>
+    </aside>
 
     <main>
         <section class="admin-dashboard reveal">
@@ -78,6 +266,11 @@
                 </div>
             </div>
             <h1>管理员后台</h1>
+            <div class="admin-security-alert" role="note">
+                <strong>安全提醒</strong>
+                <span>如果你仍在使用默认的 <code>admin / admin</code>，请立即到账户设置修改账号与密码。</span>
+                <a href="#settings">去修改</a>
+            </div>
             <div class="dashboard-stats">
                 <div class="stat-card">
                     <h3>待审核友链</h3>
@@ -92,6 +285,18 @@
                     <p class="stat-number" id="total-views">加载中...</p>
                 </div>
             </div>
+
+            <nav class="admin-index" aria-label="后台管理入口">
+                <a href="#articles"><span>01</span>文章</a>
+                <a href="#daily"><span>02</span>日常</a>
+                <a href="#messages"><span>03</span>留言</a>
+                <a href="#links"><span>04</span>友链</a>
+                <a href="#tools"><span>05</span>工具库</a>
+                <a href="#audit-logs"><span>06</span>审计</a>
+                <a href="#settings"><span>07</span>账户</a>
+                <a href="/src/pages/policy.html"><span>08</span>协议</a>
+                <a href="#pages"><span>09</span>页面</a>
+            </nav>
         </section>
         <script>
             function renderApiModeBadge() {
@@ -138,9 +343,9 @@
                     const response = await fetch('/api/stats');
                     if (response.ok) {
                         const data = await response.json();
-                        document.getElementById('pending-links').textContent = data.pending_links;
+                        document.getElementById('pending-links').textContent = Number.isFinite(Number(data.pending_links)) ? Number(data.pending_links) : '—';
                         document.getElementById('published-articles').textContent = data.published_articles;
-                        document.getElementById('total-views').textContent = data.total_views.toLocaleString();
+                        document.getElementById('total-views').textContent = Number.isFinite(Number(data.total_views)) ? Number(data.total_views).toLocaleString() : '—';
                     } else {
                         console.error('获取统计数据失败');
                     }
@@ -222,6 +427,7 @@
                     </tbody>
                 </table>
             </div>
+            <div class="admin-pagination" id="links-pagination" hidden></div>
         </section>
 
         <section id="articles" class="admin-section reveal">
@@ -234,8 +440,8 @@
             </div>
             <!-- 添加文章表单 -->
             <div id="add-article-form" class="article-form" style="display: none;">
-                <div class="terminal-label">NEW_ARTICLE_DRAFT // AUTO_SAVE: OFF</div>
-                <h3>添加新文章</h3>
+                <div class="terminal-label" id="article-form-terminal">NEW_ARTICLE_DRAFT // AUTO_SAVE: OFF</div>
+                <h3 id="article-form-title">添加新文章</h3>
                 <form id="new-article-form">
                     <div class="form-group">
                         <label for="article-title">标题</label>
@@ -244,13 +450,37 @@
                     <div class="form-group">
                         <label for="article-content">内容</label>
                         <textarea id="article-content" name="content" rows="10" required></textarea>
+                        <div class="editor-toolbar">
+                            <input type="text" id="article-image-url" inputmode="url" placeholder="粘贴图片 URL / Markdown / <img> 标签">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="insertArticleImage()">插入图片</button>
+                            <span class="editor-hint">文章配图：可直接 Ctrl+V 粘贴截图/图片，或从网页复制图文（自动提取图片），也可以粘贴图片 URL。日常照片请使用下方「相册管理」上传。</span>
+                            <span id="article-paste-status" class="editor-hint" role="status" aria-live="polite"></span>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="article-category">分类</label>
-                        <input type="text" id="article-category" name="category" required>
+                        <input type="text" id="article-category" name="category" list="article-category-options" placeholder="例如：渗透测试 / AI安全" required>
+                        <datalist id="article-category-options">
+                            <option value="渗透测试"></option>
+                            <option value="企业安全"></option>
+                            <option value="AI安全"></option>
+                            <option value="网络安全"></option>
+                            <option value="Python安全"></option>
+                            <option value="硬件安全"></option>
+                        </datalist>
+                    </div>
+                    <div class="form-group">
+                        <label for="article-cover">封面图（可选，自动压缩为 WebP）</label>
+                        <input type="file" id="article-cover" name="cover" accept="image/png,image/jpeg,image/webp,image/gif">
+                        <div class="article-cover-preview" id="article-cover-preview" hidden>
+                            <img id="article-cover-preview-img" alt="文章封面预览">
+                            <span id="article-cover-meta"></span>
+                            <button type="button" class="btn-sm delete" id="article-cover-remove">移除封面</button>
+                        </div>
+                        <p class="editor-hint">留空时会用分类色渐变作为封面。</p>
                     </div>
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">保存文章</button>
+                        <button type="submit" class="btn btn-primary" id="article-submit-btn">保存文章</button>
                         <button type="button" class="btn btn-secondary" onclick="hideAddArticleForm()">取消</button>
                     </div>
                 </form>
@@ -273,9 +503,91 @@
                     </tbody>
                 </table>
             </div>
+            <div class="admin-pagination" id="articles-pagination" hidden></div>
         </section>
 
-        <section id="messages" class="admin-section reveal">
+                <section id="daily" class="admin-section reveal">
+            <div class="section-header">
+                <h2>相册管理 / ALBUM_CONTROL</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <div class="daily-admin-layout">
+                <div class="daily-admin-column">
+                    <form id="album-form" class="article-form daily-admin-form">
+                        <div class="daily-admin-form-head">
+                            <h3>新建相册集</h3>
+                            <span class="form-card-badge">ALBUM</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="album-title">相册名称</label>
+                            <input type="text" id="album-title" name="title" maxlength="80" required placeholder="例如：2026 春 · 校园">
+                        </div>
+                        <div class="form-group">
+                            <label for="album-description">相册描述</label>
+                            <textarea id="album-description" name="description" rows="3" maxlength="600" placeholder="这本相册记录了什么..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">创建相册</button>
+                        </div>
+                        <div id="album-form-message" class="form-message" role="status" aria-live="polite"></div>
+                    </form>
+
+                    <div class="daily-admin-list-wrap">
+                        <div class="daily-admin-list-head">
+                            <h3>相册集</h3>
+                            <span id="album-count" class="daily-count">加载中...</span>
+                        </div>
+                        <div id="album-admin-list" class="daily-admin-list">
+                            <div class="loading-message"><span class="loading-spinner"></span><span>正在读取相册...</span></div>
+                        </div>
+                        <div class="admin-pagination" id="albums-pagination" hidden></div>
+                    </div>
+                </div>
+
+                <div class="daily-admin-column">
+                    <form id="daily-form" class="article-form daily-admin-form">
+                        <div class="daily-admin-form-head">
+                            <h3>上传照片</h3>
+                            <span class="form-card-badge">PHOTO</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="daily-album">所属相册</label>
+                            <select id="daily-album" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="daily-image">选择图片</label>
+                            <input type="file" id="daily-image" name="image" accept="image/png,image/jpeg,image/webp,image/gif" required>
+                            <small class="editor-hint">支持 PNG / JPG / WebP / GIF。上传前会自动压缩为 WebP（约 240KB 内）。</small>
+                        </div>
+                        <div id="daily-preview" class="daily-admin-preview" hidden>
+                            <img id="daily-preview-img" alt="照片预览">
+                        </div>
+                        <div class="form-group">
+                            <label for="daily-caption">照片说明</label>
+                            <textarea id="daily-caption" name="caption" rows="3" maxlength="1000" placeholder="这张照片背后的故事..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">上传照片</button>
+                            <span id="daily-image-meta" class="daily-image-meta"></span>
+                        </div>
+                        <div id="daily-form-message" class="form-message" role="status" aria-live="polite"></div>
+                    </form>
+
+                    <div class="daily-admin-list-wrap">
+                        <div class="daily-admin-list-head">
+                            <h3 id="daily-list-title">相册照片</h3>
+                            <span id="daily-count" class="daily-count">加载中...</span>
+                        </div>
+                        <div id="daily-admin-list" class="daily-admin-list">
+                            <div class="loading-message"><span class="loading-spinner"></span><span>正在读取照片...</span></div>
+                        </div>
+                        <div class="admin-pagination" id="photos-pagination" hidden></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+<section id="messages" class="admin-section reveal">
             <div class="section-header">
                 <h2>留言管理 / MESSAGE_CONTROL</h2>
                 <div class="section-header-bar"></div>
@@ -323,6 +635,129 @@
                     </tbody>
                 </table>
             </div>
+            <div class="admin-pagination" id="messages-pagination" hidden></div>
+        </section>
+
+        <section id="emails" class="admin-section reveal">
+            <div class="section-header">
+                <h2>邮件 / MAILBOX</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <p class="widget-desc" style="margin-bottom:1rem;">联系页表单会同时发邮件并在这里存一份站内副本。</p>
+            <div class="links-audit-toolbar">
+                <div class="audit-chip-group">
+                    <span class="audit-chip">全部 <strong id="email-total-count">0</strong></span>
+                    <span class="audit-chip">未读 <strong id="email-unread-count">0</strong></span>
+                    <span class="audit-chip">已读 <strong id="email-read-count">0</strong></span>
+                </div>
+                <div class="links-audit-controls">
+                    <label>
+                        状态
+                        <select id="email-status-filter">
+                            <option value="all">全部</option>
+                            <option value="unread">未读</option>
+                            <option value="read">已读</option>
+                        </select>
+                    </label>
+                    <label>
+                        关键词
+                        <input id="email-keyword-filter" type="text" placeholder="姓名/邮箱/主题/内容">
+                    </label>
+                    <button type="button" class="btn-sm edit" id="email-refresh-btn">刷新列表</button>
+                </div>
+                <div id="email-audit-message" class="form-message" style="margin-top:0.4rem;" role="status" aria-live="polite"></div>
+            </div>
+            <div class="admin-table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>状态</th>
+                            <th>姓名</th>
+                            <th>邮箱</th>
+                            <th>主题</th>
+                            <th>内容预览</th>
+                            <th>时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="email-table-body">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 2rem;">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="admin-pagination" id="email-pagination" hidden></div>
+        </section>
+
+        <section id="visitors" class="admin-section reveal">
+            <div class="section-header">
+                <h2>访客 / VISITORS</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <p class="widget-desc" style="margin-bottom:1rem;">记录公开页面的访问 IP、地区、页面与来源。管理后台自身的访问不会计入。</p>
+
+            <div class="visitor-stats">
+                <div class="visitor-stat-card">
+                    <span>总访问</span>
+                    <strong id="visitor-total">0</strong>
+                </div>
+                <div class="visitor-stat-card">
+                    <span>独立 IP</span>
+                    <strong id="visitor-unique">0</strong>
+                </div>
+                <div class="visitor-stat-card">
+                    <span>今日访问</span>
+                    <strong id="visitor-today">0</strong>
+                </div>
+                <div class="visitor-stat-card">
+                    <span>今日独立 IP</span>
+                    <strong id="visitor-today-unique">0</strong>
+                </div>
+            </div>
+
+            <div class="visitor-region-row">
+                <span class="visitor-region-label">TOP_REGIONS</span>
+                <div id="visitor-top-regions" class="visitor-region-list"><span class="visitor-region-empty">暂无地区数据</span></div>
+            </div>
+
+            <div class="links-audit-toolbar">
+                <div class="audit-chip-group">
+                    <span class="audit-chip">独立 IP <strong id="visitor-unique-chip">0</strong></span>
+                    <span class="audit-chip">今日 <strong id="visitor-today-chip">0</strong></span>
+                </div>
+                <div class="links-audit-controls">
+                    <label>
+                        IP
+                        <input id="visitor-ip-filter" type="text" placeholder="例如 8.8.8.8">
+                    </label>
+                    <label>
+                        地区
+                        <input id="visitor-region-filter" type="text" placeholder="国家 / 省 / 城市">
+                    </label>
+                    <button type="button" class="btn-sm edit" id="visitor-refresh-btn">刷新列表</button>
+                </div>
+                <div id="visitor-audit-message" class="form-message" style="margin-top:0.4rem;" role="status" aria-live="polite"></div>
+            </div>
+
+            <div class="admin-table-container">
+                <table class="admin-table visitor-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>IP</th>
+                            <th>地区</th>
+                            <th>页面</th>
+                            <th>User-Agent</th>
+                            <th>来源</th>
+                        </tr>
+                    </thead>
+                    <tbody id="visitor-table-body">
+                        <tr><td colspan="6" style="text-align:center;padding:2rem;">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="admin-pagination" id="visitor-pagination" hidden></div>
         </section>
 
         <!-- 留言详情模态框 -->
@@ -363,6 +798,12 @@
                             <option value="article_delete">article_delete</option>
                             <option value="link_status_update">link_status_update</option>
                             <option value="link_delete">link_delete</option>
+                            <option value="daily_create">daily_create</option>
+                            <option value="daily_update">daily_update</option>
+                            <option value="daily_delete">daily_delete</option>
+                            <option value="album_create">album_create</option>
+                            <option value="album_update">album_update</option>
+                            <option value="album_delete">album_delete</option>
                             <option value="message_delete">message_delete</option>
                             <option value="csrf_check">csrf_check</option>
                             <option value="session_invalidated">session_invalidated</option>
@@ -418,6 +859,136 @@
             </div>
         </section>
 
+        <section id="tools" class="admin-section reveal">
+            <div class="section-header">
+                <h2>工具库 / TOOL_LIBRARY</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <div class="admin-actions">
+                <button type="button" class="btn primary" id="tool-new-btn">新增工具</button>
+                <button type="button" class="btn-sm edit" id="tool-refresh-btn">刷新列表</button>
+            </div>
+
+            <div class="article-form" id="tool-editor">
+                <h3 id="tool-form-title">新增工具</h3>
+                <form id="tool-form">
+                    <input type="hidden" id="tool-id">
+                    <div class="admin-form-grid">
+                        <div class="form-group">
+                            <label for="tool-name">工具名称</label>
+                            <input type="text" id="tool-name" maxlength="120" required placeholder="例如 Nmap">
+                        </div>
+                        <div class="form-group">
+                            <label for="tool-category">分类</label>
+                            <input type="text" id="tool-category" maxlength="40" required list="tool-category-list" placeholder="网络安全">
+                            <datalist id="tool-category-list">
+                                <option value="计算机网络"></option>
+                                <option value="网络安全"></option>
+                                <option value="开发环境"></option>
+                                <option value="网络代理"></option>
+                                <option value="实用工具"></option>
+                                <option value="移动应用"></option>
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="tool-version">版本</label>
+                            <input type="text" id="tool-version" maxlength="40" placeholder="7.95">
+                        </div>
+                        <div class="form-group">
+                            <label for="tool-size">文件大小</label>
+                            <input type="text" id="tool-size" maxlength="40" placeholder="28 MB">
+                        </div>
+                        <div class="form-group">
+                            <label for="tool-glyph">图标文字</label>
+                            <input type="text" id="tool-glyph" maxlength="4" placeholder="NM">
+                        </div>
+                        <div class="form-group">
+                            <label for="tool-tone">图标配色</label>
+                            <select id="tool-tone">
+                                <option value="blue">蓝色</option>
+                                <option value="cyan">青色</option>
+                                <option value="green">绿色</option>
+                                <option value="orange">橙色</option>
+                                <option value="purple">紫色</option>
+                                <option value="gray">灰色</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="tool-source">来源标签</label>
+                            <input type="text" id="tool-source" maxlength="40" placeholder="官方 / GitHub / 网盘">
+                        </div>
+                        <div class="form-group">
+                            <label for="tool-updated">更新日期</label>
+                            <input type="text" id="tool-updated" maxlength="40" placeholder="2026-11-25">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="tool-description">描述</label>
+                        <textarea id="tool-description" rows="2" maxlength="600" placeholder="一句话说明用途。"></textarea>
+                    </div>
+                    <div class="admin-form-grid">
+                        <div class="form-group">
+                            <label for="tool-pan-url">网盘分享链接</label>
+                            <input type="url" id="tool-pan-url" maxlength="2048" placeholder="https://pan.baidu.com/s/...">
+                        </div>
+                        <div class="form-group">
+                            <label for="tool-pan-code">提取码</label>
+                            <input type="text" id="tool-pan-code" maxlength="40" placeholder="abcd">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="tool-download-url">官方 / 备用下载地址</label>
+                        <input type="url" id="tool-download-url" maxlength="2048" placeholder="https://...">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn">保存工具</button>
+                        <button type="button" class="btn" id="tool-cancel-btn">取消编辑</button>
+                    </div>
+                    <div id="tool-message" class="form-message" role="status" aria-live="polite"></div>
+                </form>
+            </div>
+
+            <div class="admin-table-container" style="margin-top:1rem;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>工具</th>
+                            <th>分类</th>
+                            <th>版本</th>
+                            <th>下载来源</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tools-table-body">
+                        <tr><td colspan="5">加载中...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="admin-pagination" id="tools-pagination" hidden></div>
+        </section>
+
+        <section id="pages" class="admin-section reveal">
+            <div class="section-header">
+                <h2>站点页面 / SITE_PAGES</h2>
+                <div class="section-header-bar"></div>
+            </div>
+            <p class="widget-desc" style="margin-bottom:1rem;">首页、关于、协议等静态页面与文案在项目文件中维护；工具库可直接在上方管理，其他页面可从这里预览。</p>
+            <div class="admin-page-grid">
+                <a href="/src/pages/index.html" target="_blank" rel="noopener">首页 <span>HOME</span></a>
+                <a href="/src/pages/articles.html" target="_blank" rel="noopener">文章 <span>ARTICLES</span></a>
+                <a href="/src/pages/daily.html" target="_blank" rel="noopener">日常 <span>DAILY</span></a>
+                <a href="/src/pages/tools.html" target="_blank" rel="noopener">工具库 <span>TOOLS</span></a>
+                <a href="/src/pages/about.html" target="_blank" rel="noopener">关于 <span>ABOUT</span></a>
+                <a href="/src/pages/contact.html" target="_blank" rel="noopener">联系 <span>CONTACT</span></a>
+                <a href="/src/pages/guestbook.html" target="_blank" rel="noopener">留言板 <span>GUESTBOOK</span></a>
+                <a href="/src/pages/links.html" target="_blank" rel="noopener">友链 <span>LINKS</span></a>
+                <a href="/src/pages/policy.html" target="_blank" rel="noopener">协议目录 <span>POLICIES</span></a>
+                <a href="/src/pages/privacy.html" target="_blank" rel="noopener">隐私协议 <span>PRIVACY</span></a>
+                <a href="/src/pages/cookies.html" target="_blank" rel="noopener">Cookie 协议 <span>COOKIES</span></a>
+                <a href="/src/pages/version.html" target="_blank" rel="noopener">版本协议 <span>VERSION</span></a>
+            </div>
+        </section>
+
         <section id="settings" class="admin-section reveal">
             <div class="section-header">
                 <h2>账户设置 / SYSTEM_CONFIG</h2>
@@ -426,6 +997,16 @@
             <div class="admin-actions">
                 <button class="btn primary" onclick="showChangePasswordForm()">修改账号与密码</button>
             </div>
+
+            <div class="article-form" style="margin-top: 1rem;">
+                <h3>邮件通道自检</h3>
+                <p class="editor-hint" style="margin-bottom: 0.8rem;">点击后向 CONTACT_TO 发送一封测试邮件，用来确认 SMTP 配置是否仍可用。</p>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="mail-test-btn">发送测试邮件</button>
+                    <span id="mail-test-message" class="form-message" role="status" aria-live="polite"></span>
+                </div>
+            </div>
+
             <!-- 修改账号与密码表单 -->
             <div id="change-password-form" class="article-form" style="display: none;">
                 <h3>修改管理员账号信息</h3>
@@ -459,9 +1040,13 @@
         </section>
         <script>
             let allLinks = [];
+            let linksPage = 1;
+            let linksFiltered = [];
+            let editingArticleId = null;
+            let articleCoverData = '';
             const auditState = {
                 page: 1,
-                pageSize: 20,
+                pageSize: 10,
                 totalPages: 1,
                 total: 0
             };
@@ -503,6 +1088,43 @@
                 if (status === 'approved') return 'badge-green';
                 if (status === 'rejected') return 'badge-cyan';
                 return 'badge-magenta';
+            }
+
+            const ADMIN_PAGE_SIZE = 10;
+
+            function pageSlice(items, page, size) {
+                const list = Array.isArray(items) ? items : [];
+                const perPage = size || ADMIN_PAGE_SIZE;
+                const total = list.length;
+                const totalPages = Math.max(1, Math.ceil(total / perPage));
+                const current = Math.min(Math.max(1, Number(page) || 1), totalPages);
+                return {
+                    items: list.slice((current - 1) * perPage, current * perPage),
+                    page: current,
+                    totalPages: totalPages,
+                    total: total,
+                    size: perPage
+                };
+            }
+
+            function renderAdminPager(container, view, onPage) {
+                if (!container) return;
+                if (!view || view.total <= view.size) {
+                    container.hidden = true;
+                    container.innerHTML = '';
+                    return;
+                }
+                container.hidden = false;
+                container.innerHTML = `
+                    <span class="admin-pagination-meta">共 ${view.total} 条 · 第 ${view.page}/${view.totalPages} 页</span>
+                    <div class="admin-pagination-actions">
+                        <button type="button" class="btn-sm edit" data-page-prev ${view.page <= 1 ? 'disabled' : ''}>上一页</button>
+                        <button type="button" class="btn-sm edit" data-page-next ${view.page >= view.totalPages ? 'disabled' : ''}>下一页</button>
+                    </div>`;
+                const prev = container.querySelector('[data-page-prev]');
+                const next = container.querySelector('[data-page-next]');
+                if (prev) prev.addEventListener('click', function () { onPage(view.page - 1); });
+                if (next) next.addEventListener('click', function () { onPage(view.page + 1); });
             }
 
             // 将数据库存储的 UTC 时间戳正确解析为本地时间
@@ -584,14 +1206,14 @@
 
             function renderLinksTable(list) {
                 const tbody = document.getElementById('links-table-body');
+                if (!tbody) return;
+                const view = pageSlice(list, linksPage);
                 tbody.innerHTML = '';
 
-                if (!list.length) {
+                if (!view.total) {
                     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">当前筛选条件下暂无友链记录</td></tr>';
-                    return;
-                }
-
-                list.forEach(link => {
+                } else {
+                    view.items.forEach(link => {
                     const avatar = (link.site_avatar || '').trim();
                     const safeName = String(link.site_name || '站').trim();
                     const fallback = escapeHtml((safeName[0] || '站').toUpperCase());
@@ -624,13 +1246,20 @@
                                 ${link.status === 'pending' ? `
                                     <button class="btn-sm approve" onclick="approveLink(${link.id}, this)">通过</button>
                                     <button class="btn-sm reject" onclick="rejectLink(${link.id}, this)">拒绝</button>
+                                    <button class="btn-sm delete" onclick="deleteLink(${link.id}, this)">删除</button>
                                 ` : `
                                     <button class="btn-sm delete" onclick="deleteLink(${link.id}, this)">删除</button>
                                 `}
                             </div>
                         </td>
                     `;
-                    tbody.appendChild(tr);
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                renderAdminPager(document.getElementById('links-pagination'), view, function (page) {
+                    linksPage = page;
+                    renderLinksTable(linksFiltered);
                 });
             }
 
@@ -653,7 +1282,9 @@
                     });
                 }
 
-                renderLinksTable(filtered);
+                linksFiltered = filtered;
+                linksPage = 1;
+                renderLinksTable(linksFiltered);
             }
 
             function setAuditMessage(text, isError = false) {
@@ -764,7 +1395,8 @@
             // 加载友链数据
             async function loadLinks() {
                 try {
-                    const response = await fetch('/api/links');
+                    // 管理端必须读取全部状态，公共 /api/links 只返回已通过
+                    const response = await fetch('/api/admin/links');
                     if (response.ok) {
                         allLinks = await response.json();
                         updateLinksCounters(allLinks);
@@ -780,44 +1412,68 @@
             }
             
             // 加载文章数据
+            let articlesCache = [];
+            let articlesPage = 1;
+
             async function loadArticles() {
                 try {
                     const response = await fetch('/api/articles');
                     if (response.ok) {
-                        const articles = await response.json();
-                        const tbody = document.getElementById('articles-table-body');
-                        tbody.innerHTML = '';
-                        
-                        articles.forEach(article => {
-                            const safeTitle = escapeHtml(article.title || '');
-                            const safeCreatedAt = escapeHtml(formatAdminDateTime(article.created_at));
-                            const safeCategory = escapeHtml(article.category || '');
-                            const safeId = Number(article.id) || 0;
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td>${safeTitle}</td>
-                                <td>${safeCreatedAt}</td>
-                                <td>${safeCategory}</td>
-                                <td>
-                                    <button class="btn small edit" onclick="editArticle(${safeId})">编辑</button>
-                                    <button class="btn small delete" onclick="deleteArticle(${safeId})">删除</button>
-                                </td>
-                            `;
-                            tbody.appendChild(tr);
-                        });
+                        articlesCache = await response.json();
+                        articlesPage = 1;
+                        renderArticles();
                     }
                 } catch (error) {
                     console.error('加载文章失败:', error);
                 }
             }
+
+            function renderArticles() {
+                const tbody = document.getElementById('articles-table-body');
+                if (!tbody) return;
+                const view = pageSlice(articlesCache, articlesPage);
+                tbody.innerHTML = '';
+
+                if (!view.items.length) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:2rem;">暂无文章</td></tr>';
+                } else {
+                    view.items.forEach(article => {
+                        const safeTitle = escapeHtml(article.title || '');
+                        const safeCreatedAt = escapeHtml(formatAdminDateTime(article.created_at));
+                        const safeCategory = escapeHtml(article.category || '');
+                        const safeId = Number(article.id) || 0;
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${safeTitle}</td>
+                            <td>${safeCreatedAt}</td>
+                            <td>${safeCategory}</td>
+                            <td>
+                                <button class="btn small edit" onclick="editArticle(${safeId})">编辑</button>
+                                <button class="btn small delete" onclick="deleteArticle(${safeId})">删除</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                renderAdminPager(document.getElementById('articles-pagination'), view, function (page) {
+                    articlesPage = page;
+                    renderArticles();
+                });
+            }
             
             // 加载留言数据
             let messagesCache = [];
+            let messagesFiltered = [];
+            let messagesPage = 1;
             let messagesCurrentDetailId = null;
+            let emailMessages = [];
+            let emailFiltered = [];
+            let emailPage = 1;
 
             async function loadMessages() {
                 try {
-                    const response = await fetch('/api/messages');
+                    const response = await fetch('/api/messages?source=guestbook');
                     if (response.ok) {
                         messagesCache = await response.json();
                         // 更新统计
@@ -839,12 +1495,10 @@
             }
 
             function applyMessagesFilters() {
-                const tbody = document.getElementById('messages-table-body');
-                if (!tbody) return;
                 const statusFilter = document.getElementById('messages-status-filter').value;
                 const keyword = (document.getElementById('messages-keyword-filter').value || '').trim().toLowerCase();
 
-                const filtered = messagesCache.filter(m => {
+                messagesFiltered = messagesCache.filter(m => {
                     if (statusFilter === 'unread' && Number(m.is_read)) return false;
                     if (statusFilter === 'read' && !Number(m.is_read)) return false;
                     if (keyword) {
@@ -855,40 +1509,52 @@
                     }
                     return true;
                 });
+                messagesPage = 1;
+                renderMessagesTable();
+            }
 
+            function renderMessagesTable() {
+                const tbody = document.getElementById('messages-table-body');
+                if (!tbody) return;
+                const view = pageSlice(messagesFiltered, messagesPage);
                 tbody.innerHTML = '';
-                if (filtered.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;">暂无留言</td></tr>`;
-                    return;
+
+                if (!view.total) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">暂无留言</td></tr>';
+                } else {
+                    view.items.forEach(message => {
+                        const safeName = escapeHtml(message.name || '');
+                        const safeEmail = escapeHtml(message.email || '');
+                        const safeSubject = escapeHtml(message.subject || '（无主题）');
+                        const safeMessage = escapeHtml(message.message || '');
+                        const previewText = safeMessage.length > 50 ? safeMessage.slice(0, 50) + '…' : safeMessage;
+                        const safeCreatedAt = escapeHtml(formatAdminDateTime(message.created_at));
+                        const safeId = Number(message.id) || 0;
+                        const isRead = Number(message.is_read);
+                        const tr = document.createElement('tr');
+                        tr.style.cursor = 'pointer';
+                        tr.innerHTML = `
+                            <td>
+                                <span class="message-status-dot ${isRead ? 'is-read' : 'is-unread'}" title="${isRead ? '已读' : '未读'}"></span>
+                            </td>
+                            <td>${safeName}${!isRead ? ' <span class="new-flag">NEW</span>' : ''}</td>
+                            <td>${safeEmail}</td>
+                            <td>${safeSubject}</td>
+                            <td>${previewText}</td>
+                            <td>${safeCreatedAt}</td>
+                            <td>
+                                <button class="btn small edit" onclick="event.stopPropagation();viewMessageDetail(${safeId})">查看</button>
+                                <button class="btn small delete" onclick="event.stopPropagation();deleteMessage(${safeId})">删除</button>
+                            </td>
+                        `;
+                        tr.addEventListener('click', () => viewMessageDetail(safeId));
+                        tbody.appendChild(tr);
+                    });
                 }
 
-                filtered.forEach(message => {
-                    const safeName = escapeHtml(message.name || '');
-                    const safeEmail = escapeHtml(message.email || '');
-                    const safeSubject = escapeHtml(message.subject || '（无主题）');
-                    const safeMessage = escapeHtml(message.message || '');
-                    const previewText = safeMessage.length > 50 ? safeMessage.slice(0, 50) + '…' : safeMessage;
-                    const safeCreatedAt = escapeHtml(formatAdminDateTime(message.created_at));
-                    const safeId = Number(message.id) || 0;
-                    const isRead = Number(message.is_read);
-                    const tr = document.createElement('tr');
-                    tr.style.cursor = 'pointer';
-                    tr.innerHTML = `
-                        <td>
-                            <span class="message-status-dot ${isRead ? 'is-read' : 'is-unread'}" title="${isRead ? '已读' : '未读'}"></span>
-                        </td>
-                        <td>${safeName}${!isRead ? ' <span class="new-flag">NEW</span>' : ''}</td>
-                        <td>${safeEmail}</td>
-                        <td>${safeSubject}</td>
-                        <td>${previewText}</td>
-                        <td>${safeCreatedAt}</td>
-                        <td>
-                            <button class="btn small edit" onclick="event.stopPropagation();viewMessageDetail(${safeId})">查看</button>
-                            <button class="btn small delete" onclick="event.stopPropagation();deleteMessage(${safeId})">删除</button>
-                        </td>
-                    `;
-                    tr.addEventListener('click', () => viewMessageDetail(safeId));
-                    tbody.appendChild(tr);
+                renderAdminPager(document.getElementById('messages-pagination'), view, function (page) {
+                    messagesPage = page;
+                    renderMessagesTable();
                 });
             }
 
@@ -899,8 +1565,205 @@
                 el.style.color = isError ? '#ff4757' : 'var(--text-color)';
             }
 
-            function viewMessageDetail(id) {
-                const message = messagesCache.find(m => Number(m.id) === Number(id));
+            function setEmailAuditMessage(text, isError) {
+                const el = document.getElementById('email-audit-message');
+                if (!el) return;
+                el.textContent = text || '';
+                el.style.color = isError ? '#ff4757' : 'var(--text-color)';
+            }
+
+            async function loadEmails() {
+                try {
+                    const response = await fetch('/api/contact', { cache: 'no-store' });
+                    if (!response.ok) {
+                        setEmailAuditMessage('邮件列表加载失败（接口不可用）', true);
+                        return;
+                    }
+                    const list = await response.json();
+                    emailMessages = (Array.isArray(list) ? list : []).map(item => ({
+                        ...(item || {}),
+                        source: 'contact',
+                        is_read: Number.isFinite(Number(item && item.is_read)) ? Number(item.is_read) : 0
+                    }));
+                    emailPage = 1;
+
+                    const total = emailMessages.length;
+                    const unread = emailMessages.filter(m => !Number(m.is_read)).length;
+                    const elTotal = document.getElementById('email-total-count');
+                    const elUnread = document.getElementById('email-unread-count');
+                    const elRead = document.getElementById('email-read-count');
+                    if (elTotal) elTotal.textContent = String(total);
+                    if (elUnread) elUnread.textContent = String(unread);
+                    if (elRead) elRead.textContent = String(total - unread);
+
+                    applyEmailFilters();
+                    setEmailAuditMessage('邮件列表已更新');
+                } catch (error) {
+                    console.error('加载邮件失败:', error);
+                    setEmailAuditMessage('网络错误，加载邮件失败', true);
+                }
+            }
+
+            function applyEmailFilters() {
+                const statusFilter = document.getElementById('email-status-filter').value;
+                const keyword = (document.getElementById('email-keyword-filter').value || '').trim().toLowerCase();
+
+                emailFiltered = emailMessages.filter(m => {
+                    if (statusFilter === 'unread' && Number(m.is_read)) return false;
+                    if (statusFilter === 'read' && !Number(m.is_read)) return false;
+                    if (keyword) {
+                        const hay = [
+                            m.name || '', m.email || '', m.subject || '', m.message || ''
+                        ].join(' ').toLowerCase();
+                        if (!hay.includes(keyword)) return false;
+                    }
+                    return true;
+                });
+                emailPage = 1;
+                renderEmailTable();
+            }
+
+            function renderEmailTable() {
+                const tbody = document.getElementById('email-table-body');
+                if (!tbody) return;
+                const view = pageSlice(emailFiltered, emailPage);
+                tbody.innerHTML = '';
+
+                if (!view.total) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;">暂无邮件</td></tr>';
+                } else {
+                    view.items.forEach(message => {
+                        const safeName = escapeHtml(message.name || '');
+                        const safeEmail = escapeHtml(message.email || '');
+                        const safeSubject = escapeHtml(message.subject || '（无主题）');
+                        const safeMessage = escapeHtml(message.message || '');
+                        const previewText = safeMessage.length > 60 ? safeMessage.slice(0, 60) + '…' : safeMessage;
+                        const safeCreatedAt = escapeHtml(formatAdminDateTime(message.created_at));
+                        const safeId = Number(message.id) || 0;
+                        const isRead = Number(message.is_read);
+                        const tr = document.createElement('tr');
+                        tr.style.cursor = 'pointer';
+                        tr.innerHTML = `
+                            <td><span class="message-status-dot ${isRead ? 'is-read' : 'is-unread'}" title="${isRead ? '已读' : '未读'}"></span></td>
+                            <td>${safeName}${!isRead ? ' <span class="new-flag">NEW</span>' : ''}</td>
+                            <td>${safeEmail}</td>
+                            <td>${safeSubject}</td>
+                            <td>${previewText}</td>
+                            <td>${safeCreatedAt}</td>
+                            <td><button class="btn small edit" onclick="event.stopPropagation();viewMessageDetail(${safeId}, true)">查看</button></td>
+                        `;
+                        tr.addEventListener('click', () => viewMessageDetail(safeId, true));
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                renderAdminPager(document.getElementById('email-pagination'), view, function (page) {
+                    emailPage = page;
+                    renderEmailTable();
+                });
+            }
+
+            let visitorPage = 1;
+
+            function setVisitorMessage(text, isError) {
+                const el = document.getElementById('visitor-audit-message');
+                if (!el) return;
+                el.textContent = text || '';
+                el.style.color = isError ? '#f87171' : 'var(--lm-text-dim)';
+            }
+
+            async function loadVisitors() {
+                const ip = (document.getElementById('visitor-ip-filter').value || '').trim();
+                const region = (document.getElementById('visitor-region-filter').value || '').trim();
+                const params = new URLSearchParams({
+                    page: String(visitorPage),
+                    page_size: '10'
+                });
+                if (ip) params.set('ip', ip);
+                if (region) params.set('region', region);
+
+                try {
+                    const response = await fetch('/api/admin/visitors?' + params.toString(), { cache: 'no-store' });
+                    if (!response.ok) {
+                        setVisitorMessage('访客数据加载失败（HTTP ' + response.status + '）', true);
+                        return;
+                    }
+                    const data = await response.json();
+                    const total = Number(data.total) || 0;
+                    const unique = Number(data.unique_ips) || 0;
+                    const todayTotal = Number(data.today_total) || 0;
+                    const todayUnique = Number(data.today_unique) || 0;
+
+                    document.getElementById('visitor-total').textContent = total.toLocaleString();
+                    document.getElementById('visitor-unique').textContent = unique.toLocaleString();
+                    document.getElementById('visitor-today').textContent = todayTotal.toLocaleString();
+                    document.getElementById('visitor-today-unique').textContent = todayUnique.toLocaleString();
+                    document.getElementById('visitor-unique-chip').textContent = String(unique);
+                    document.getElementById('visitor-today-chip').textContent = String(todayTotal);
+
+                    const regionBox = document.getElementById('visitor-top-regions');
+                    if (regionBox) {
+                        const regions = Array.isArray(data.top_regions) ? data.top_regions : [];
+                        regionBox.innerHTML = regions.length
+                            ? regions.map(function (item) {
+                                return '<span class="visitor-region-chip"><strong>' + escapeHtml(item.region || '未知') + '</strong><em>' + Number(item.count || 0) + '</em></span>';
+                            }).join('')
+                            : '<span class="visitor-region-empty">暂无地区数据</span>';
+                    }
+
+                    const tbody = document.getElementById('visitor-table-body');
+                    const items = Array.isArray(data.items) ? data.items : [];
+                    tbody.innerHTML = items.length ? items.map(function (item) {
+                        const time = escapeHtml(formatAdminDateTime(item.created_at));
+                        const ipText = escapeHtml(item.ip || '—');
+                        const regionText = escapeHtml(item.region || '未知');
+                        const pathText = escapeHtml(item.path || '—');
+                        const uaText = escapeHtml(item.user_agent || '—');
+                        const uaShort = uaText.length > 80 ? uaText.slice(0, 80) + '…' : uaText;
+                        let refText = '—';
+                        let refHref = '';
+                        try {
+                            if (item.referrer) {
+                                const parsed = new URL(item.referrer);
+                                refText = parsed.hostname || item.referrer;
+                                refHref = item.referrer;
+                            }
+                        } catch (error) { /* keep dashes */ }
+                        const refHtml = refHref
+                            ? '<a href="' + escapeHtml(refHref) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(refText) + '</a>'
+                            : '—';
+                        return '<tr>' +
+                            '<td>' + time + '</td>' +
+                            '<td><code class="visitor-ip">' + ipText + '</code></td>' +
+                            '<td>' + regionText + '</td>' +
+                            '<td class="visitor-path" title="' + escapeHtml(item.path || '') + '">' + pathText + '</td>' +
+                            '<td class="visitor-ua" title="' + escapeHtml(item.user_agent || '') + '">' + uaShort + '</td>' +
+                            '<td>' + refHtml + '</td>' +
+                        '</tr>';
+                    }).join('') : '<tr><td colspan="6" style="text-align:center;padding:2rem;">还没有访客记录。打开一个公开页面后刷新即可看到。</td></tr>';
+
+                    const view = {
+                        page: Number(data.page) || 1,
+                        totalPages: Number(data.total_pages) || 1,
+                        total: total,
+                        size: Number(data.page_size) || 10
+                    };
+                    visitorPage = view.page;
+                    renderAdminPager(document.getElementById('visitor-pagination'), view, function (page) {
+                        visitorPage = page;
+                        loadVisitors();
+                    });
+                    setVisitorMessage('访客数据已更新');
+                } catch (error) {
+                    console.error('加载访客数据失败:', error);
+                    setVisitorMessage('网络错误，访客数据加载失败', true);
+                }
+            }
+
+            function viewMessageDetail(id, preferEmail) {
+                const primary = preferEmail ? emailMessages : messagesCache;
+                const secondary = preferEmail ? messagesCache : emailMessages;
+                const message = primary.find(m => Number(m.id) === Number(id)) || secondary.find(m => Number(m.id) === Number(id));
                 if (!message) return;
                 messagesCurrentDetailId = Number(message.id);
                 const body = document.getElementById('message-detail-body');
@@ -953,7 +1816,7 @@
             }
 
             async function toggleMessageRead(id, forceRead, reload) {
-                const message = messagesCache.find(m => Number(m.id) === Number(id));
+                const message = messagesCache.find(m => Number(m.id) === Number(id)) || emailMessages.find(m => Number(m.id) === Number(id));
                 if (!message) return;
                 const nextValue = forceRead === true ? true : forceRead === false ? false : !Number(message.is_read);
                 try {
@@ -974,12 +1837,29 @@
                         if (elUnread) elUnread.textContent = unread;
                         if (elRead) elRead.textContent = total - unread;
                         applyMessagesFilters();
+
+                        const isEmailMessage = emailMessages.some(m => Number(m.id) === Number(id));
+                        if (isEmailMessage) {
+                            const eTotal = emailMessages.length;
+                            const eUnread = emailMessages.filter(m => !Number(m.is_read)).length;
+                            const eTotalEl = document.getElementById('email-total-count');
+                            const eUnreadEl = document.getElementById('email-unread-count');
+                            const eReadEl = document.getElementById('email-read-count');
+                            if (eTotalEl) eTotalEl.textContent = String(eTotal);
+                            if (eUnreadEl) eUnreadEl.textContent = String(eUnread);
+                            if (eReadEl) eReadEl.textContent = String(eTotal - eUnread);
+                            applyEmailFilters();
+                        }
+
                         // 同步按钮文字
                         const toggleBtn = document.getElementById('message-toggle-read-btn');
                         if (messagesCurrentDetailId === Number(id) && toggleBtn) {
                             toggleBtn.textContent = nextValue ? '标记未读' : '标记已读';
                         }
-                        if (reload) setMessagesAuditMessage(nextValue ? '已标记为已读' : '已标记为未读');
+                        if (reload) {
+                            if (isEmailMessage) setEmailAuditMessage(nextValue ? '已标记为已读' : '已标记为未读');
+                            else setMessagesAuditMessage(nextValue ? '已标记为已读' : '已标记为未读');
+                        }
                     } else {
                         setMessagesAuditMessage('更新状态失败', true);
                     }
@@ -990,7 +1870,11 @@
             }
 
             async function deleteMessageFromDetail() {
-                if (messagesCurrentDetailId && confirm('确定要删除这条留言吗？')) {
+                if (messagesCurrentDetailId && await adminConfirm({
+                    title: '删除留言',
+                    message: '确定要删除这条留言吗？删除后不可恢复。',
+                    confirmText: '删除'
+                })) {
                     await deleteMessage(messagesCurrentDetailId, true);
                     closeMessageDetail();
                 }
@@ -1052,7 +1936,11 @@
             
             // 删除友链
             async function deleteLink(id, triggerButton) {
-                if (confirm('确定要删除这条友链吗？')) {
+                if (await adminConfirm({
+                    title: '删除友链',
+                    message: '确定要删除这条友链吗？删除后不可恢复。',
+                    confirmText: '删除'
+                })) {
                     try {
                         if (triggerButton) {
                             triggerButton.disabled = true;
@@ -1080,7 +1968,11 @@
             
             // 删除留言
             async function deleteMessage(id, skipConfirm) {
-                if (!skipConfirm && !confirm('确定要删除这条留言吗？')) return;
+                if (!skipConfirm && !(await adminConfirm({
+                    title: '删除留言',
+                    message: '确定要删除这条留言吗？删除后不可恢复。',
+                    confirmText: '删除'
+                }))) return;
                 try {
                     const response = await fetch(`/api/messages/${id}`, {
                         method: 'DELETE',
@@ -1089,6 +1981,7 @@
                     if (response.ok) {
                         setMessagesAuditMessage('留言已删除');
                         await loadMessages();
+                        await loadEmails();
                     } else {
                         setMessagesAuditMessage('删除失败', true);
                     }
@@ -1100,7 +1993,11 @@
             
             // 删除文章
             async function deleteArticle(id) {
-                if (confirm('确定要删除这篇文章吗？')) {
+                if (await adminConfirm({
+                    title: '删除文章',
+                    message: '确定要删除这篇文章吗？删除后不可恢复。',
+                    confirmText: '删除'
+                })) {
                     try {
                         const response = await fetch(`/api/articles/${id}`, {
                             method: 'DELETE',
@@ -1116,47 +2013,403 @@
                 }
             }
             
+
+            const articleCoverInput = document.getElementById('article-cover');
+            const articleCoverPreview = document.getElementById('article-cover-preview');
+            const articleCoverPreviewImg = document.getElementById('article-cover-preview-img');
+            const articleCoverMeta = document.getElementById('article-cover-meta');
+            const articleCoverRemove = document.getElementById('article-cover-remove');
+
+            function setArticleCover(data) {
+                articleCoverData = data || '';
+                if (!articleCoverData) {
+                    articleCoverPreview.hidden = true;
+                    articleCoverPreviewImg.removeAttribute('src');
+                    articleCoverMeta.textContent = '';
+                    return;
+                }
+                articleCoverPreviewImg.src = articleCoverData;
+                articleCoverMeta.textContent = '已压缩：' + Math.round(articleCoverData.length / 1024) + ' KB';
+                articleCoverPreview.hidden = false;
+            }
+
+            function loadArticleCoverImage(file) {
+                return new Promise(function (resolve, reject) {
+                    const url = URL.createObjectURL(file);
+                    const image = new Image();
+                    image.onload = function () { URL.revokeObjectURL(url); resolve(image); };
+                    image.onerror = function () { URL.revokeObjectURL(url); reject(new Error('图片读取失败')); };
+                    image.src = url;
+                });
+            }
+
+            async function optimizeArticleCover(file) {
+                if (!/^image\/(png|jpeg|webp|gif)$/i.test(file.type)) {
+                    throw new Error('仅支持 PNG / JPG / WebP / GIF');
+                }
+                if (file.size > 15 * 1024 * 1024) {
+                    throw new Error('原始图片不能超过 15MB');
+                }
+                const image = await loadArticleCoverImage(file);
+                let width = image.naturalWidth || image.width;
+                let height = image.naturalHeight || image.height;
+                let scale = Math.min(1, 1600 / Math.max(width, height));
+
+                for (let attempt = 0; attempt < 4; attempt++) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(width * scale));
+                    canvas.height = Math.max(1, Math.round(height * scale));
+                    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+                    const qualities = [0.84, 0.76, 0.68, 0.6, 0.52];
+                    for (let i = 0; i < qualities.length; i++) {
+                        const output = canvas.toDataURL('image/webp', qualities[i]);
+                        if (output.length <= 180000) return output;
+                    }
+                    scale *= 0.8;
+                }
+                throw new Error('图片压缩后仍然过大，请换一张更小的图片');
+            }
+
+            if (articleCoverInput) {
+                articleCoverInput.addEventListener('change', function () {
+                    const file = articleCoverInput.files && articleCoverInput.files[0];
+                    if (!file) { setArticleCover(''); return; }
+                    articleCoverInput.disabled = true;
+                    setArticleCover('');
+                    articleCoverMeta.textContent = '正在压缩封面...';
+                    articleCoverPreview.hidden = false;
+                    optimizeArticleCover(file).then(function (data) {
+                        setArticleCover(data);
+                    }).catch(function (error) {
+                        articleCoverInput.value = '';
+                        setArticleCover('');
+                        alert(error.message || '封面处理失败');
+                    }).finally(function () {
+                        articleCoverInput.disabled = false;
+                    });
+                });
+            }
+
+            if (articleCoverRemove) {
+                articleCoverRemove.addEventListener('click', function () {
+                    articleCoverInput.value = '';
+                    setArticleCover('');
+                });
+            }
+
             // 显示添加文章表单
             function showAddArticleForm() {
+                editingArticleId = null;
+                articleCoverInput.value = '';
+                setArticleCover('');
+                document.getElementById('new-article-form').reset();
+                document.getElementById('article-form-title').textContent = '添加新文章';
+                document.getElementById('article-form-terminal').textContent = 'NEW_ARTICLE_DRAFT // AUTO_SAVE: OFF';
+                document.getElementById('article-submit-btn').textContent = '保存文章';
                 document.getElementById('add-article-form').style.display = 'block';
+                document.getElementById('article-title').focus();
             }
-            
-            // 隐藏添加文章表单
+
+            // 隐藏添加/编辑文章表单
             function hideAddArticleForm() {
                 document.getElementById('add-article-form').style.display = 'none';
                 document.getElementById('new-article-form').reset();
+                articleCoverInput.value = '';
+                setArticleCover('');
+                editingArticleId = null;
+                document.getElementById('article-form-title').textContent = '添加新文章';
+                document.getElementById('article-form-terminal').textContent = 'NEW_ARTICLE_DRAFT // AUTO_SAVE: OFF';
+                document.getElementById('article-submit-btn').textContent = '保存文章';
             }
             
-            // 提交新文章
+            // 允许直接粘贴 Markdown / <img> 片段到 URL 输入框
+            function normalizeArticleImageInput(value) {
+                let url = String(value || '').trim();
+                const markdown = url.match(/^!\[[^\]]*\]\(\s*([^)]+?)\s*\)$/);
+                if (markdown) url = markdown[1].trim();
+                const html = url.match(/<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i);
+                if (html) url = html[1].trim();
+                return url.replace(/&amp;/g, '&');
+            }
+
+            function probeArticleImage(url) {
+                return new Promise(function (resolve) {
+                    const image = new Image();
+                    image.onload = function () { resolve(true); };
+                    image.onerror = function () { resolve(false); };
+                    image.src = url;
+                });
+            }
+
+            // 在正文光标处插入 Markdown 图片
+            async function insertArticleImage() {
+                const urlInput = document.getElementById('article-image-url');
+                const textarea = document.getElementById('article-content');
+                if (!urlInput || !textarea) return;
+
+                const url = normalizeArticleImageInput(urlInput.value);
+                if (!url) {
+                    urlInput.focus();
+                    return;
+                }
+                if (!/^(https?:\/\/|\/|data:image\/)/i.test(url)) {
+                    alert('图片地址需要以 http(s)://、/ 或 data:image/ 开头');
+                    urlInput.focus();
+                    return;
+                }
+
+                if (articlePasteStatus) articlePasteStatus.textContent = '正在验证图片地址...';
+                const ok = await probeArticleImage(url);
+                if (!ok) {
+                    if (articlePasteStatus) articlePasteStatus.textContent = '';
+                    alert('这个地址没有加载出图片。请确认它是图片直链（不是文章页），或改用 Ctrl+V 粘贴图片。');
+                    urlInput.focus();
+                    return;
+                }
+
+                const title = (document.getElementById('article-title').value || '文章配图').trim();
+                const alt = title.replace(/[\[\]]/g, '').slice(0, 80) || '文章配图';
+                const snippet = '\n![' + alt + '](' + url + ')\n';
+                const start = typeof textarea.selectionStart === 'number' ? textarea.selectionStart : textarea.value.length;
+                const end = typeof textarea.selectionEnd === 'number' ? textarea.selectionEnd : start;
+                if (typeof textarea.setRangeText === 'function') {
+                    textarea.setRangeText(snippet, start, end, 'end');
+                } else {
+                    textarea.value += snippet;
+                }
+                urlInput.value = '';
+                textarea.focus();
+                if (articlePasteStatus) {
+                    articlePasteStatus.textContent = '已插入图片链接。';
+                    window.setTimeout(function () {
+                        if (articlePasteStatus.textContent.indexOf('已插入') === 0) articlePasteStatus.textContent = '';
+                    }, 4000);
+                }
+            }
+
+            function resolvePastedImageUrl(src) {
+                src = String(src || '').trim();
+                if (!src) return '';
+                if (/^(data:image\/|blob:)/i.test(src)) return src;
+                try { return new URL(src, window.location.href).href; } catch (error) { return src; }
+            }
+
+            function looksLikePastedImageUrl(value) {
+                const url = String(value || '').trim();
+                if (!url || /\s/.test(url)) return false;
+                if (/^data:image\//i.test(url)) return true;
+                return /^(https?:\/\/|\/)[^\s]+\.(png|jpe?g|webp|gif|avif|svg)(\?[^\s]*)?(#[^\s]*)?$/i.test(url);
+            }
+
+            // 把网页复制出来的 HTML 片段转成可编辑 Markdown，保留图片位置
+            function htmlPasteToMarkdown(html) {
+                const doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+                const chunks = [];
+
+                function walk(node) {
+                    if (node.nodeType === Node.TEXT_NODE) {
+                        const text = node.nodeValue.replace(/\u00a0/g, ' ').replace(/[ \t\r\n]+/g, ' ');
+                        if (text.trim()) chunks.push(text);
+                        return;
+                    }
+                    if (node.nodeType !== Node.ELEMENT_NODE) return;
+                    const tag = node.tagName.toLowerCase();
+                    if (['script', 'style', 'noscript', 'svg', 'iframe', 'button', 'input', 'select', 'textarea'].includes(tag)) return;
+                    if (tag === 'br') { chunks.push('\n'); return; }
+                    if (tag === 'img') {
+                        const src = resolvePastedImageUrl(node.getAttribute('data-src') || node.getAttribute('src'));
+                        if (src) {
+                            const alt = (node.getAttribute('alt') || '图片').replace(/[\[\]\n]/g, ' ').trim().slice(0, 80) || '图片';
+                            chunks.push('\n![' + alt + '](' + src + ')\n');
+                        }
+                        return;
+                    }
+                    if (tag === 'a') {
+                        const href = node.getAttribute('href') || '';
+                        const label = (node.textContent || '').trim();
+                        if (href && label && !/^javascript:/i.test(href)) {
+                            chunks.push('[' + label + '](' + resolvePastedImageUrl(href) + ')');
+                        } else {
+                            Array.from(node.childNodes).forEach(walk);
+                        }
+                        return;
+                    }
+                    if (tag === 'strong' || tag === 'b') { chunks.push('**'); Array.from(node.childNodes).forEach(walk); chunks.push('**'); return; }
+                    if (tag === 'em' || tag === 'i') { chunks.push('*'); Array.from(node.childNodes).forEach(walk); chunks.push('*'); return; }
+                    if (tag === 'code') { chunks.push('`' + node.textContent.replace(/`/g, '´') + '`'); return; }
+                    if (tag === 'pre') { chunks.push('\n```\n' + node.textContent.replace(/```/g, '``​`').trim() + '\n```\n'); return; }
+                    if (/^h[1-6]$/.test(tag)) {
+                        chunks.push('\n' + '#'.repeat(Number(tag[1])) + ' ');
+                        Array.from(node.childNodes).forEach(walk);
+                        chunks.push('\n');
+                        return;
+                    }
+                    if (tag === 'li') { chunks.push('\n- '); Array.from(node.childNodes).forEach(walk); chunks.push('\n'); return; }
+                    if (tag === 'blockquote') { chunks.push('\n> '); Array.from(node.childNodes).forEach(walk); chunks.push('\n'); return; }
+                    if (['p', 'div', 'section', 'article', 'header', 'footer', 'main', 'ul', 'ol', 'table', 'thead', 'tbody', 'tr', 'figure', 'figcaption', 'dl', 'dt', 'dd'].includes(tag)) {
+                        chunks.push('\n');
+                        Array.from(node.childNodes).forEach(walk);
+                        chunks.push('\n');
+                        return;
+                    }
+                    Array.from(node.childNodes).forEach(walk);
+                }
+
+                walk(doc.body);
+                return chunks.join('').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+            }
+
+            function insertArticleMarkdown(markdown, statusText, range) {
+                const textarea = articleContentInput;
+                if (!textarea || !markdown) return false;
+                const start = range && typeof range.start === 'number' ? range.start : (typeof textarea.selectionStart === 'number' ? textarea.selectionStart : textarea.value.length);
+                const end = range && typeof range.end === 'number' ? range.end : (typeof textarea.selectionEnd === 'number' ? textarea.selectionEnd : start);
+                if (textarea.value.length + markdown.length > 1400000) {
+                    alert('插入后正文过长，请减少图片数量或压缩后再试。');
+                    if (articlePasteStatus) articlePasteStatus.textContent = '正文过长，未插入。';
+                    return false;
+                }
+                if (typeof textarea.setRangeText === 'function') {
+                    textarea.setRangeText(markdown, start, end, 'end');
+                } else {
+                    textarea.value = textarea.value.slice(0, start) + markdown + textarea.value.slice(end);
+                }
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                textarea.focus();
+                if (articlePasteStatus && statusText) {
+                    articlePasteStatus.textContent = statusText;
+                    window.setTimeout(function () {
+                        if (articlePasteStatus.textContent.indexOf('已插入') === 0) articlePasteStatus.textContent = '';
+                    }, 4000);
+                }
+                return true;
+            }
+
+            // 粘贴图片：支持剪贴板图片文件、网页图文 HTML、图片直链
+            const articleContentInput = document.getElementById('article-content');
+            const articlePasteStatus = document.getElementById('article-paste-status');
+            if (articleContentInput) {
+                articleContentInput.addEventListener('paste', async function (event) {
+                    const clipboard = event.clipboardData;
+                    if (!clipboard) return;
+                    const textarea = articleContentInput;
+                    const start = typeof textarea.selectionStart === 'number' ? textarea.selectionStart : textarea.value.length;
+                    const end = typeof textarea.selectionEnd === 'number' ? textarea.selectionEnd : start;
+
+                    const imageFiles = [];
+                    if (clipboard.items) {
+                        for (let i = 0; i < clipboard.items.length; i++) {
+                            const item = clipboard.items[i];
+                            if (item.kind === 'file' && /^image\//i.test(item.type)) {
+                                const file = item.getAsFile();
+                                if (file) imageFiles.push(file);
+                            }
+                        }
+                    }
+
+                    if (imageFiles.length) {
+                        event.preventDefault();
+                        let inserted = '';
+                        let totalKb = 0;
+                        let insertedCount = 0;
+                        if (articlePasteStatus) articlePasteStatus.textContent = '正在处理粘贴的图片...';
+                        for (let i = 0; i < imageFiles.length; i++) {
+                            try {
+                                const data = await optimizeArticleCover(imageFiles[i]);
+                                inserted += (inserted ? '\n\n' : '\n') + '![粘贴图片](' + data + ')\n';
+                                totalKb += Math.round(data.length / 1024);
+                                insertedCount++;
+                            } catch (error) {
+                                alert('第 ' + (i + 1) + ' 张图片处理失败：' + (error.message || '未知错误'));
+                            }
+                        }
+                        if (!inserted) {
+                            if (articlePasteStatus) articlePasteStatus.textContent = '没有插入图片。';
+                            return;
+                        }
+                        insertArticleMarkdown(inserted, '已插入 ' + insertedCount + ' 张图片（约 ' + totalKb + ' KB）', { start: start, end: end });
+                        return;
+                    }
+
+                    const html = clipboard.getData ? (clipboard.getData('text/html') || '') : '';
+                    if (/<img\b/i.test(html)) {
+                        const markdown = htmlPasteToMarkdown(html);
+                        const count = (markdown.match(/!\[/g) || []).length;
+                        if (count) {
+                            event.preventDefault();
+                            insertArticleMarkdown(markdown, '已插入 ' + count + ' 张网页图片');
+                            return;
+                        }
+                    }
+
+                    const text = clipboard.getData ? String(clipboard.getData('text/plain') || '').trim() : '';
+                    if (/^!\[[^\]]*\]\(\s*(?:https?:\/\/|\/|data:image\/)[^)]+\)$/i.test(text)) {
+                        event.preventDefault();
+                        insertArticleMarkdown(text, '已插入图片');
+                        return;
+                    }
+                    if (looksLikePastedImageUrl(text)) {
+                        event.preventDefault();
+                        insertArticleMarkdown('\n![粘贴图片](' + text + ')\n', '已插入图片');
+                    }
+                });
+            }
+
+            // 提交新文章 / 保存文章修改
             document.getElementById('new-article-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
                 const title = document.getElementById('article-title').value;
                 const content = document.getElementById('article-content').value;
                 const category = document.getElementById('article-category').value;
+                const isEditing = editingArticleId !== null;
+                const url = isEditing ? '/api/articles/' + editingArticleId : '/api/articles';
                 
                 try {
-                    const response = await fetch('/api/articles', {
-                        method: 'POST',
+                    const response = await fetch(url, {
+                        method: isEditing ? 'PUT' : 'POST',
                         headers: getAdminCsrfHeaders(true),
-                        body: JSON.stringify({ title, content, category })
+                        body: JSON.stringify({ title, content, category, cover_image: articleCoverData })
                     });
                     if (response.ok) {
                         hideAddArticleForm();
                         loadArticles();
                         getStats();
                     } else {
-                        const reason = await parseErrorMessage(response, '添加文章失败');
+                        const reason = await parseErrorMessage(response, isEditing ? '保存修改失败' : '添加文章失败');
                         alert(reason);
                     }
                 } catch (error) {
-                    console.error('添加文章失败:', error);
+                    console.error(isEditing ? '保存文章修改失败:' : '添加文章失败:', error);
                 }
             });
             
-            // 编辑文章
-            function editArticle(id) {
-                alert('编辑功能正在开发中');
+            // 编辑文章：读取原文并复用文章表单
+            async function editArticle(id) {
+                try {
+                    const response = await fetch('/api/articles/' + id);
+                    if (!response.ok) {
+                        const reason = await parseErrorMessage(response, '读取文章失败');
+                        alert(reason);
+                        return;
+                    }
+                    const article = await response.json();
+                    showAddArticleForm();
+                    editingArticleId = id;
+                    document.getElementById('article-title').value = article.title || '';
+                    document.getElementById('article-content').value = article.content || '';
+                    document.getElementById('article-category').value = article.category || '';
+                    setArticleCover(article.cover_image || '');
+                    document.getElementById('article-form-title').textContent = '编辑文章 #' + id;
+                    document.getElementById('article-form-terminal').textContent = 'EDIT_ARTICLE_DRAFT // ARTICLE_ID: ' + id;
+                    document.getElementById('article-submit-btn').textContent = '保存修改';
+                    const form = document.getElementById('add-article-form');
+                    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    document.getElementById('article-title').focus();
+                } catch (error) {
+                    console.error('读取文章失败:', error);
+                    alert('网络错误，无法读取文章');
+                }
             }
             
             // 初始加载数据
@@ -1174,6 +2427,28 @@
                 setMessagesAuditMessage('正在刷新留言列表...');
                 loadMessages();
             });
+
+            document.getElementById('email-status-filter').addEventListener('change', applyEmailFilters);
+            document.getElementById('email-keyword-filter').addEventListener('input', applyEmailFilters);
+            document.getElementById('email-refresh-btn').addEventListener('click', () => {
+                setEmailAuditMessage('正在刷新邮件列表...');
+                loadEmails();
+            });
+
+            document.getElementById('visitor-ip-filter').addEventListener('change', () => {
+                visitorPage = 1;
+                loadVisitors();
+            });
+            document.getElementById('visitor-region-filter').addEventListener('change', () => {
+                visitorPage = 1;
+                loadVisitors();
+            });
+            document.getElementById('visitor-refresh-btn').addEventListener('click', () => {
+                setVisitorMessage('正在刷新访客数据...');
+                visitorPage = 1;
+                loadVisitors();
+            });
+
             document.querySelector('#message-detail-modal .modal-close').addEventListener('click', closeMessageDetail);
             document.getElementById('message-detail-modal').addEventListener('click', (e) => {
                 if (e.target.id === 'message-detail-modal') closeMessageDetail();
@@ -1216,6 +2491,8 @@
             loadLinks();
             loadArticles();
             loadMessages();
+            loadEmails();
+            loadVisitors();
             loadAuditLogs();
             
             // 每30秒刷新一次数据
@@ -1223,6 +2500,8 @@
                 loadLinks();
                 loadArticles();
                 loadMessages();
+                loadEmails();
+                loadVisitors();
                 loadAuditLogs();
                 getStats();
             }, 30000);
@@ -1309,7 +2588,13 @@
 
             document.getElementById('reset-admin-btn').addEventListener('click', async () => {
                 const resetMessage = document.getElementById('reset-admin-message');
-                const secondConfirm = prompt('请输入 RESET_ADMIN 确认重置：');
+                const secondConfirm = await adminPrompt({
+                    title: '重置管理员',
+                    message: '此操作会把管理员恢复为默认账号。请输入 RESET_ADMIN 确认。',
+                    inputLabel: '确认口令',
+                    placeholder: 'RESET_ADMIN',
+                    confirmText: '确认重置'
+                });
                 if (secondConfirm === null) {
                     return;
                 }
@@ -1351,6 +2636,100 @@
                 }
             });
         </script>
+
+        <script>
+            (function () {
+                // 1) 页面功能顺序：文章 → 日常 → 留言 → 友链 → 工具库 → 审计 → 账户 → 页面
+                const main = document.querySelector('main');
+                const order = ['articles', 'daily', 'messages', 'emails', 'visitors', 'links', 'tools', 'audit-logs', 'settings', 'pages'];
+                order.forEach(function (id) {
+                    const section = document.getElementById(id);
+                    if (section && main) main.appendChild(section);
+                });
+
+                // 2) 侧边栏滚动高亮
+                const rail = document.querySelector('.admin-rail-nav');
+                if (!rail) return;
+                const links = Array.from(rail.querySelectorAll('a[href^="#"]'));
+                const sections = links
+                    .map(function (link) { return document.querySelector(link.getAttribute('href')); })
+                    .filter(Boolean);
+                const setActive = function (activeLink) {
+                    links.forEach(function (link) {
+                        link.classList.toggle('is-active', link === activeLink);
+                    });
+                };
+                if (links.length) setActive(links[0]);
+
+                if ('IntersectionObserver' in window) {
+                    const observer = new IntersectionObserver(function (entries) {
+                        const visible = entries
+                            .filter(function (entry) { return entry.isIntersecting; })
+                            .sort(function (a, b) { return b.intersectionRatio - a.intersectionRatio; })[0];
+                        if (!visible) return;
+                        const link = links.find(function (item) {
+                            return item.getAttribute('href') === '#' + visible.target.id;
+                        });
+                        if (link) setActive(link);
+                    }, { rootMargin: '-12% 0px -72% 0px', threshold: [0.05, 0.2, 0.5] });
+                    sections.forEach(function (section) { observer.observe(section); });
+                }
+
+                links.forEach(function (link) {
+                    link.addEventListener('click', function () { setActive(link); });
+                });
+            })();
+        </script>
+
+        <script>
+            (function () {
+                const button = document.getElementById('mail-test-btn');
+                const message = document.getElementById('mail-test-message');
+                if (!button) return;
+
+                button.addEventListener('click', async function () {
+                    const csrf = sessionStorage.getItem('yanmo.site.admin.csrf.v1') || '';
+                    const oldText = button.textContent;
+                    button.disabled = true;
+                    button.textContent = '发送中...';
+                    if (message) {
+                        message.textContent = '正在连接 SMTP...';
+                        message.style.color = 'var(--lm-text-dim)';
+                    }
+
+                    try {
+                        const response = await fetch('/api/mail-test', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrf
+                            },
+                            body: '{}'
+                        });
+                        const result = await response.json().catch(function () { return {}; });
+                        if (response.ok && result.ok) {
+                            if (message) {
+                                message.textContent = '测试邮件已发送到 ' + (result.to || '收件邮箱') + '，请检查收件箱和垃圾箱。';
+                                message.style.color = '#62e8be';
+                            }
+                        } else {
+                            if (message) {
+                                message.textContent = '测试失败：' + (result.error || result.reason || ('HTTP ' + response.status));
+                                message.style.color = '#f87171';
+                            }
+                        }
+                    } catch (error) {
+                        if (message) {
+                            message.textContent = '网络错误，无法连接 SMTP 测试接口。';
+                            message.style.color = '#f87171';
+                        }
+                    } finally {
+                        button.disabled = false;
+                        button.textContent = oldText;
+                    }
+                });
+            })();
+        </script>
     </main>
 
     <footer>
@@ -1362,8 +2741,650 @@
             </div>
         </div>
         <div class="footer-copyright">
-            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
         </div>
     </footer>
+<script>
+(function () {
+    const albumForm = document.getElementById('album-form');
+    const albumTitleInput = document.getElementById('album-title');
+    const albumDescriptionInput = document.getElementById('album-description');
+    const albumMessage = document.getElementById('album-form-message');
+    const albumList = document.getElementById('album-admin-list');
+    const albumCount = document.getElementById('album-count');
+
+    const form = document.getElementById('daily-form');
+    const albumSelect = document.getElementById('daily-album');
+    const imageInput = document.getElementById('daily-image');
+    const preview = document.getElementById('daily-preview');
+    const previewImg = document.getElementById('daily-preview-img');
+    const caption = document.getElementById('daily-caption');
+    const message = document.getElementById('daily-form-message');
+    const meta = document.getElementById('daily-image-meta');
+    const list = document.getElementById('daily-admin-list');
+    const count = document.getElementById('daily-count');
+    const listTitle = document.getElementById('daily-list-title');
+
+    let imageData = '';
+    let albums = [];
+    let albumsPage = 1;
+    let photosCache = [];
+    let photosPage = 1;
+    let activeAlbumId = '';
+
+    function setAlbumMessage(text, kind) {
+        albumMessage.textContent = text || '';
+        albumMessage.className = 'form-message' + (kind ? ' ' + kind : '');
+    }
+
+    function setMessage(text, kind) {
+        message.textContent = text || '';
+        message.className = 'form-message' + (kind ? ' ' + kind : '');
+    }
+
+    function escapeHtml(value) {
+        return String(value || '').replace(/[&<>"']/g, function (char) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char] || char;
+        });
+    }
+
+    function formatDate(value) {
+        const text = String(value || '').replace('T', ' ').replace('Z', '');
+        return text.slice(0, 16) || '-';
+    }
+
+    function loadImageFile(file) {
+        return new Promise(function (resolve, reject) {
+            const url = URL.createObjectURL(file);
+            const image = new Image();
+            image.onload = function () { URL.revokeObjectURL(url); resolve(image); };
+            image.onerror = function () { URL.revokeObjectURL(url); reject(new Error('图片读取失败')); };
+            image.src = url;
+        });
+    }
+
+    async function optimizeImage(file) {
+        if (!/^image\/(png|jpeg|webp|gif)$/i.test(file.type)) {
+            throw new Error('仅支持 PNG / JPG / WebP / GIF');
+        }
+        if (file.size > 15 * 1024 * 1024) {
+            throw new Error('原始图片不能超过 15MB');
+        }
+
+        const image = await loadImageFile(file);
+        let width = image.naturalWidth || image.width;
+        let height = image.naturalHeight || image.height;
+        let scale = Math.min(1, 1600 / Math.max(width, height));
+
+        for (let attempt = 0; attempt < 4; attempt++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(width * scale));
+            canvas.height = Math.max(1, Math.round(height * scale));
+            const context = canvas.getContext('2d');
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            const qualities = [0.86, 0.78, 0.7, 0.62, 0.55];
+            for (let i = 0; i < qualities.length; i++) {
+                const output = canvas.toDataURL('image/webp', qualities[i]);
+                if (output.length <= 240000) return output;
+            }
+            scale *= 0.8;
+        }
+        throw new Error('图片压缩后仍然过大，请换一张更小的图片');
+    }
+
+    imageInput.addEventListener('change', function () {
+        const file = imageInput.files && imageInput.files[0];
+        imageData = '';
+        preview.hidden = true;
+        meta.textContent = '';
+        if (!file) return;
+
+        setMessage('正在压缩图片...', '');
+        optimizeImage(file).then(function (data) {
+            imageData = data;
+            previewImg.src = data;
+            preview.hidden = false;
+            meta.textContent = '已压缩：' + Math.round(data.length / 1024) + ' KB';
+            setMessage('图片已就绪，可以上传。', 'success');
+        }).catch(function (error) {
+            imageInput.value = '';
+            setMessage(error.message || '图片处理失败', 'error');
+        });
+    });
+
+    albumForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        const title = albumTitleInput.value.trim();
+        if (!title) {
+            setAlbumMessage('请填写相册名称。', 'error');
+            albumTitleInput.focus();
+            return;
+        }
+
+        const submit = albumForm.querySelector('button[type="submit"]');
+        submit.disabled = true;
+        setAlbumMessage('正在创建相册...', '');
+
+        try {
+            const response = await fetch('/api/albums', {
+                method: 'POST',
+                headers: getAdminCsrfHeaders(true),
+                body: JSON.stringify({
+                    title: title,
+                    description: albumDescriptionInput.value.trim()
+                })
+            });
+            const result = await response.json().catch(function () { return {}; });
+            if (!response.ok) throw new Error(result.error || result.message || '创建失败');
+
+            albumForm.reset();
+            activeAlbumId = String(result.id || '');
+            setAlbumMessage('相册已创建，可以上传照片了。', 'success');
+            await loadAlbums();
+        } catch (error) {
+            setAlbumMessage(error.message || '创建失败，请稍后再试', 'error');
+        } finally {
+            submit.disabled = false;
+        }
+    });
+
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        if (!activeAlbumId) {
+            setMessage('请先创建或选择一个相册。', 'error');
+            return;
+        }
+        if (!imageData) {
+            setMessage('请先选择一张图片。', 'error');
+            imageInput.focus();
+            return;
+        }
+
+        const submit = form.querySelector('button[type="submit"]');
+        submit.disabled = true;
+        setMessage('上传中...', '');
+
+        try {
+            const response = await fetch('/api/daily', {
+                method: 'POST',
+                headers: getAdminCsrfHeaders(true),
+                body: JSON.stringify({
+                    album_id: activeAlbumId,
+                    image: imageData,
+                    caption: caption.value.trim()
+                })
+            });
+            const result = await response.json().catch(function () { return {}; });
+            if (!response.ok) throw new Error(result.error || result.message || '上传失败');
+
+            form.reset();
+            imageData = '';
+            preview.hidden = true;
+            meta.textContent = '';
+            setMessage('照片已上传。', 'success');
+            await loadAlbums();
+        } catch (error) {
+            setMessage(error.message || '上传失败，请稍后再试', 'error');
+        } finally {
+            submit.disabled = false;
+        }
+    });
+
+    albumSelect.addEventListener('change', function () {
+        activeAlbumId = albumSelect.value;
+        loadPhotos(activeAlbumId);
+    });
+
+    function renderAlbumList() {
+        albumCount.textContent = albums.length ? '共 ' + albums.length + ' 本' : '暂无相册';
+        albumSelect.innerHTML = albums.length
+            ? albums.map(function (album) {
+                return '<option value="' + escapeHtml(album.id) + '">' + escapeHtml(album.title) + '（' + (Number(album.photo_count) || 0) + ' 张）</option>';
+            }).join('')
+            : '<option value="">请先创建相册</option>';
+        albumSelect.disabled = !albums.length;
+
+        if (!albums.length) {
+            albumList.innerHTML = '<div class="daily-admin-empty">还没有相册集，先在上方创建一个吧。</div>';
+            const emptyPager = document.getElementById('albums-pagination');
+            if (emptyPager) emptyPager.hidden = true;
+            activeAlbumId = '';
+            albumSelect.value = '';
+            clearPhotos('还没有相册');
+            return;
+        }
+
+        if (!activeAlbumId || !albums.some(function (album) { return String(album.id) === String(activeAlbumId); })) {
+            activeAlbumId = String(albums[0].id);
+        }
+        albumSelect.value = activeAlbumId;
+
+        const albumView = pageSlice(albums, albumsPage);
+        albumList.innerHTML = albumView.items.map(function (album) {
+            const photoCount = Number(album.photo_count) || 0;
+            const cover = album.cover_image
+                ? '<img src="' + escapeHtml(album.cover_image) + '" alt="' + escapeHtml(album.title) + ' 封面" loading="lazy">'
+                : '<span class="daily-admin-album-cover daily-admin-album-cover--empty" aria-hidden="true">◌</span>';
+            return '<article class="daily-admin-item daily-admin-album">' +
+                cover +
+                '<div class="daily-admin-item-body">' +
+                    '<strong>' + escapeHtml(album.title) + '</strong>' +
+                    '<time>' + photoCount + ' 张 · ' + escapeHtml(formatDate(album.created_at)) + '</time>' +
+                    '<p>' + (album.description ? escapeHtml(album.description) : '<span class="daily-admin-muted">无描述</span>') + '</p>' +
+                '</div>' +
+                '<div class="daily-admin-actions">' +
+                    '<button type="button" class="btn-sm edit daily-admin-open" data-id="' + escapeHtml(album.id) + '">管理照片</button>' +
+                    '<button type="button" class="btn-sm delete daily-album-delete" data-id="' + escapeHtml(album.id) + '" data-count="' + photoCount + '" data-title="' + escapeHtml(album.title) + '">删除</button>' +
+                '</div>' +
+            '</article>';
+        }).join('');
+
+        renderAdminPager(document.getElementById('albums-pagination'), albumView, function (page) {
+            albumsPage = page;
+            renderAlbumList();
+        });
+    }
+
+    function clearPhotos(text) {
+        listTitle.textContent = '相册照片';
+        count.textContent = '暂无照片';
+        list.innerHTML = '<div class="daily-admin-empty">' + escapeHtml(text || '选择一个相册查看照片。') + '</div>';
+        const pager = document.getElementById('photos-pagination');
+        if (pager) pager.hidden = true;
+    }
+
+    function renderPhotos(items) {
+        photosCache = Array.isArray(items) ? items : [];
+        count.textContent = photosCache.length ? '共 ' + photosCache.length + ' 张' : '暂无照片';
+        const photosView = pageSlice(photosCache, photosPage);
+        if (!photosCache.length) {
+            list.innerHTML = '<div class="daily-admin-empty">这个相册还没有照片，上传第一张吧。</div>';
+            const pager = document.getElementById('photos-pagination');
+            if (pager) pager.hidden = true;
+            return;
+        }
+        list.innerHTML = photosView.items.map(function (item) {
+            const captionText = String(item.caption || '').trim();
+            return '<article class="daily-admin-item">' +
+                '<img src="' + escapeHtml(item.image_data) + '" alt="' + escapeHtml(captionText || '相册照片') + '" loading="lazy">' +
+                '<div class="daily-admin-item-body">' +
+                    '<time>' + escapeHtml(formatDate(item.created_at)) + '</time>' +
+                    '<p>' + (captionText ? escapeHtml(captionText) : '<span class="daily-admin-muted">无说明</span>') + '</p>' +
+                '</div>' +
+                '<div class="daily-admin-actions">' +
+                    '<button type="button" class="btn-sm edit daily-admin-edit" data-id="' + escapeHtml(item.id) + '" data-caption="' + escapeHtml(captionText) + '">编辑说明</button>' +
+                    '<button type="button" class="btn-sm delete daily-admin-delete" data-id="' + escapeHtml(item.id) + '">删除</button>' +
+                '</div>' +
+            '</article>';
+        }).join('');
+
+        renderAdminPager(document.getElementById('photos-pagination'), photosView, function (page) {
+            photosPage = page;
+            renderPhotos(photosCache);
+        });
+    }
+
+    async function loadPhotos(albumId) {
+        if (!albumId) {
+            clearPhotos('还没有相册');
+            return;
+        }
+        list.innerHTML = '<div class="loading-message"><span class="loading-spinner"></span><span>正在读取照片...</span></div>';
+        count.textContent = '加载中...';
+        try {
+            const response = await fetch('/api/albums/' + encodeURIComponent(albumId), { cache: 'no-store' });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const data = await response.json();
+            const album = data.album || {};
+            const items = Array.isArray(data.photos) ? data.photos : [];
+            listTitle.textContent = album.title ? '「' + album.title + '」的照片' : '相册照片';
+            photosPage = 1;
+            renderPhotos(items);
+        } catch (error) {
+            listTitle.textContent = '相册照片';
+            count.textContent = '读取失败';
+            list.innerHTML = '<div class="daily-admin-empty">照片列表暂时不可用，请稍后刷新。</div>';
+        }
+    }
+
+    async function loadAlbums() {
+        try {
+            const response = await fetch('/api/albums', { cache: 'no-store' });
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            const data = await response.json();
+            albums = Array.isArray(data) ? data : [];
+            albumsPage = 1;
+            renderAlbumList();
+            if (activeAlbumId) await loadPhotos(activeAlbumId);
+        } catch (error) {
+            albumCount.textContent = '读取失败';
+            albumList.innerHTML = '<div class="daily-admin-empty">相册列表暂时不可用，请稍后刷新。</div>';
+            clearPhotos('相册列表读取失败');
+        }
+    }
+
+    albumList.addEventListener('click', async function (event) {
+        const openButton = event.target.closest('.daily-admin-open');
+        if (openButton) {
+            activeAlbumId = String(openButton.dataset.id || '');
+            albumSelect.value = activeAlbumId;
+            await loadPhotos(activeAlbumId);
+            return;
+        }
+
+        const deleteButton = event.target.closest('.daily-album-delete');
+        if (!deleteButton) return;
+        const id = deleteButton.dataset.id;
+        if (!id) return;
+        const title = deleteButton.dataset.title || '这个相册';
+        const photoCount = Number(deleteButton.dataset.count) || 0;
+        if (!(await adminConfirm({
+            title: '删除相册',
+            message: '确定删除相册「' + title + '」吗？\n其中 ' + photoCount + ' 张照片也会一起删除。',
+            confirmText: '删除相册'
+        }))) return;
+
+        deleteButton.disabled = true;
+        try {
+            const response = await fetch('/api/albums/' + encodeURIComponent(id), {
+                method: 'DELETE',
+                headers: getAdminCsrfHeaders(false)
+            });
+            if (!response.ok) {
+                const result = await response.json().catch(function () { return {}; });
+                throw new Error(result.error || '删除失败');
+            }
+            if (String(activeAlbumId) === String(id)) activeAlbumId = '';
+            setAlbumMessage('相册已删除。', 'success');
+            await loadAlbums();
+        } catch (error) {
+            setAlbumMessage(error.message || '删除失败', 'error');
+            deleteButton.disabled = false;
+        }
+    });
+
+    list.addEventListener('click', async function (event) {
+        const editButton = event.target.closest('.daily-admin-edit');
+        if (editButton) {
+            const id = editButton.dataset.id;
+            if (!id) return;
+            const current = editButton.dataset.caption || '';
+            const captionText = await adminPrompt({
+                title: '修改照片说明',
+                message: '留空表示这张照片没有说明。',
+                inputLabel: '照片说明',
+                value: current,
+                placeholder: '写点什么…',
+                confirmText: '保存'
+            });
+            if (captionText === null) return;
+            editButton.disabled = true;
+            try {
+                const response = await fetch('/api/daily/' + encodeURIComponent(id), {
+                    method: 'PUT',
+                    headers: getAdminCsrfHeaders(true),
+                    body: JSON.stringify({ caption: captionText.trim().slice(0, 1000) })
+                });
+                if (!response.ok) {
+                    const result = await response.json().catch(function () { return {}; });
+                    throw new Error(result.error || '保存失败');
+                }
+                setMessage('照片说明已更新。', 'success');
+                await loadAlbums();
+            } catch (error) {
+                setMessage(error.message || '保存失败', 'error');
+                editButton.disabled = false;
+            }
+            return;
+        }
+
+        const deleteButton = event.target.closest('.daily-admin-delete');
+        if (!deleteButton) return;
+        const id = deleteButton.dataset.id;
+        if (!id || !(await adminConfirm({
+            title: '删除照片',
+            message: '确定要删除这张照片吗？删除后不可恢复。',
+            confirmText: '删除'
+        }))) return;
+
+        deleteButton.disabled = true;
+        try {
+            const response = await fetch('/api/daily/' + encodeURIComponent(id), {
+                method: 'DELETE',
+                headers: getAdminCsrfHeaders(false)
+            });
+            if (!response.ok) {
+                const result = await response.json().catch(function () { return {}; });
+                throw new Error(result.error || '删除失败');
+            }
+            setMessage('照片已删除。', 'success');
+            await loadAlbums();
+        } catch (error) {
+            setMessage(error.message || '删除失败', 'error');
+            deleteButton.disabled = false;
+        }
+    });
+
+    loadAlbums();
+})();
+</script>
+
+    <script>
+        (() => {
+            const tableBody = document.getElementById('tools-table-body');
+            const form = document.getElementById('tool-form');
+            if (!tableBody || !form) return;
+
+            let toolsCache = [];
+            let toolsPage = 1;
+
+            const formTitle = document.getElementById('tool-form-title');
+            const message = document.getElementById('tool-message');
+            const idInput = document.getElementById('tool-id');
+            const nameInput = document.getElementById('tool-name');
+            const categoryInput = document.getElementById('tool-category');
+            const versionInput = document.getElementById('tool-version');
+            const sizeInput = document.getElementById('tool-size');
+            const glyphInput = document.getElementById('tool-glyph');
+            const toneInput = document.getElementById('tool-tone');
+            const sourceInput = document.getElementById('tool-source');
+            const updatedInput = document.getElementById('tool-updated');
+            const descriptionInput = document.getElementById('tool-description');
+            const panUrlInput = document.getElementById('tool-pan-url');
+            const panCodeInput = document.getElementById('tool-pan-code');
+            const downloadUrlInput = document.getElementById('tool-download-url');
+
+            const esc = (value) => String(value == null ? '' : value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+
+            const showMessage = (text, isError = false) => {
+                message.textContent = text || '';
+                message.style.color = isError ? '#fca5a5' : '';
+            };
+
+            const setToday = () => {
+                if (!updatedInput.value) updatedInput.value = new Date().toISOString().slice(0, 10);
+            };
+
+            const resetForm = () => {
+                form.reset();
+                idInput.value = '';
+                toneInput.value = 'blue';
+                updatedInput.value = new Date().toISOString().slice(0, 10);
+                formTitle.textContent = '新增工具';
+                showMessage('');
+            };
+
+            const payloadFromForm = () => ({
+                name: nameInput.value.trim(),
+                category: categoryInput.value.trim(),
+                version: versionInput.value.trim(),
+                size: sizeInput.value.trim(),
+                glyph: glyphInput.value.trim(),
+                tone: toneInput.value,
+                source: sourceInput.value.trim(),
+                updatedAt: updatedInput.value.trim(),
+                description: descriptionInput.value.trim(),
+                panUrl: panUrlInput.value.trim(),
+                panCode: panCodeInput.value.trim(),
+                downloadUrl: downloadUrlInput.value.trim()
+            });
+
+            async function loadTools() {
+                tableBody.innerHTML = '<tr><td colspan="5">加载中...</td></tr>';
+                try {
+                    const response = await fetch('/api/tools', { headers: { Accept: 'application/json' }, cache: 'no-store' });
+                    const payload = await response.json().catch(() => ([]));
+                    if (!response.ok) throw new Error(payload && payload.error || ('HTTP ' + response.status));
+                    toolsCache = Array.isArray(payload) ? payload : [];
+                    toolsPage = 1;
+                    tableBody.dataset.tools = JSON.stringify(toolsCache);
+                    renderTools();
+                } catch (error) {
+                    tableBody.innerHTML = '<tr><td colspan="5">工具接口不可用：' + esc(error.message) + '</td></tr>';
+                }
+            }
+
+            function renderTools() {
+                const view = pageSlice(toolsCache, toolsPage);
+                tableBody.innerHTML = '';
+
+                if (!view.total) {
+                    tableBody.innerHTML = '<tr><td colspan="5">还没有工具，点击「新增工具」添加。</td></tr>';
+                } else {
+                    tableBody.innerHTML = view.items.map((tool) => {
+                        const href = tool.panUrl || tool.downloadUrl || '';
+                        const link = href
+                            ? '<a href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + (tool.panUrl ? '网盘' : '官方') + ' ↗</a>'
+                            : '<span style="color:var(--theme-text-muted)">未设置</span>';
+                        return [
+                            '<tr>',
+                            '<td><div class="tool-row-main"><strong>' + esc(tool.name) + '</strong><span>' + esc(tool.source || '—') + '</span></div></td>',
+                            '<td>' + esc(tool.category) + '</td>',
+                            '<td>' + esc(tool.version || '—') + '</td>',
+                            '<td>' + link + '</td>',
+                            '<td>',
+                            '<button type="button" class="btn-sm edit" data-tool-edit="' + esc(tool.id) + '">编辑</button> ',
+                            '<button type="button" class="btn-sm delete" data-tool-delete="' + esc(tool.id) + '">删除</button>',
+                            '</td>',
+                            '</tr>'
+                        ].join('');
+                    }).join('');
+                }
+
+                renderAdminPager(document.getElementById('tools-pagination'), view, function (page) {
+                    toolsPage = page;
+                    renderTools();
+                });
+            }
+
+            function startEdit(id) {
+                const tools = JSON.parse(tableBody.dataset.tools || '[]');
+                const tool = tools.find((item) => String(item.id) === String(id));
+                if (!tool) return;
+                idInput.value = tool.id;
+                nameInput.value = tool.name || '';
+                categoryInput.value = tool.category || '';
+                versionInput.value = tool.version || '';
+                sizeInput.value = tool.size || '';
+                glyphInput.value = tool.glyph || '';
+                toneInput.value = tool.tone || 'blue';
+                sourceInput.value = tool.source || '';
+                updatedInput.value = tool.updatedAt || '';
+                descriptionInput.value = tool.description || '';
+                panUrlInput.value = tool.panUrl || '';
+                panCodeInput.value = tool.panCode || '';
+                downloadUrlInput.value = tool.downloadUrl || '';
+                formTitle.textContent = '编辑工具';
+                showMessage('');
+                document.getElementById('tool-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const id = idInput.value;
+                const payload = payloadFromForm();
+                if (!payload.name || !payload.category) {
+                    showMessage('工具名称和分类不能为空。', true);
+                    return;
+                }
+                showMessage('保存中...');
+                try {
+                    const response = await fetch(id ? '/api/tools/' + encodeURIComponent(id) : '/api/tools', {
+                        method: id ? 'PUT' : 'POST',
+                        headers: getAdminCsrfHeaders(true),
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(result.error || ('HTTP ' + response.status));
+                    resetForm();
+                    await loadTools();
+                    showMessage(id ? '工具已更新。' : '工具已添加。');
+                } catch (error) {
+                    showMessage('保存失败：' + error.message, true);
+                }
+            });
+
+            tableBody.addEventListener('click', async (event) => {
+                const editBtn = event.target.closest('[data-tool-edit]');
+                if (editBtn) {
+                    startEdit(editBtn.dataset.toolEdit);
+                    return;
+                }
+                const delBtn = event.target.closest('[data-tool-delete]');
+                if (!delBtn) return;
+                if (!(await adminConfirm({
+                    title: '删除工具',
+                    message: '确定要删除这个工具吗？删除后不可恢复。',
+                    confirmText: '删除'
+                }))) return;
+                try {
+                    const response = await fetch('/api/tools/' + encodeURIComponent(delBtn.dataset.toolDelete), {
+                        method: 'DELETE',
+                        headers: getAdminCsrfHeaders(false)
+                    });
+                    const result = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(result.error || ('HTTP ' + response.status));
+                    await loadTools();
+                } catch (error) {
+                    showMessage('删除失败：' + error.message, true);
+                }
+            });
+
+            document.getElementById('tool-new-btn').addEventListener('click', () => {
+                resetForm();
+                document.getElementById('tool-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            document.getElementById('tool-cancel-btn').addEventListener('click', resetForm);
+            document.getElementById('tool-refresh-btn').addEventListener('click', loadTools);
+
+            resetForm();
+            setToday();
+            loadTools();
+        })();
+    </script>
+    <!-- 自定义确认/输入弹窗：替代浏览器原生 confirm/prompt -->
+    <div class="admin-confirm" id="admin-confirm" hidden>
+        <div class="admin-confirm-backdrop" data-confirm-cancel></div>
+        <div class="admin-confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="admin-confirm-title" aria-describedby="admin-confirm-message">
+            <div class="admin-confirm-kicker"><span aria-hidden="true">!</span> SYSTEM_CONFIRM</div>
+            <h2 id="admin-confirm-title">确认操作</h2>
+            <p id="admin-confirm-message"></p>
+            <label class="admin-confirm-field" id="admin-confirm-field" hidden>
+                <span id="admin-confirm-input-label">输入内容</span>
+                <input id="admin-confirm-input" type="text" maxlength="1000" autocomplete="off">
+            </label>
+            <div class="admin-confirm-actions">
+                <button type="button" class="admin-confirm-btn" id="admin-confirm-cancel">取消</button>
+                <button type="button" class="admin-confirm-btn admin-confirm-btn--primary" id="admin-confirm-ok">确定</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

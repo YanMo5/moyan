@@ -4,22 +4,39 @@
     <meta charset="UTF-8">
         <script src="/src/js/theme-boot.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>友情链接 - YanMo的个人博客</title>
+    <title>友情链接 - YanMo Labs</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/styles.css">
     <link rel="stylesheet" href="/src/css/beautify.css">
     <link rel="stylesheet" href="/src/css/music-box.css">
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <link rel="stylesheet" href="/src/css/links.css">
+    <meta name="description" content="YanMo 的友情链接与安全研究同行网络，欢迎交换友链。">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="友情链接 - YanMo Labs">
+    <meta property="og:description" content="YanMo 的友情链接与安全研究同行网络，欢迎交换友链。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="友情链接 - YanMo Labs">
+    <meta name="twitter:description" content="YanMo 的友情链接与安全研究同行网络，欢迎交换友链。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
 </head>
-<body>
+<body class="links-view">
     <header>
         <nav>
             <div class="logo">
-                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
             </div>
             <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
@@ -28,12 +45,10 @@
             </button>
             <div class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/src/pages/index.html"><span class="shimmer"></span>首页</a></li>
                     <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
-                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于我</a></li>
-                    <li><a href="/src/pages/contact.html"><span class="shimmer"></span>联系</a></li>
-                    <li><a href="/src/pages/guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="/src/pages/links.html" class="active"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
                     <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
             </div>
@@ -48,7 +63,7 @@
     <main>
         <section class="links-page reveal">
             <div class="terminal-label">TRUSTED_NODES // PEER_NETWORK // VETTED_SOURCES</div>
-            <h1 class="glitch-text" data-text="友情链接 / LINKS">友情链接 / LINKS</h1>
+            <h1 class="glitch-text page-title" data-text="友情链接 LINKS"><span class="page-title-cn">友情链接</span><span class="page-title-en">LINKS</span></h1>
             <p class="links-description">汇集各路安全大牛，交换赛博空间情报</p>
 
             <!-- ── HANDSHAKE PROTOCOL ────────────────────────────── -->
@@ -193,6 +208,41 @@
                     return /^https?:\/\//i.test(v) ? v : '#';
                 }
 
+                function siteHost(url) {
+                    try {
+                        return new URL(String(url || '')).hostname.replace(/^www\./i, '');
+                    } catch (error) {
+                        return '';
+                    }
+                }
+
+                function buildSiteShot(url) {
+                    const raw = String(url || '').trim();
+                    if (!/^https?:\/\//i.test(raw)) return '';
+                    // 带每日 token：强制生成一次新截图并等待 15 秒，避免抓到站点的加载页；
+                    // 同一 token 当天会被服务端缓存，后续访问不会重复等待。
+                    const token = new Date().toISOString().slice(0, 10);
+                    const target = raw + (raw.indexOf('?') === -1 ? '?' : '&') + 'ym_preview=' + encodeURIComponent(token);
+                    return 'https://image.thum.io/get/width/640/crop/1000/wait/15/noanimate/' + target;
+                }
+
+                function formatSyncLabel(value) {
+                    if (!value) return '未同步';
+                    const date = new Date(value);
+                    if (Number.isNaN(date.getTime())) return '未同步';
+                    const now = new Date();
+                    if (date.toDateString() === now.toDateString()) {
+                        return 'SYNC ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    }
+                    return 'SYNC ' + date.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+                }
+
+                function formatSyncTitle(value) {
+                    if (!value) return '';
+                    const date = new Date(value);
+                    return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('zh-CN');
+                }
+
                 function avatarBlock(link) {
                     const avatar = String(link.site_avatar || '').trim();
                     const name   = String(link.site_name || '站点').trim();
@@ -205,18 +255,25 @@
                 function updateSummary(links) {
                     document.getElementById('links-count-all').textContent      = String(links.length);
                     document.getElementById('links-count-approved').textContent = String(links.filter(l => l.status === 'approved').length);
+                    const onlineEl = document.getElementById('links-count-online');
+                    if (onlineEl) {
+                        onlineEl.textContent = String(links.filter(l => l.is_online).length);
+                    }
                 }
                 function showLinksState(title, description) {
                     document.getElementById('links-groups-container').innerHTML = `
                         <div class="link-card link-state-card">
+                            <div class="link-state-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
                             <div class="link-state-title">${escapeHtml(title)}</div>
                             ${description ? `<p class="link-state-desc">${escapeHtml(description)}</p>` : ''}
+                            <a class="btn link-state-cta" href="/src/pages/link-apply.html">申请友链接入 <span aria-hidden="true">→</span></a>
                         </div>`;
                 }
 
                 // B: fire a live HEAD probe per card via /api/check-links result
                 function applyProbeResult(linkId, result) {
                     const dot = document.getElementById('dot-' + linkId);
+                    const statusEl = document.getElementById('status-' + linkId);
                     const postEl = document.getElementById('post-' + linkId);
                     const metaEl = document.getElementById('meta-' + linkId);
                     if (!dot) return;
@@ -225,22 +282,28 @@
                         dot.classList.remove('dot-unknown', 'dot-offline');
                         dot.classList.add('dot-online');
                         dot.title = 'ONLINE';
+                        if (statusEl) statusEl.textContent = 'ONLINE';
                     } else {
                         dot.classList.remove('dot-unknown', 'dot-online');
                         dot.classList.add('dot-offline');
                         dot.title = result.error ? ('OFFLINE: ' + result.error) : 'OFFLINE';
+                        if (statusEl) statusEl.textContent = 'OFFLINE';
                     }
 
-                    if (postEl && result.latestPostTitle && result.latestPostUrl) {
-                        const safe = escapeHtml(result.latestPostUrl);
-                        const title = result.latestPostTitle;
-                        const short = title.length > 50 ? title.slice(0, 50) + '…' : title;
-                        postEl.innerHTML = `<a class="link-latest-post" href="${safe}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(title)}">▸ ${escapeHtml(short)}</a>`;
+                    if (postEl) {
+                        if (result.latestPostTitle && result.latestPostUrl) {
+                            const safe = escapeHtml(result.latestPostUrl);
+                            const title = result.latestPostTitle;
+                            const short = title.length > 42 ? title.slice(0, 42) + '…' : title;
+                            postEl.innerHTML = `<a class="link-latest-post" href="${safe}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(title)}">▸ ${escapeHtml(short)}</a>`;
+                        } else {
+                            postEl.innerHTML = '<span class="link-latest-post link-latest-post--none">▸ 暂无最新文章</span>';
+                        }
                     }
 
                     if (metaEl && result.checkedAt) {
-                        const d = new Date(result.checkedAt);
-                        metaEl.textContent = 'Probed: ' + d.toLocaleTimeString();
+                        metaEl.textContent = formatSyncLabel(result.checkedAt);
+                        metaEl.title = formatSyncTitle(result.checkedAt);
                     }
                 }
 
@@ -290,54 +353,158 @@
                         grid.className = 'links-grid';
 
                         groups[cat].forEach(link => {
-                            const safeName    = escapeHtml(link.site_name);
+                            const safeName    = escapeHtml(String(link.site_name || '未命名站点').trim() || '未命名站点');
                             const safeSiteUrl = safeUrl(link.site_url);
                             const safeDesc    = escapeHtml(link.site_description || '');
+                            const host        = siteHost(link.site_url);
+                            const initial     = escapeHtml((String(link.site_name || host || '?').trim().slice(0, 1) || '?').toUpperCase());
+                            const rawAvatar   = String(link.site_avatar || '').trim();
+                            const avatarSrc   = rawAvatar && (rawAvatar.startsWith('data:image/') || /^https?:\/\//i.test(rawAvatar) || rawAvatar.startsWith('/')) ? rawAvatar : '';
+                            const shotUrl     = buildSiteShot(link.site_url);
 
                             // use probeCache if available, otherwise fall back to DB values
                             const cached   = probeCache[link.site_url];
-                            const isOnline = cached ? cached.online : !!link.is_online;
-                            const dotState = isOnline ? 'dot-online' : 'dot-unknown';
-                            const dotLabel = cached ? (isOnline ? 'ONLINE' : 'OFFLINE') : 'PROBING…';
+                            const hasDbStatus = Boolean(link.last_checked);
+                            const isOnline = cached ? cached.online : (hasDbStatus ? Boolean(link.is_online) : false);
+                            const dotState = cached
+                                ? (isOnline ? 'dot-online' : 'dot-offline')
+                                : (hasDbStatus ? (isOnline ? 'dot-online' : 'dot-offline') : 'dot-unknown');
+                            const dotLabel = cached
+                                ? (isOnline ? 'ONLINE' : 'OFFLINE')
+                                : (hasDbStatus ? (isOnline ? 'ONLINE' : 'OFFLINE') : 'PROBING');
 
-                            const checkedAt = cached
-                                ? 'Probed: ' + new Date(cached.checkedAt).toLocaleTimeString()
-                                : (link.last_checked ? 'DB sync: ' + new Date(link.last_checked).toLocaleString() : 'Probing…');
+                            const syncValue = cached ? cached.checkedAt : link.last_checked;
+                            const checkedAt = formatSyncLabel(syncValue);
+                            const checkedTitle = formatSyncTitle(syncValue);
 
                             const postTitle = (cached && cached.latestPostTitle) || link.latest_post_title || '';
                             const postUrl   = (cached && cached.latestPostUrl)   || link.latest_post_url   || '';
                             const latestPostHtml = (postTitle && postUrl)
-                                ? `<a class="link-latest-post" href="${escapeHtml(safeUrl(postUrl))}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(postTitle)}">▸ ${escapeHtml(postTitle.length > 50 ? postTitle.slice(0, 50) + '…' : postTitle)}</a>`
-                                : '<span class="link-latest-post link-latest-post--none">▸ fetching latest post…</span>';
+                                ? `<a class="link-latest-post" href="${escapeHtml(safeUrl(postUrl))}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(postTitle)}">▸ ${escapeHtml(postTitle.length > 42 ? postTitle.slice(0, 42) + '…' : postTitle)}</a>`
+                                : '<span class="link-latest-post link-latest-post--none">▸ 暂无最新文章</span>';
 
-                            const card = document.createElement('a');
-                            card.href      = safeSiteUrl;
-                            card.target    = '_blank';
-                            card.rel       = 'noopener noreferrer';
-                            card.className = 'link-card link-card-compact';
+                            const card = document.createElement('div');
+                            card.className = 'link-card link-card-site';
                             card.innerHTML = `
-                                <div class="link-main">
-                                    ${avatarBlock(link)}
-                                    <div class="link-body">
-                                        <div class="link-name-row">
-                                            <span class="link-name">${safeName}</span>
-                                            <span class="link-status-dot ${dotState}" id="dot-${link.id}" title="${dotLabel}"></span>
-                                        </div>
-                                        <div class="link-meta" id="meta-${link.id}">${escapeHtml(checkedAt)}</div>
-                                        ${safeDesc ? `<div class="link-desc">${safeDesc}</div>` : ''}
-                                        <div id="post-${link.id}">${latestPostHtml}</div>
+                                <a class="link-card-hit" href="${safeSiteUrl}" target="_blank" rel="noopener noreferrer" aria-label="访问 ${safeName}"></a>
+                                <div class="link-shot-wrap" aria-hidden="true">
+                                    ${avatarSrc ? `<img class="link-shot-avatar" src="${escapeHtml(avatarSrc)}" alt="">` : `<span class="link-shot-fallback">${initial}</span>`}
+                                    ${shotUrl ? `<img class="link-shot" src="${escapeHtml(shotUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
+                                </div>
+                                <div class="link-browser-bar" aria-hidden="true">
+                                    <span class="link-browser-dots"><i></i><i></i><i></i></span>
+                                    <span class="link-browser-host">${escapeHtml(host || 'unknown')}</span>
+                                </div>
+                                <div class="link-content">
+                                    <div class="link-name-row">
+                                        ${avatarBlock(link)}
+                                        <span class="link-name">${safeName}</span>
+                                        <span class="link-status-dot ${dotState}" id="dot-${link.id}" title="${dotLabel}"></span>
+                                        <span class="link-status-text" id="status-${link.id}">${dotLabel}</span>
+                                    </div>
+                                    <div class="link-meta" id="meta-${link.id}" title="${escapeHtml(checkedTitle)}">${escapeHtml(checkedAt)}</div>
+                                    ${safeDesc ? `<div class="link-desc">${safeDesc}</div>` : ''}
+                                    <div class="link-footer">
+                                        <div class="link-latest" id="post-${link.id}">${latestPostHtml}</div>
+                                        <span class="link-latency" id="latency-${link.id}" title="正在测量到该站点的往返延迟">-- ms</span>
                                     </div>
                                 </div>`;
+                            const shot = card.querySelector('.link-shot');
+                            if (shot) shot.addEventListener('error', () => shot.remove());
                             grid.appendChild(card);
                         });
+
+                        // 友链较少时补一张申请卡，避免单卡在宽屏中显得空
+                        if (groups[cat].length < 3) {
+                            const cta = document.createElement('a');
+                            cta.className = 'link-card link-card-cta';
+                            cta.href = '/src/pages/link-apply.html';
+                            cta.innerHTML = `
+                                <span class="link-browser-bar" aria-hidden="true">
+                                    <span class="link-browser-dots"><i></i><i></i><i></i></span>
+                                    <span class="link-browser-host">NEW_NODE</span>
+                                </span>
+                                <span class="link-cta-mark" aria-hidden="true">+</span>
+                                <span class="link-cta-title">YOUR_NODE_HERE</span>
+                                <span class="link-cta-desc">申请友链接入 · 交换节点</span>
+                                <span class="link-cta-arrow" aria-hidden="true">→</span>`;
+                            grid.appendChild(cta);
+                        }
 
                         group.appendChild(grid);
                         container.appendChild(group);
                     });
                 }
 
+                async function probeLinkLatency(link) {
+                    const el = document.getElementById('latency-' + link.id);
+                    if (!el || !link.site_url) return;
+                    let url;
+                    try {
+                        url = new URL(link.site_url, window.location.href);
+                    } catch (error) {
+                        el.textContent = 'N/A';
+                        el.className = 'link-latency is-unknown';
+                        return;
+                    }
+                    if (url.protocol !== 'https:') {
+                        el.textContent = 'N/A';
+                        el.className = 'link-latency is-unknown';
+                        el.title = 'HTTP 站点无法在 HTTPS 页面直接探测延迟';
+                        return;
+                    }
+
+                    el.textContent = '…';
+                    el.className = 'link-latency is-checking';
+                    el.title = '正在测量到该站点的往返延迟';
+                    const controller = new AbortController();
+                    const timer = window.setTimeout(() => controller.abort(), 6000);
+                    const started = performance.now();
+                    try {
+                        await fetch(url.href, {
+                            mode: 'no-cors',
+                            method: 'HEAD',
+                            cache: 'no-store',
+                            redirect: 'follow',
+                            signal: controller.signal
+                        });
+                        const ms = Math.max(1, Math.round(performance.now() - started));
+                        el.textContent = ms + ' ms';
+                        el.className = 'link-latency ' + (ms < 150 ? 'is-fast' : ms < 350 ? 'is-ok' : ms < 800 ? 'is-warn' : 'is-bad');
+                        el.title = '到 ' + (link.site_name || url.hostname) + ' 的往返延迟：' + ms + ' ms';
+                    } catch (error) {
+                        el.textContent = 'TIMEOUT';
+                        el.className = 'link-latency is-bad';
+                        el.title = '延迟探测超时或站点拒绝了请求';
+                    } finally {
+                        window.clearTimeout(timer);
+                    }
+                }
+
+                function probeAllLatencies() {
+                    allLinks.filter(l => l.status === 'approved').forEach(link => {
+                        probeLinkLatency(link);
+                    });
+                }
+
+                function markProbeUnknown(links) {
+                    (links || allLinks).forEach(link => {
+                        if (link.status !== 'approved') return;
+                        const dot = document.getElementById('dot-' + link.id);
+                        const statusEl = document.getElementById('status-' + link.id);
+                        if (dot && dot.classList.contains('dot-unknown')) {
+                            dot.title = 'UNKNOWN';
+                        }
+                        if (statusEl && statusEl.textContent === 'PROBING') {
+                            statusEl.textContent = 'UNKNOWN';
+                        }
+                    });
+                }
+
                 // Fetch fresh probe results from /api/check-links, then re-apply to rendered cards
                 async function pollLinkStatus() {
+                    const controller = new AbortController();
+                    const timeout = window.setTimeout(() => controller.abort(), 6000);
                     try {
                         const urls = allLinks
                             .filter(l => l.status === 'approved' && l.site_url)
@@ -348,19 +515,30 @@
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ urls }),
+                            signal: controller.signal,
                         });
-                        if (!res.ok) return;
+                        if (!res.ok) {
+                            markProbeUnknown();
+                            return;
+                        }
                         const results = await res.json(); // { [url]: { online, latestPostTitle, latestPostUrl, checkedAt, error? } }
+                        if (!results || typeof results !== 'object') {
+                            markProbeUnknown();
+                            return;
+                        }
 
                         // Update cache
                         Object.assign(probeCache, results);
 
-                        // Apply to each rendered card
+                        // Apply to each rendered card; missing results become UNKNOWN, not endless PROBING
+                        const missing = [];
                         allLinks.forEach(link => {
                             if (link.status !== 'approved' || !link.site_url) return;
                             const result = results[link.site_url];
                             if (result) applyProbeResult(link.id, result);
+                            else missing.push(link);
                         });
+                        if (missing.length) markProbeUnknown(missing);
 
                         // Update online count in summary
                         const onlineCount = Object.values(probeCache).filter(r => r.online).length;
@@ -368,6 +546,9 @@
                         if (summaryOnline) summaryOnline.textContent = String(onlineCount);
                     } catch (err) {
                         console.warn('[check-links] probe failed:', err.message);
+                        markProbeUnknown();
+                    } finally {
+                        window.clearTimeout(timeout);
                     }
                 }
 
@@ -375,9 +556,15 @@
                     try {
                         const response = await fetch('/api/links');
                         if (response.ok) {
-                            allLinks = await response.json();
+                            const list = await response.json();
+                            allLinks = (Array.isArray(list) ? list : []).map((item) => ({
+                                ...(item || {}),
+                                // 旧版公开接口不返回 status；公开接口本身就只含已通过友链。
+                                status: (item && item.status) || 'approved'
+                            }));
                             updateSummary(allLinks);
                             renderLinks();
+                            probeAllLatencies();
                             // fire probe immediately after first render
                             pollLinkStatus();
                         }
@@ -401,7 +588,7 @@
     <footer>
         <div class="footer-content">
             <div class="footer-info">
-                <h3>YanMo的个人博客</h3>
+                <h3>YanMo Labs</h3>
                 <p>信息安全专家 | 渗透测试 | 人工智能</p>
                 <p>—— 技术改变未来，代码创造世界 ——</p>
             </div>
@@ -421,7 +608,7 @@
             </div>
         </div>
         <div class="footer-copyright">
-            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
         </div>
     </footer>
 

@@ -4,24 +4,39 @@
     <meta charset="UTF-8">
         <script src="/src/js/theme-boot.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>安全文章 - YanMo的个人博客</title>
+    <title>安全文章 - YanMo Labs</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
-    <meta name="description" content="YanMo的个人博客文章列表，涵盖渗透测试、人工智能安全、网络安全架构等深度技术分享。">
+    <meta name="description" content="YanMo Labs文章列表，涵盖渗透测试、人工智能安全、网络安全架构等深度技术分享。">
     <meta name="keywords" content="安全文章, 技术博客, 渗透测试, AI安全">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/styles.css">
     <link rel="stylesheet" href="/src/css/beautify.css">
     <link rel="stylesheet" href="/src/css/music-box.css">
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="安全文章 - YanMo Labs">
+    <meta property="og:description" content="YanMo Labs文章列表，涵盖渗透测试、人工智能安全、网络安全架构等深度技术分享。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="安全文章 - YanMo Labs">
+    <meta name="twitter:description" content="YanMo Labs文章列表，涵盖渗透测试、人工智能安全、网络安全架构等深度技术分享。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
 </head>
 <body class="articles-view">
     <header>
         <nav>
             <div class="logo">
-                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
             </div>
             <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
@@ -30,12 +45,10 @@
             </button>
             <div class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/src/pages/index.html"><span class="shimmer"></span>首页</a></li>
                     <li><a href="/src/pages/articles.html" class="active"><span class="shimmer"></span>文章</a></li>
-                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于我</a></li>
-                    <li><a href="/src/pages/contact.html"><span class="shimmer"></span>联系</a></li>
-                    <li><a href="/src/pages/guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
                     <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
             </div>
@@ -45,30 +58,19 @@
     <main>
         <section class="articles-page reveal">
             <div class="terminal-label">INTEL_ARCHIVE // SECURE_FEED // YANMO_LABS</div>
-            <h1 class="glitch-text" data-text="安全文章 | SECURITY ARTICLES">安全文章 | SECURITY ARTICLES</h1>
-            <p class="articles-description">共享情报、渗透技巧与AI安全研究</p>
-            
+            <h1 class="glitch-text page-title" data-text="安全文章 SECURITY ARTICLES"><span class="page-title-cn">安全文章</span><span class="page-title-en">SECURITY ARTICLES</span></h1>
+            <p class="articles-description">共享情报、渗透技巧与 AI 安全研究。</p>
+
+
             <!-- ── Taxonomy Filter Bar ──────────────────────── -->
-            <div class="articles-controls">
+            <div class="articles-controls" id="categories">
                 <div class="search-box">
                     <span class="search-icon">></span>
                     <input type="text" id="article-search" placeholder="grep -r 'keyword' ./archives">
                 </div>
                 <div class="filter-box">
                     <select id="category-filter" aria-label="按分类筛选文章">
-                        <option value="all">[ALL_SECTORS]</option>
-                        <option value="0x01_WebExploit">[0x01] WebExploit</option>
-                        <option value="0x02_ReverseEngineering">[0x02] ReverseEngineering</option>
-                        <option value="0x03_RedTeamOps">[0x03] RedTeamOps</option>
-                        <option value="0x04_BinaryPwn">[0x04] BinaryPwn</option>
-                        <option value="0x05_CryptoBreak">[0x05] CryptoBreak</option>
-                        <option value="0x06_MalwareForensics">[0x06] MalwareForensics</option>
-                        <option value="0x07_AISecOps">[0x07] AISecOps</option>
-                        <option value="0x08_CTF_WriteUp">[0x08] CTF_WriteUp</option>
-                        <option value="0x09_NetRecon">[0x09] NetRecon</option>
-                        <option value="0x0A_CloudAbuse">[0x0A] CloudAbuse</option>
-                        <option value="0x0B_HardwareSec">[0x0B] HardwareSec</option>
-                        <option value="0x0C_ThreatIntel">[0x0C] ThreatIntel</option>
+                        <option value="all">[ALL] 全部分类</option>
                     </select>
                 </div>
             </div>
@@ -86,39 +88,57 @@
                 <button type="button" class="tag-btn" data-tag="BufferOverflow">BufferOverflow</button>
                 <button type="button" class="tag-btn" data-tag="PrivEsc">PrivEsc</button>
                 <button type="button" class="tag-btn" data-tag="OSINT">OSINT</button>
-                <button type="button" class="tag-btn" data-tag="Phishing">Phishing</button>
-                <button type="button" class="tag-btn" data-tag="ReverseShell">ReverseShell</button>
-                <button type="button" class="tag-btn" data-tag="CVE">CVE</button>
-                <button type="button" class="tag-btn" data-tag="0day">0day</button>
-                <button type="button" class="tag-btn" data-tag="CTF">CTF</button>
-                <button type="button" class="tag-btn" data-tag="LLM_Jailbreak">LLM_Jailbreak</button>
-                <button type="button" class="tag-btn" data-tag="PromptInjection">PromptInjection</button>
-                <button type="button" class="tag-btn" data-tag="Mermaid">Mermaid</button>
-                <button type="button" class="tag-btn" data-tag="CloudMisconfig">CloudMisconfig</button>
-                <button type="button" class="tag-btn" data-tag="IAM_Escalation">IAM_Escalation</button>
-                <button type="button" class="tag-btn" data-tag="SideChannel">SideChannel</button>
-                <button type="button" class="tag-btn" data-tag="OSINT">OSINT</button>
-                <button type="button" class="tag-btn" data-tag="APT">APT</button>
-                <button type="button" class="tag-btn" data-tag="KillChain">KillChain</button>
+                <button type="button" class="tag-btn tag-more-btn" id="tag-more-btn" aria-expanded="false">更多 +</button>
+                <span id="tag-more-group" class="tag-more-group" hidden>
+                    <button type="button" class="tag-btn" data-tag="Phishing">Phishing</button>
+                    <button type="button" class="tag-btn" data-tag="ReverseShell">ReverseShell</button>
+                    <button type="button" class="tag-btn" data-tag="CVE">CVE</button>
+                    <button type="button" class="tag-btn" data-tag="0day">0day</button>
+                    <button type="button" class="tag-btn" data-tag="CTF">CTF</button>
+                    <button type="button" class="tag-btn" data-tag="LLM_Jailbreak">LLM_Jailbreak</button>
+                    <button type="button" class="tag-btn" data-tag="PromptInjection">PromptInjection</button>
+                    <button type="button" class="tag-btn" data-tag="Mermaid">Mermaid</button>
+                    <button type="button" class="tag-btn" data-tag="CloudMisconfig">CloudMisconfig</button>
+                    <button type="button" class="tag-btn" data-tag="IAM_Escalation">IAM_Escalation</button>
+                    <button type="button" class="tag-btn" data-tag="SideChannel">SideChannel</button>
+                    <button type="button" class="tag-btn" data-tag="APT">APT</button>
+                    <button type="button" class="tag-btn" data-tag="KillChain">KillChain</button>
+                </span>
             </div>
 
-            <div class="articles-list" id="articles-container">
-                <!-- Articles will be loaded here dynamically -->
-                <div class="loading-status">正在初始化数据流...</div>
+            <!-- ── Archive overview ─────────────────────────── -->
+            <div class="archive-filter" id="archive-filter" hidden></div>
+            <div class="archive-head" id="stats">
+                <div class="archive-head-main">
+                    <span class="archive-eyebrow">// ARCHIVE</span>
+                    <h2>文章总览 <em id="archive-total">—</em></h2>
+                </div>
+                <div class="archive-stat-row">
+                    <span>分类 <strong id="stat-categories">—</strong></span>
+                    <span>标签 <strong id="stat-tags">—</strong></span>
+                    <span>年份 <strong id="stat-years">—</strong></span>
+                </div>
             </div>
-            <div class="pagination-controls" id="pagination-container" style="display: none;">
-                <button id="prev-page" class="pagination-btn" disabled>上一页</button>
-                <span class="pagination-info" id="pagination-info"></span>
-                <button id="next-page" class="pagination-btn">下一页</button>
+
+            <div id="archive">
+                <div class="articles-list archive-list" id="articles-container">
+                    <!-- Articles will be loaded here dynamically -->
+                    <div class="loading-status">正在初始化数据流...</div>
+                </div>
+                <div class="pagination-controls" id="pagination-container" style="display: none;">
+                    <button id="prev-page" class="pagination-btn" disabled>上一页</button>
+                    <span class="pagination-info" id="pagination-info"></span>
+                    <button id="next-page" class="pagination-btn">下一页</button>
+                </div>
+                <div class="scroll-trigger" id="scroll-trigger"></div>
             </div>
-            <div class="scroll-trigger" id="scroll-trigger"></div>
         </section>
     </main>
 
     <footer>
         <div class="footer-content">
             <div class="footer-info">
-                <h3>YanMo的个人博客</h3>
+                <h3>YanMo Labs</h3>
                 <p>信息安全专家 | 渗透测试 | 人工智能</p>
                 <p>—— 技术改变未来，代码创造世界 ——</p>
             </div>
@@ -138,7 +158,7 @@
             </div>
         </div>
         <div class="footer-copyright">
-            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
         </div>
     </footer>
 
@@ -168,18 +188,24 @@
 
             /* ── Taxonomy helpers ─────────────────────────────────── */
             const CATEGORY_META = {
-                '0x01_WebExploit':       { label: '[0x01] WebExploit',       cls: 'badge-red'    },
-                '0x02_ReverseEngineering':{ label: '[0x02] RevEng',           cls: 'badge-orange' },
-                '0x03_RedTeamOps':       { label: '[0x03] RedTeam',          cls: 'badge-pink'   },
-                '0x04_BinaryPwn':        { label: '[0x04] BinaryPwn',        cls: 'badge-purple' },
-                '0x05_CryptoBreak':      { label: '[0x05] CryptoBreak',      cls: 'badge-yellow' },
-                '0x06_MalwareForensics': { label: '[0x06] Forensics',        cls: 'badge-amber'  },
-                '0x07_AISecOps':         { label: '[0x07] AISecOps',         cls: 'badge-cyan'   },
-                '0x08_CTF_WriteUp':      { label: '[0x08] CTF_WriteUp',      cls: 'badge-green'  },
-                '0x09_NetRecon':         { label: '[0x09] NetRecon',          cls: 'badge-teal'   },
-                '0x0A_CloudAbuse':       { label: '[0x0A] CloudAbuse',        cls: 'badge-sky'    },
-                '0x0B_HardwareSec':      { label: '[0x0B] HardwareSec',       cls: 'badge-lime'   },
-                '0x0C_ThreatIntel':      { label: '[0x0C] ThreatIntel',       cls: 'badge-rose'   },
+                '渗透测试':                { label: '渗透测试',                cls: 'badge-red'    },
+                'AI安全':                  { label: 'AI 安全',                 cls: 'badge-purple' },
+                '企业安全':                { label: '企业安全',                cls: 'badge-cyan'   },
+                '网络安全':                { label: '网络安全',                cls: 'badge-teal'   },
+                'Python安全':              { label: 'Python 安全',             cls: 'badge-yellow' },
+                '硬件安全':                { label: '硬件安全',                cls: 'badge-amber'  },
+                '0x01_WebExploit':         { label: '[0x01] WebExploit',       cls: 'badge-red'    },
+                '0x02_ReverseEngineering': { label: '[0x02] RevEng',           cls: 'badge-orange' },
+                '0x03_RedTeamOps':         { label: '[0x03] RedTeam',          cls: 'badge-pink'   },
+                '0x04_BinaryPwn':          { label: '[0x04] BinaryPwn',        cls: 'badge-purple' },
+                '0x05_CryptoBreak':        { label: '[0x05] CryptoBreak',      cls: 'badge-yellow' },
+                '0x06_MalwareForensics':   { label: '[0x06] Forensics',        cls: 'badge-amber'  },
+                '0x07_AISecOps':           { label: '[0x07] AISecOps',         cls: 'badge-cyan'   },
+                '0x08_CTF_WriteUp':        { label: '[0x08] CTF_WriteUp',      cls: 'badge-green'  },
+                '0x09_NetRecon':           { label: '[0x09] NetRecon',         cls: 'badge-teal'   },
+                '0x0A_CloudAbuse':         { label: '[0x0A] CloudAbuse',       cls: 'badge-sky'    },
+                '0x0B_HardwareSec':        { label: '[0x0B] HardwareSec',      cls: 'badge-lime'   },
+                '0x0C_ThreatIntel':        { label: '[0x0C] ThreatIntel',      cls: 'badge-rose'   },
             };
 
             function categoryBadge(cat) {
@@ -190,66 +216,155 @@
                 return `<span class="cyber-badge badge-magenta">${escapeHtml(cat)}</span>`;
             }
 
-            function renderTags(tagsField) {
-                const tags = String(tagsField || '').split(',').map(t => t.trim()).filter(Boolean);
+            /* ── 模型工具 ─────────────────────────────────────────── */
+            function escapeHtml(v) {
+                return String(v || '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]||c));
+            }
+
+            function splitTags(tagsField) {
+                return String(tagsField || '').split(',').map(t => t.trim()).filter(Boolean);
+            }
+
+            function articleTags(article) {
+                const tags = splitTags(article.tags);
+                if (!tags.length && article.category) tags.push(String(article.category).trim());
+                return [...new Set(tags)];
+            }
+
+            function renderTags(article) {
+                const tags = articleTags(article);
                 if (!tags.length) return '';
                 return tags.map(t => `<button type="button" class="article-tag-btn" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('');
             }
 
-            /* ── Render ───────────────────────────────────────────── */
-            function escapeHtml(v) {
-                return String(v || '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]||c));
+            function plainText(v) {
+                return String(v || '')
+                    .replace(/\x60\x60\x60[\s\S]*?\x60\x60\x60/g, ' ')
+                    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+                    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+                    .replace(/<[^>]*>/g, ' ')
+                    .replace(/[#>*_\x60~]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
             }
+
             function truncateText(v, n) {
-                const t = String(v || '').replace(/\s+/g,' ').trim();
+                const t = plainText(v);
                 return t.length <= n ? t : t.slice(0, n) + '...';
             }
 
-            function renderArticleItem(article) {
+            function renderArticleItem(article, index) {
                 const isPinned = article.is_pinned || article.pinned;
-                const dateStr  = escapeHtml(formatLocalDate(article.created_at));
-                const excerpt  = escapeHtml(truncateText(article.content, 140));
-                const fileId   = String(article.id).padStart(3, '0');
-                const tagHtml  = renderTags(article.tags);
+                const dateStr = escapeHtml(formatLocalDate(article.created_at));
+                const tagHtml = renderTags(article);
+                const cover = String(article.cover_image || '').trim();
+                const coverMarkup = cover
+                    ? `<span class="archive-cover"><img src="${escapeHtml(cover)}" alt="" loading="lazy"></span>`
+                    : `<span class="archive-cover archive-cover--empty" aria-hidden="true"><span>${escapeHtml(article.category || 'NOTE')}</span></span>`;
                 return `
-                    <article class="article-item fade-in" data-category="${escapeHtml(article.category)}" data-tags="${escapeHtml(article.tags || '')}">
-                        <span class="file-id">[FILE_${fileId}]</span>
-                        <div class="article-meta-row">
-                            <span class="article-date">${dateStr}</span>
-                            ${categoryBadge(article.category)}
-                            ${isPinned ? '<span class="cyber-badge badge-yellow">PIN</span>' : ''}
+                    <article class="article-item" data-category="${escapeHtml(article.category)}" data-tags="${escapeHtml(articleTags(article).join(','))}">
+                        <span class="archive-index">${String(index).padStart(2, '0')}</span>
+                        ${coverMarkup}
+                        <div class="archive-body">
+                            <h2><a href="/post/${article.id}">${escapeHtml(article.title)}</a></h2>
+                            <div class="archive-meta">
+                                <time class="archive-date" datetime="${escapeHtml(article.created_at || '')}">${dateStr}</time>
+                                ${isPinned ? '<span class="cyber-badge badge-yellow">PIN</span>' : ''}
+                                ${tagHtml ? `<span class="archive-tags">${tagHtml}</span>` : ''}
+                            </div>
                         </div>
-                        <h2>${escapeHtml(article.title)}</h2>
-                        <p class="article-excerpt">${excerpt}</p>
-                        ${tagHtml ? `<div class="article-tags">${tagHtml}</div>` : ''}
-                        <a href="/post/${article.id}" class="read-more">READ_MORE →</a>
+                        <a class="archive-go" href="/post/${article.id}" aria-label="阅读全文" title="阅读全文">→</a>
                     </article>`;
             }
 
+            function renderArchive(articles) {
+                const sorted = articles.slice().sort((a, b) => {
+                    const ta = new Date(a.created_at || 0).getTime() || 0;
+                    const tb = new Date(b.created_at || 0).getTime() || 0;
+                    return tb - ta;
+                });
+                const groups = new Map();
+                sorted.forEach(article => {
+                    const year = String(article.created_at || '').slice(0, 4) || '—';
+                    if (!groups.has(year)) groups.set(year, []);
+                    groups.get(year).push(article);
+                });
+                const years = [...groups.keys()].sort((a, b) => String(b).localeCompare(String(a)));
+                let index = 0;
+                return years.map(year => {
+                    const rows = groups.get(year).map(article => renderArticleItem(article, ++index)).join('');
+                    return `<div class="archive-year" id="year-${escapeHtml(year)}"><span>${escapeHtml(year)}</span></div>${rows}`;
+                }).join('');
+            }
+
+            function updateArchiveStats(articles) {
+                const categories = new Set();
+                const tags = new Set();
+                const years = new Set();
+                articles.forEach(article => {
+                    if (article.category) categories.add(String(article.category).trim());
+                    articleTags(article).forEach(tag => tags.add(tag));
+                    const year = String(article.created_at || '').slice(0, 4);
+                    if (year) years.add(year);
+                });
+                [['archive-total', articles.length], ['stat-categories', categories.size], ['stat-tags', tags.size], ['stat-years', years.size]].forEach(([id, value]) => {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = value;
+                });
+            }
+
             /* ── Load ─────────────────────────────────────────────── */
+            function syncCategoryOptions(articles) {
+                const existing = new Set(Array.from(categoryFilter.options).map(option => option.value));
+                const categories = [...new Set(articles.map(article => String(article.category || '').trim()).filter(Boolean))];
+                categories.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+                categories.forEach(cat => {
+                    if (existing.has(cat)) return;
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = (CATEGORY_META[cat] && CATEGORY_META[cat].label) || cat;
+                    categoryFilter.appendChild(option);
+                    existing.add(cat);
+                });
+            }
+
             async function loadArticles(page = 1, searchTerm = '', category = 'all', append = false) {
                 if (isLoading) return;
                 isLoading = true;
                 try {
-                    const params = new URLSearchParams({ page, limit: 10, search: searchTerm, category });
+                    const params = new URLSearchParams({ page, limit: 50, search: searchTerm, category });
                     const response = await fetch('/api/articles?' + params.toString());
                     if (!response.ok) throw new Error('HTTP ' + response.status);
                     const result = await response.json();
-                    const articles = result.data || result;
-                    totalPages    = result.total_pages || 1;
-                    totalArticles = result.total || articles.length;
-                    currentPage   = page;
+                    const articles = Array.isArray(result) ? result : (Array.isArray(result.data) ? result.data : []);
+                    syncCategoryOptions(articles);
+                    currentPage = page;
 
                     let filtered = articles;
+                    const query = String(searchTerm || '').trim().toLowerCase();
+                    if (query) {
+                        filtered = filtered.filter(article => [
+                            article.title,
+                            article.content,
+                            article.category,
+                            article.tags
+                        ].join(' ').toLowerCase().includes(query));
+                    }
+                    if (category && category !== 'all') {
+                        filtered = filtered.filter(article => String(article.category || '') === category);
+                    }
                     if (activeTag && activeTag !== 'all') {
-                        filtered = articles.filter(a => String(a.tags || '').split(',').map(t => t.trim()).includes(activeTag));
+                        filtered = filtered.filter(article => articleTags(article).includes(activeTag));
                     }
 
-                    const html = filtered.map(renderArticleItem).join('') ||
-                        '<div class="no-results">[ NO_MATCH ] — Adjust filters or search query.</div>';
+                    totalArticles = filtered.length;
+                    totalPages = 1;
 
-                    if (append) container.innerHTML += html;
-                    else container.innerHTML = html;
+                    const html = renderArchive(filtered) ||
+                        '<div class="no-results">[ NO_MATCH ] — 换个标签或关键词试试。</div>';
+
+                    container.innerHTML = html;
+                    updateArchiveStats(filtered);
 
                     updatePagination();
                     checkScrollTrigger();
@@ -273,6 +388,12 @@
                 activeTag = tag || 'all';
                 tagCloud.querySelectorAll('.tag-btn').forEach(b => b.classList.toggle('active', b.dataset.tag === activeTag));
                 currentPage = 1;
+                try {
+                    const url = new URL(window.location.href);
+                    if (activeTag && activeTag !== 'all') url.searchParams.set('tag', activeTag);
+                    else url.searchParams.delete('tag');
+                    window.history.replaceState({}, '', url);
+                } catch (error) { /* noop */ }
                 loadArticles(1, searchInput.value.trim(), categoryFilter.value);
             }
 
@@ -281,6 +402,17 @@
                 if (!btn) return;
                 setActiveTag(btn.dataset.tag);
             });
+
+            const tagMoreBtn = document.getElementById('tag-more-btn');
+            const tagMoreGroup = document.getElementById('tag-more-group');
+            if (tagMoreBtn && tagMoreGroup) {
+                tagMoreBtn.addEventListener('click', () => {
+                    const willOpen = tagMoreGroup.hidden;
+                    tagMoreGroup.hidden = !willOpen;
+                    tagMoreBtn.textContent = willOpen ? '收起 −' : '更多 +';
+                    tagMoreBtn.setAttribute('aria-expanded', String(willOpen));
+                });
+            }
 
             /* ── Pagination ───────────────────────────────────────── */
             function updatePagination() {
@@ -331,7 +463,34 @@
                 }
             }, { passive: true });
 
-            loadArticles();
+            function updateArchiveFilterNote(categoryOverride) {
+                const note = document.getElementById('archive-filter');
+                if (!note) return;
+                const parts = [];
+                const activeCategory = categoryOverride || categoryFilter.value;
+                if (activeCategory && activeCategory !== 'all') parts.push('分类：' + activeCategory);
+                if (activeTag && activeTag !== 'all') parts.push('#' + activeTag);
+                if (!parts.length) {
+                    note.hidden = true;
+                    note.innerHTML = '';
+                    return;
+                }
+                note.hidden = false;
+                note.innerHTML = '<span>FILTER //</span> ' + escapeHtml(parts.join(' · ')) + ' <a href="/src/pages/articles.html">清除</a>';
+            }
+
+            const initialParams = new URLSearchParams(window.location.search);
+            const initialCategory = initialParams.get('category');
+            const initialTag = initialParams.get('tag');
+            if (initialCategory) {
+                categoryFilter.value = initialCategory;
+            }
+            if (initialTag) {
+                setActiveTag(initialTag);
+            } else {
+                loadArticles(1, '', initialCategory || 'all');
+            }
+            updateArchiveFilterNote(initialCategory || 'all');
         });
     </script>
 </body>

@@ -3,162 +3,244 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>正在进入 - YanMo的个人博客</title>
+    <title>正在进入 - YanMo Labs</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
-        <script src="/src/js/theme-boot.js"></script>
+    <meta name="theme-color" content="#070b14">
+    <script src="/src/js/theme-boot.js"></script>
     <style>
         :root {
-            --bg: #05050a;
-            --panel: rgba(11, 18, 30, 0.86);
-            --cyan: #00ffff;
-            --orange: #ff8c3a;
-            --text: #00ffff;
+            --splash-bg: #070b14;
+            --splash-panel: rgba(12, 19, 33, 0.9);
+            --splash-text: #e9eefb;
+            --splash-dim: rgba(233, 238, 251, 0.56);
+            --splash-accent: #7aa7ff;
+            --splash-accent-2: #b48cff;
+            --splash-accent-3: #4be3b0;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
-        body {
+        html, body { height: 100%; }
+
+        body.splash {
             margin: 0;
             min-height: 100vh;
             display: grid;
             place-items: center;
-            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            color: var(--text);
-            background:
-                radial-gradient(900px 360px at 12% 0%, rgba(22, 242, 210, 0.16), transparent 55%),
-                radial-gradient(760px 300px at 100% 12%, rgba(255, 140, 58, 0.14), transparent 52%),
-                var(--bg);
+            padding: 1.5rem;
+            color: var(--splash-text);
+            background-color: var(--splash-bg);
+            background-image:
+                radial-gradient(900px 560px at 8% -10%, rgba(122, 167, 255, 0.24), transparent 62%),
+                radial-gradient(760px 520px at 98% 4%, rgba(180, 140, 255, 0.18), transparent 60%),
+                radial-gradient(720px 520px at 50% 112%, rgba(75, 227, 176, 0.10), transparent 64%);
+            background-repeat: no-repeat;
+            font-family: 'Inter', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
             overflow: hidden;
         }
 
+        body.splash::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(148, 178, 255, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(148, 178, 255, 0.045) 1px, transparent 1px);
+            background-size: 64px 64px;
+            -webkit-mask-image: radial-gradient(900px 640px at 50% 0%, #000 0%, transparent 78%);
+            mask-image: radial-gradient(900px 640px at 50% 0%, #000 0%, transparent 78%);
+        }
+
         .loader-wrap {
-            width: min(92vw, 560px);
-            background: var(--panel);
-            border-radius: 16px;
-            padding: 1.45rem 1.3rem 1.05rem;
-            box-shadow: 0 16px 42px rgba(0, 0, 0, 0.42);
-            backdrop-filter: blur(8px);
-            text-align: center;
             position: relative;
-            overflow: hidden;
-            min-height: min(78vh, 500px);
+            width: min(92vw, 480px);
+            min-height: min(76vh, 440px);
+            padding: 2.6rem 2rem 1.6rem;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 30px;
+            background:
+                radial-gradient(360px 220px at 50% 0%, rgba(122, 167, 255, 0.12), transparent 70%),
+                var(--splash-panel);
+            box-shadow:
+                0 50px 100px -50px rgba(0, 0, 0, 0.95),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+            isolation: isolate;
         }
 
         .loader-wrap::before {
-            content: '';
+            content: "";
             position: absolute;
             inset: 0;
-            background: linear-gradient(120deg, transparent 0%, rgba(22, 242, 210, 0.06) 45%, transparent 90%);
-            transform: translateX(-120%);
-            animation: shine 2.8s ease-in-out infinite;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+            background-size: 32px 32px;
+            -webkit-mask-image: linear-gradient(180deg, #000, transparent 82%);
+            mask-image: linear-gradient(180deg, #000, transparent 82%);
             pointer-events: none;
         }
 
-        @keyframes shine {
-            0% {
-                transform: translateX(-120%);
-            }
-
-            55%,
-            100% {
-                transform: translateX(120%);
-            }
-        }
-
-        .loader-avatar {
-            width: 120px;
-            height: 120px;
-            margin: 0 auto 1rem;
-            border-radius: 50%;
-            overflow: hidden;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+        body.splash .loader-avatar {
             position: relative;
             z-index: 1;
+            width: 112px;
+            height: 112px;
+            border-radius: 50%;
+            overflow: hidden;
+            margin: 0 auto 1.3rem;
+            padding: 6px;
+            background: conic-gradient(from 210deg, #7aa7ff, #b48cff 45%, #4be3b0 78%, #7aa7ff);
+            box-shadow: 0 24px 50px -22px rgba(122, 167, 255, 0.7);
         }
 
-        .loader-avatar img {
+        body.splash .loader-avatar::after {
+            content: "";
+            position: absolute;
+            inset: 6px;
+            border-radius: 50%;
+            background: #0a1120;
+        }
+
+        body.splash .loader-avatar img {
+            position: relative;
+            z-index: 1;
             width: 100%;
             height: 100%;
+            display: block;
+            border-radius: 50%;
             object-fit: cover;
-            object-position: center;
+            background: #0a1120;
+        }
+
+        .kicker {
+            position: relative;
+            z-index: 1;
+            margin-bottom: 0.5rem;
+            color: var(--splash-accent);
+            font-family: 'Roboto Mono', 'JetBrains Mono', Consolas, monospace;
+            font-size: 0.58rem;
+            letter-spacing: 0.22em;
         }
 
         .title {
-            margin: 0 0 0.3rem;
-            font-size: clamp(1.25rem, 3.2vw, 1.7rem);
-            letter-spacing: 0.6px;
             position: relative;
             z-index: 1;
+            margin: 0;
+            font-size: clamp(2rem, 6vw, 2.8rem);
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.06em;
+            background: linear-gradient(112deg, #f2f6ff 4%, #b8ceff 40%, #d3c1ff 68%, #8ff1d0 96%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
 
         .sub {
-            margin: 0 0 1rem;
-            color: #a6bcc8;
-            font-size: 0.95rem;
             position: relative;
             z-index: 1;
+            margin: 0.65rem 0 2rem;
+            color: var(--splash-dim);
+            font-family: 'Roboto Mono', 'JetBrains Mono', Consolas, monospace;
+            font-size: 0.66rem;
+            letter-spacing: 0.12em;
         }
 
         .bar {
-            width: 100%;
-            max-width: 460px;
-            height: 9px;
-            border-radius: 999px;
-            background: rgba(22, 242, 210, 0.15);
-            overflow: hidden;
-            border: 1px solid rgba(22, 242, 210, 0.26);
             position: relative;
             z-index: 1;
+            width: 100%;
+            max-width: 320px;
+            height: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.045);
+            overflow: hidden;
         }
 
         .bar > span {
             display: block;
             width: 0;
             height: 100%;
-            background: linear-gradient(90deg, var(--cyan), var(--orange));
-            box-shadow: 0 0 18px rgba(22, 242, 210, 0.55);
-            transition: width 0.2s linear;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--splash-accent), var(--splash-accent-2) 55%, var(--splash-accent-3));
+            box-shadow: 0 0 18px rgba(122, 167, 255, 0.6);
+            transition: width 0.18s linear;
         }
 
         .meta {
-            margin-top: 0.6rem;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.6rem;
-            font-size: 0.82rem;
-            color: #9fb5c2;
             position: relative;
             z-index: 1;
+            width: 100%;
+            max-width: 320px;
+            margin-top: 0.7rem;
+            display: flex;
+            justify-content: space-between;
+            color: var(--splash-dim);
+            font-family: 'Roboto Mono', 'JetBrains Mono', Consolas, monospace;
+            font-size: 0.58rem;
+            letter-spacing: 0.12em;
+        }
+
+        .meta strong { color: var(--splash-accent-3); font-weight: 600; }
+
+        .footnote {
+            position: relative;
+            z-index: 1;
+            margin-top: 2rem;
+            color: rgba(233, 238, 251, 0.3);
+            font-family: 'Roboto Mono', 'JetBrains Mono', Consolas, monospace;
+            font-size: 0.54rem;
+            letter-spacing: 0.18em;
         }
 
         @media (max-width: 520px) {
-            .loader-avatar {
-                width: 102px;
-                height: 102px;
-            }
+            .loader-wrap { padding: 2rem 1.2rem 1.2rem; border-radius: 24px; }
+            body.splash .loader-avatar { width: 96px; height: 96px; }
         }
+
     </style>
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <meta name="description" content="正在进入 YanMo Labs。">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="加载中 - YanMo Labs">
+    <meta property="og:description" content="正在进入 YanMo Labs。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="加载中 - YanMo Labs">
+    <meta name="twitter:description" content="正在进入 YanMo Labs。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <meta name="robots" content="noindex, nofollow">
 </head>
 <body class="splash">
     <main class="loader-wrap" aria-live="polite">
+        <div class="kicker">SYSTEM.BOOT // VERIFYING</div>
         <div class="loader-avatar">
             <img src="/assets/images/site-avatar.png" alt="站点头像">
         </div>
         <h1 class="title">YanMo</h1>
+        <p class="sub">SECURITY RESEARCH · PERSONAL BLOG</p>
         <div class="bar" aria-hidden="true"><span id="load-progress"></span></div>
         <div class="meta">
-            <span>LOADING</span>
-            <span id="load-percent">0%</span>
+            <span>LOADING_ASSETS</span>
+            <strong id="load-percent">0%</strong>
         </div>
+        <div class="footnote">YANMO LABS // EST. 2023</div>
     </main>
 
     <script>

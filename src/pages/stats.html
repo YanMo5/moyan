@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+        <script src="/src/js/theme-boot.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>统计 - YanMo Labs</title>
+    <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
+    <link rel="shortcut icon" href="/assets/images/site-avatar.png">
+    <meta name="description" content="YanMo Labs 的文章发布、标签与分类统计。">
+    <meta name="keywords" content="安全文章, 技术博客, 渗透测试, AI安全">
+    <link rel="stylesheet" href="/src/css/styles.css">
+    <link rel="stylesheet" href="/src/css/beautify.css">
+    <link rel="stylesheet" href="/src/css/music-box.css">
+    <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="统计 - YanMo Labs">
+    <meta property="og:description" content="YanMo Labs 的文章发布、标签与分类统计。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="统计 - YanMo Labs">
+    <meta name="twitter:description" content="YanMo Labs 的文章发布、标签与分类统计。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
+</head>
+
+<body class="articles-view taxonomy-view" data-taxonomy-view="stats">
+<header>
+        <nav>
+            <div class="logo">
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
+            </div>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="/src/pages/articles.html" class="active"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+<main>
+        <section class="taxonomy-page taxonomy-page--stats reveal">
+            <div class="terminal-label">TAXONOMY // STATISTICS // YANMO_LABS</div>
+            <h1 class="glitch-text page-title" data-text="统计 STATISTICS"><span class="page-title-cn">统计</span><span class="page-title-en">STATISTICS</span></h1>
+            <p class="taxonomy-lead">文章发布节奏、Top 10 标签与分类分布。</p>
+            <div class="stats-summary" id="stats-summary">正在接入统计数据…</div>
+            <div class="stats-grid">
+                <article class="chart-card">
+                    <div class="chart-head"><span>// PUBLISH</span><h2>文章发布统计图</h2></div>
+                    <div class="chart-body" id="chart-publish"></div>
+                </article>
+                <article class="chart-card">
+                    <div class="chart-head"><span>// TAGS</span><h2>Top 10 标签统计图</h2></div>
+                    <div class="chart-body" id="chart-tags"></div>
+                </article>
+                <article class="chart-card">
+                    <div class="chart-head"><span>// CATEGORIES</span><h2>文章分类统计图</h2></div>
+                    <div class="chart-body chart-body--donut" id="chart-categories"></div>
+                </article>
+            </div>
+        </section>
+</main>
+
+<footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo Labs</h3>
+                <p>信息安全专家 | 渗透测试 | 人工智能</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="/src/pages/link-apply.html" class="footer-link">前往友链申请页面</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
+        </div>
+    </footer>
+
+<script src="/src/js/local-api.js"></script>
+    <script src="/src/js/date-utils.js"></script>
+    <script src="/src/js/palette-manager.js"></script>
+    <script src="/src/js/music-box.js" defer></script>
+    <script src="/src/js/ux-enhancements.js"></script>
+    
+<script src="/src/js/taxonomy.js" defer></script>
+</body>
+</html>

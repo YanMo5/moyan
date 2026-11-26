@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
         <script src="/src/js/theme-boot.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文章详情 - YanMo的个人博客</title>
+    <title>文章详情 - YanMo Labs</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/styles.css">
     <link rel="stylesheet" href="/src/css/beautify.css">
     <!-- Highlight.js — Monokai-Neon palette（本地 vendor，避免 CDN 阻塞首屏） -->
@@ -161,12 +158,31 @@
     </style>
     <link rel="stylesheet" href="/src/css/music-box.css">
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <meta name="description" content="YanMo 的安全研究文章，涵盖 Web 渗透、漏洞复现、蓝队运营与 AI 安全。">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="文章 - YanMo Labs">
+    <meta property="og:description" content="YanMo 的安全研究文章，涵盖 Web 渗透、漏洞复现、蓝队运营与 AI 安全。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="文章 - YanMo Labs">
+    <meta name="twitter:description" content="YanMo 的安全研究文章，涵盖 Web 渗透、漏洞复现、蓝队运营与 AI 安全。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
 </head>
 <body class="post-view">
     <header>
         <nav>
             <div class="logo">
-                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
             </div>
             <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
@@ -175,12 +191,10 @@
             </button>
             <div class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/src/pages/index.html"><span class="shimmer"></span>首页</a></li>
                     <li><a href="/src/pages/articles.html" class="active"><span class="shimmer"></span>文章</a></li>
-                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于我</a></li>
-                    <li><a href="/src/pages/contact.html"><span class="shimmer"></span>联系</a></li>
-                    <li><a href="/src/pages/guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
                     <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
             </div>
@@ -202,11 +216,17 @@
                     </div>
                     <div class="post-cover-overlay">
                         <div class="post-cover-content">
-                            <span class="post-category badge" id="article-category-badge"></span>
+                            <div class="post-cover-kicker">
+                                <span class="post-original">原创</span>
+                                <span class="post-category badge" id="article-category-badge"></span>
+                                <div class="post-cover-tags" id="article-tags"></div>
+                            </div>
                             <h1 id="article-title" class="glitch-text"></h1>
                             <div class="post-cover-meta">
                                 <span class="post-date" id="article-date"></span>
                                 <span class="post-author">研究员：YanMo</span>
+                                <span class="post-words" id="article-words"></span>
+                                <span class="post-reading" id="article-reading"></span>
                             </div>
                         </div>
                     </div>
@@ -220,21 +240,48 @@
                 </header>
 
                 <div class="post-layout">
-                    <aside class="post-toc" id="post-toc" style="display: none;">
-                        <div class="toc-header">
-                            <h3>阅读导航</h3>
-                            <button type="button" id="toc-toggle" class="toc-toggle" aria-expanded="false">展开目录</button>
-                        </div>
-                        <div class="toc-list" id="toc-list"></div>
-                    </aside>
-
                     <div class="post-content" id="article-content">
                         <!-- Content will be loaded here -->
                     </div>
+
+                    <aside class="post-side" aria-label="文章信息">
+                        <div class="post-side-card post-author-card">
+                            <img class="post-author-avatar" src="/assets/images/site-avatar.png" alt="YanMo" loading="lazy">
+                            <div class="post-author-id">
+                                <strong>YanMo</strong>
+                                <span>信息安全研究员</span>
+                            </div>
+                            <p>记录攻防、AI 安全与工程实践。</p>
+                            <a class="post-author-link" href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+                        </div>
+
+                        <div class="post-side-card post-info-card">
+                            <h3>文章信息</h3>
+                            <dl class="post-info-list">
+                                <div><dt>发布</dt><dd id="post-info-date">—</dd></div>
+                                <div><dt>分类</dt><dd id="post-info-category">—</dd></div>
+                                <div><dt>字数</dt><dd id="post-info-words">—</dd></div>
+                                <div><dt>阅读</dt><dd id="post-info-reading">—</dd></div>
+                            </dl>
+                            <div class="post-info-tags" id="post-info-tags"></div>
+                        </div>
+
+                        <aside class="post-toc" id="post-toc" style="display: none;">
+                            <div class="toc-header">
+                                <h3>阅读导航</h3>
+                                <button type="button" id="toc-toggle" class="toc-toggle" aria-expanded="false">展开目录</button>
+                            </div>
+                            <div class="toc-list" id="toc-list"></div>
+                        </aside>
+                    </aside>
                 </div>
             </div>
 
             <div class="post-footer">
+                <div class="post-end">
+                    <div class="post-end-tags" id="post-end-tags"></div>
+                    <p>本文由 <strong>YanMo</strong> 创作，转载请注明出处。</p>
+                </div>
                 <a href="/src/pages/articles.html" class="btn">返回任务列表</a>
             </div>
         </article>
@@ -246,7 +293,7 @@
     <footer>
         <div class="footer-content">
             <div class="footer-info">
-                <h3>YanMo的个人博客</h3>
+                <h3>YanMo Labs</h3>
                 <p>信息安全专家 | 渗透测试 | 人工智能</p>
                 <p>—— 技术改变未来，代码创造世界 ——</p>
             </div>
@@ -266,7 +313,7 @@
             </div>
         </div>
         <div class="footer-copyright">
-            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
         </div>
     </footer>
 
@@ -334,6 +381,53 @@
             }
             function isMobileViewport() { return window.innerWidth <= 900; }
 
+            function articleTagList(article) {
+                const raw = Array.isArray(article.tags) ? article.tags : String(article.tags || '').split(',');
+                const tags = raw.map(t => String(t || '').trim()).filter(Boolean);
+                if (!tags.length && article.category) tags.push(String(article.category).trim());
+                return [...new Set(tags)];
+            }
+
+            function countArticleChars(html) {
+                const holder = document.createElement('div');
+                holder.innerHTML = String(html || '');
+                return (holder.textContent || '').replace(/\s+/g, '').length;
+            }
+
+            function renderArticleMeta(article) {
+                const tags = articleTagList(article);
+                const chars = countArticleChars(article.content);
+                const minutes = Math.max(1, Math.ceil(chars / 400));
+                const countText = chars >= 1000 ? (chars / 1000).toFixed(1) + 'k' : String(chars);
+                const tagHtml = tags.map(t =>
+                    `<a class="post-tag" href="/src/pages/articles.html?tag=${encodeURIComponent(t)}">#${escapeHtml(t)}</a>`
+                ).join('');
+                const setHtml = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
+                const setText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+
+                setHtml('article-tags', tagHtml);
+                setHtml('post-info-tags', tagHtml);
+                setHtml('post-end-tags', tagHtml);
+                setText('article-words', countText + ' 字');
+                setText('article-reading', minutes + ' 分钟');
+                setText('post-info-date', formatLocalDate(article.created_at));
+                setText('post-info-category', article.category || '未分类');
+                setText('post-info-words', countText + ' 字');
+                setText('post-info-reading', minutes + ' 分钟');
+
+                const plain = String(article.content || '')
+                    .replace(/<[^>]*>/g, ' ')
+                    .replace(/[#>*`_~\-]+/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                if (plain) {
+                    const summary = plain.length > 120 ? plain.slice(0, 120) + '…' : plain;
+                    content.insertAdjacentHTML('afterbegin',
+                        `<div class="post-abstract"><span class="post-abstract-label">TL;DR</span><p>${escapeHtml(summary)}</p></div>`
+                    );
+                }
+            }
+
             /* 一个标题一个页面：把 canonical / description 指向 /post/<id> */
             function updateCanonical(article, id) {
                 if (!id) return;
@@ -399,31 +493,59 @@
                 } catch (_) { return ''; }
                 return '';
             }
+            function firstContentImage(rawContent) {
+                const source = String(rawContent || '');
+                const htmlMatch = source.match(/<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["']/i);
+                if (htmlMatch) {
+                    const htmlUrl = normalizeCoverUrl(htmlMatch[1]);
+                    if (htmlUrl) return htmlUrl;
+                }
+                const mdMatch = source.match(/!\[[^\]]*\]\(\s*(?:<([^>]+)>|([^)\s]+))(?:\s+["'][^"']*["'])?\s*\)/);
+                return normalizeCoverUrl(mdMatch && (mdMatch[1] || mdMatch[2]));
+            }
             function resolveArticleCover(a) {
-                for (const k of ['cover_url','coverUrl','cover','thumbnail','image','image_url','banner']) {
+                for (const k of ['cover_image','cover_url','coverUrl','cover','thumbnail','image','image_url','banner']) {
                     const n = normalizeCoverUrl(a[k]);
                     if (n) return n;
                 }
+                if (/日常|daily/i.test(String(a.category || ''))) return firstContentImage(a.content);
                 return '';
             }
-            function escapeSvgText(v) {
-                return String(v||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));
-            }
             function generateFallbackCover(a) {
-                const t = escapeSvgText(a&&a.title?a.title:'Untitled');
-                const c = escapeSvgText(a&&a.category?a.category:'Research');
+                /* 封面只负责氛围：标题与分类由 .post-cover-overlay 渲染，
+                   避免旧版把标题同时画进 SVG 和 HTML 里造成重复。 */
                 const svg = [
                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675">',
-                    '<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#07131f"/><stop offset="100%" stop-color="#02050b"/></linearGradient>',
-                    '<linearGradient id="ac" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#18f4d6" stop-opacity=".86"/><stop offset="100%" stop-color="#071723" stop-opacity=".96"/></linearGradient>',
-                    '<pattern id="sc" width="6" height="6" patternUnits="userSpaceOnUse"><rect width="6" height="1.2" fill="rgba(255,255,255,0.07)"/></pattern></defs>',
+                    '<defs>',
+                    '<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#050912"/><stop offset="55%" stop-color="#081120"/><stop offset="100%" stop-color="#03060d"/></linearGradient>',
+                    '<radialGradient id="glowA" cx="18%" cy="8%" r="55%"><stop offset="0%" stop-color="#6ea8fe" stop-opacity=".42"/><stop offset="100%" stop-color="#6ea8fe" stop-opacity="0"/></radialGradient>',
+                    '<radialGradient id="glowB" cx="88%" cy="18%" r="48%"><stop offset="0%" stop-color="#a78bfa" stop-opacity=".34"/><stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/></radialGradient>',
+                    '<radialGradient id="glowC" cx="60%" cy="110%" r="55%"><stop offset="0%" stop-color="#34d399" stop-opacity=".16"/><stop offset="100%" stop-color="#34d399" stop-opacity="0"/></radialGradient>',
+                    '<pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M64 0H0V64" fill="none" stroke="rgba(255,255,255,.055)" stroke-width="1"/></pattern>',
+                    '<linearGradient id="line" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#6ea8fe" stop-opacity=".0"/><stop offset="50%" stop-color="#6ea8fe" stop-opacity=".55"/><stop offset="100%" stop-color="#a78bfa" stop-opacity=".0"/></linearGradient>',
+                    '</defs>',
                     '<rect width="1200" height="675" fill="url(#bg)"/>',
-                    '<rect width="1200" height="675" fill="url(#ac)" opacity=".88"/>',
-                    '<rect width="1200" height="675" fill="url(#sc)" opacity=".55"/>',
-                    '<rect x="78" y="78" width="1044" height="519" rx="24" fill="rgba(2,8,16,.32)" stroke="rgba(24,244,214,.58)" stroke-width="4"/>',
-                    '<text x="130" y="180" fill="#d9fff7" font-size="42" font-family="Segoe UI,sans-serif" opacity=".88">'+c+'</text>',
-                    '<text x="130" y="290" fill="#fff" font-size="54" font-weight="700" font-family="Segoe UI,sans-serif">'+t+'</text>',
-                    '<text x="130" y="548" fill="rgba(230,245,255,.88)" font-size="28" letter-spacing="4" font-family="Consolas,monospace">YANMO LABS // SECURITY RESEARCH</text>',
+                    '<rect width="1200" height="675" fill="url(#glowA)"/>',
+                    '<rect width="1200" height="675" fill="url(#glowB)"/>',
+                    '<rect width="1200" height="675" fill="url(#glowC)"/>',
+                    '<rect width="1200" height="675" fill="url(#grid)" opacity=".55"/>',
+                    '<g fill="none" stroke="url(#line)" stroke-width="1.4">',
+                    '<path d="M-40 520C220 420 420 470 620 330S980 130 1240 190"/>',
+                    '<path d="M-40 585C250 500 470 545 680 400S1010 210 1240 270"/>',
+                    '<path d="M-40 455C200 360 390 410 590 280S950 80 1240 140"/>',
+                    '</g>',
+                    '<g fill="none" stroke="rgba(148,178,255,.16)">',
+                    '<circle cx="975" cy="335" r="150" stroke-width="1"/>',
+                    '<circle cx="975" cy="335" r="225" stroke-width="1" stroke-dasharray="2 8"/>',
+                    '<circle cx="975" cy="335" r="300" stroke-width="1" stroke-opacity=".55"/>',
+                    '</g>',
+                    '<g fill="rgba(148,178,255,.5)">',
+                    '<circle cx="975" cy="185" r="3"/><circle cx="1130" cy="335" r="3"/><circle cx="975" cy="485" r="3"/><circle cx="820" cy="335" r="3"/>',
+                    '</g>',
+                    '<rect x="64" y="64" width="22" height="22" fill="none" stroke="rgba(148,178,255,.35)"/>',
+                    '<rect x="1114" y="589" width="22" height="22" fill="none" stroke="rgba(167,139,250,.35)"/>',
+                    '<text x="64" y="610" fill="rgba(232,238,249,.64)" font-size="20" letter-spacing="6" font-family="Consolas,monospace">YANMO LABS // SECURITY RESEARCH</text>',
+                    '<text x="1136" y="72" fill="rgba(232,238,249,.5)" text-anchor="end" font-size="17" letter-spacing="4" font-family="Consolas,monospace">SEC // 2026</text>',
                     '</svg>'
                 ].join('');
                 return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
@@ -475,7 +597,7 @@
                     // C-03: sanitize rendered HTML with DOMPurify before setting innerHTML
                     const rendered = marked.parse(String(rawText || ''));
                     content.innerHTML = (typeof DOMPurify !== 'undefined')
-                        ? DOMPurify.sanitize(rendered)
+                        ? DOMPurify.sanitize(rendered, { ADD_DATA_URI_TAGS: ['img'] })
                         : rendered;
                 } else {
                     // Plain-text fallback
@@ -525,7 +647,7 @@
             }
 
             function buildToc() {
-                if (!sectionNodes.length) { toc.style.display = 'none'; tocNodes = []; return; }
+                if (!sectionNodes.length) { toc.style.display = 'none'; tocNodes = []; if (tocFab) tocFab.style.display = 'none'; return; }
                 const headings = sectionNodes.filter(n => n.dataset.type === 'heading');
                 tocNodes = headings.length ? headings : sectionNodes.filter((_, i) => i === 0 || i % 2 === 0 || i === sectionNodes.length - 1);
                 tocList.innerHTML = tocNodes.map((node, i) => {
@@ -535,6 +657,7 @@
                     return `<li><a href="#${node.id}" class="${cls}" data-target="${node.id}"><span class="toc-number">${String(i+1).padStart(2,'0')}</span>${escapeHtml(label)}</a></li>`;
                 }).join('');
                 toc.style.display = 'block';
+                if (tocFab) tocFab.style.display = '';
                 setTocDrawerOpen(false);
             }
 
@@ -565,7 +688,13 @@
                 if (!r.ok) throw new Error('ARTICLE_LIST_FAILED');
                 const arr = await r.json();
                 if (!Array.isArray(arr) || !arr.length) throw new Error('NO_ARTICLES');
-                return arr[0];
+                const latest = arr[0];
+                // 列表接口会剔除内联 Base64 图片，最新文章回退时再取一次完整正文
+                try {
+                    return await fetchArticleById(latest.id);
+                } catch (_) {
+                    return latest;
+                }
             }
             async function resolveArticle(requestedId) {
                 if (requestedId) {
@@ -640,6 +769,16 @@
                 if (categoryHeader) categoryHeader.textContent  = article.category;
 
                 buildArticleContent(article.content);
+                renderArticleMeta(article);
+
+                const isDailyPost = /日常|daily/i.test(String(article.category || ''));
+                content.classList.toggle('post-content--daily', isDailyPost);
+                const isAwardPost = isDailyPost && /证书|获奖|奖状|奖杯|竞赛|比赛|赛事|奖牌|certificate|award/i.test(
+                    String(article.title || '') + ' ' + String(article.content || '').slice(0, 1200)
+                );
+                content.classList.toggle('post-content--award', isAwardPost);
+                if (isAwardPost && categoryBadge) categoryBadge.textContent = article.category + ' · CERT';
+
                 buildToc();
 
                 cover.textContent = '';
@@ -647,6 +786,11 @@
                 img.src = resolveArticleCover(article) || generateFallbackCover(article);
                 img.alt = String(article.title || '文章封面');
                 img.loading = 'lazy'; img.decoding = 'async';
+                img.onerror = function () {
+                    if (img.dataset.fallback) return;
+                    img.dataset.fallback = '1';
+                    img.src = generateFallbackCover(article);
+                };
                 cover.appendChild(img);
 
                 loading.style.display = 'none';

@@ -6,23 +6,39 @@
     
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理员登录 - YanMo的个人博客</title>
+    <title>管理员登录 - YanMo Labs</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/css/styles.css">
     <link rel="stylesheet" href="/src/css/beautify.css">
     
     <link rel="stylesheet" href="/src/css/music-box.css">
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <meta name="description" content="YanMo 博客管理员登录。">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="管理员登录 - YanMo Labs">
+    <meta property="og:description" content="YanMo 博客管理员登录。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="管理员登录 - YanMo Labs">
+    <meta name="twitter:description" content="YanMo 博客管理员登录。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <meta name="robots" content="noindex, nofollow">
 </head>
-<body>
+<body class="admin-login-view">
     <header>
         <nav>
             <div class="logo">
-                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
             </div>
             <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
@@ -31,11 +47,10 @@
             </button>
             <div class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/src/pages/index.html"><span class="shimmer"></span>首页</a></li>
                     <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
-                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于我</a></li>
-                    <li><a href="/src/pages/contact.html"><span class="shimmer"></span>联系</a></li>
-                    <li><a href="/src/pages/guestbook.html"><span class="shimmer"></span>留言板</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
                     <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
             </div>
@@ -57,20 +72,47 @@
 
     <main>
         <section class="login-page reveal">
-            <div class="login-container">
-                <h1 class="glitch-text" data-text="安全登录 / ACCESS_GRANTED">安全登录 / ACCESS_GRANTED</h1>
-                <form id="login-form" class="login-form terminal-form">
-                    <div class="form-group">
-                        <label for="username">> ADMIN_CID:</label>
-                        <input type="text" id="username" name="username" placeholder="输入识别码..." autocomplete="username" maxlength="64" required>
+            <div class="login-shell">
+                <aside class="login-aside" aria-label="后台安全说明">
+                    <a class="login-brand" href="/src/pages/index.html">
+                        <img src="/assets/images/site-avatar.png" alt="YanMo 头像" width="40" height="40">
+                        <span><strong>YANMO</strong><small>CONTROL PLANE</small></span>
+                    </a>
+                    <div class="login-aside-copy">
+                        <span class="login-eyebrow">SECURE ACCESS // RESTRICTED</span>
+                        <h2>仅限授权操作员</h2>
+                        <p>后台用于文章、留言与友链管理。所有请求都经过会话校验、CSRF 防护与失败限流。</p>
                     </div>
-                    <div class="form-group">
-                        <label for="password">> ACCESS_KEY:</label>
-                        <input type="password" id="password" name="password" placeholder="输入访问密钥..." autocomplete="current-password" maxlength="256" required>
+                    <ul class="login-facts">
+                        <li><span>01</span><div><strong>PBKDF2-SHA256</strong><small>600,000 次迭代加盐哈希</small></div></li>
+                        <li><span>02</span><div><strong>RATE LIMITED</strong><small>10 分钟窗口 · 失败锁定</small></div></li>
+                        <li><span>03</span><div><strong>SESSION GUARD</strong><small>HttpOnly · CSRF · 空闲超时</small></div></li>
+                    </ul>
+                    <div class="login-aside-foot"><span>YANMO LABS</span><span>2026 / UTC+8</span></div>
+                </aside>
+
+                <div class="login-container">
+                    <div class="login-kicker">ADMIN_CONSOLE // AUTHENTICATION</div>
+                    <h1>安全登录</h1>
+                    <p class="login-lead">使用管理员凭据进入控制台。连续失败会触发临时锁定。</p>
+                    <form id="login-form" class="login-form terminal-form">
+                        <div class="form-group">
+                            <label for="username">ADMIN_CID / 识别码</label>
+                            <input type="text" id="username" name="username" placeholder="输入管理员识别码..." autocomplete="username" maxlength="64" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">ACCESS_KEY / 访问密钥</label>
+                            <input type="password" id="password" name="password" placeholder="输入访问密钥..." autocomplete="current-password" maxlength="256" required>
+                        </div>
+                        <button type="submit" class="btn">进入控制台 <span aria-hidden="true">→</span></button>
+                        <div id="login-message" class="form-message" role="status" aria-live="polite"></div>
+                    </form>
+                    <div class="login-container-foot">
+                        <a href="/src/pages/index.html">← 返回站点</a>
+                        <span>Authorized access only</span>
                     </div>
-                    <button type="submit" class="btn">登录</button>
-                    <div id="login-message" class="form-message" role="status" aria-live="polite"></div>
-                </form>
+                </div>
+            </div>
                 <script>
                     document.getElementById('login-form').addEventListener('submit', async (e) => {
                         e.preventDefault();
@@ -123,6 +165,7 @@
                         }
                     });
                 </script>
+                </div>
             </div>
         </section>
     </main>
@@ -130,14 +173,29 @@
     <footer>
         <div class="footer-content">
             <div class="footer-info">
-                <h3>YanMo的个人博客</h3>
+                <h3>YanMo Labs</h3>
                 <p>信息安全专家 | 渗透测试 | 人工智能</p>
                 <p>—— 技术改变未来，代码创造世界 ——</p>
             </div>
         </div>
         <div class="footer-copyright">
-            <p>YanMo的个人博客 © 2026 All Copyrights Reserved.</p>
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
         </div>
     </footer>
+    <script>
+        (function () {
+            let expired = new URLSearchParams(window.location.search).get('expired') === '1';
+            try {
+                if (sessionStorage.getItem('yanmo.site.admin.expired.v1') === '1') expired = true;
+                sessionStorage.removeItem('yanmo.site.admin.expired.v1');
+            } catch (error) { /* noop */ }
+            if (!expired) return;
+            const message = document.getElementById('login-message');
+            if (message) {
+                message.textContent = '登录已过期，请重新登录。';
+                message.style.color = '#ffb86b';
+            }
+        })();
+    </script>
 </body>
 </html>

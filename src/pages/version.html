@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <script src="/src/js/theme-boot.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>版本协议 - YanMo Labs</title>
+    <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
+    <link rel="shortcut icon" href="/assets/images/site-avatar.png">
+    <link rel="stylesheet" href="/src/css/styles.css">
+    <link rel="stylesheet" href="/src/css/beautify.css">
+    <link rel="stylesheet" href="/src/css/music-box.css">
+    <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <link rel="stylesheet" href="/src/css/legal.css">
+    <meta name="description" content="版本协议 - YanMo Labs 网站协议文档。">
+    <meta name="theme-color" content="#070b14">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
+</head>
+<body class="policy-view">
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
+            </div>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button type="button" class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <script src="/src/js/palette-manager.js"></script>
+    <script src="/src/js/music-box.js" defer></script>
+    <script src="/src/js/ux-enhancements.js"></script>
+    <main>
+        <section class="policy-page legal-doc">
+    <a class="apply-back" href="/src/pages/policy.html">← 返回协议目录</a>
+    <div class="terminal-label">LEGAL // VERSION // EFFECTIVE</div>
+    <h1 class="glitch-text page-title" data-text="版本协议 VERSION POLICY">
+        <span class="page-title-cn">版本协议</span>
+        <span class="page-title-en">VERSION POLICY</span>
+    </h1>
+    <div class="legal-meta"><span><i aria-hidden="true"></i>站点版本 v1.2.0</span><span><i aria-hidden="true"></i>更新 2026-11-26</span><span><i aria-hidden="true"></i>状态 已生效</span></div>
+    <div class="legal-banner">本页记录 YanMo Labs 的站点版本号规则、当前版本与主要变更。文章内容的修订以文章页面和 RSS 为准；代码层面的细节以仓库提交记录为准。</div>
+    <nav class="legal-toc" aria-label="文档目录"><a href="#scheme">版本号规则</a><a href="#current">当前版本</a><a href="#changelog">变更记录</a><a href="#compatibility">兼容与旧地址</a><a href="#notify">更新通知</a><a href="#contact">联系方式</a></nav>
+    <article class="legal-body">
+        <h2 id="scheme">1. 版本号规则</h2>
+        <p>本站站点版本采用 <code>vMAJOR.MINOR.PATCH</code> 形式：</p>
+        <ul>
+            <li><strong>MAJOR：</strong>站点结构、内容模型、公开接口或访问方式发生不兼容变化；</li>
+            <li><strong>MINOR：</strong>新增页面、功能或较大视觉改版，并尽量保持旧链接可用；</li>
+            <li><strong>PATCH：</strong>样式修正、文案调整、安全修补与缺陷修复。</li>
+        </ul>
+        <p>协议文档单独使用 <code>v1.x</code> 版本号；文章内容有独立的发布和修订时间，不随站点版本号变化。</p>
+
+        <h2 id="current">2. 当前版本</h2>
+        <p>当前站点版本：<strong>v1.2.0</strong>，发布于 <strong>2026-11-26</strong>。本页描述站点层面的主要变化，不替代文章修订记录、RSS 或代码提交历史。</p>
+
+        <h2 id="changelog">3. 变更记录</h2>
+        <ul>
+            <li><strong>v1.2.0 · 2026-11-26：</strong>管理后台新增「访客 / VISITORS」选项卡；记录公开页面访问的 IP、解析地区、路径、User-Agent、来源和时间；提供总访问、独立 IP、今日访问/独立 IP 统计，支持地区筛选、IP 筛选和每页 10 条分页；隐私协议同步补充访客记录与 ipwho.is 地区解析说明。</li>
+            <li><strong>v1.1.0 · 2026-11-26：</strong>后台改为左侧控制台导航；各管理列表每页最多 10 条并支持分页；新增「邮件 / MAILBOX」选项卡，联系表单同时发送 SMTP 邮件并保存站内副本；新增邮件通道自检和 SMTP 配置；友链改为首页截图卡片并显示延迟；相册照片尺寸调整；管理员会话持久化。</li>
+            <li><strong>v1.0.0 · 2026-11-25：</strong>首页全屏视频背景、参考式页脚、协议文档体系；文章归档、分类/标签/统计/RSS 页面；文章详情阅读布局；日常相册集；友链审核与后台管理。</li>
+            <li><strong>v0.9.0 · 2026-11：</strong>页面标题中英文层级、封面与日常照片流、管理后台基础功能、页面强调色与编号。</li>
+            <li><strong>v0.8.0 · 2026-11：</strong>管理员会话、CSRF、输入校验、限流与内容检测；友链可用性检查与自动化测试。</li>
+            <li><strong>v0.7.0 及更早：</strong>站点基础页面、文章系统、留言板、友链和终端风格导航逐步成型。更早的逐条记录以仓库提交为准。</li>
+        </ul>
+
+        <h2 id="compatibility">4. 兼容与旧地址</h2>
+        <p>本站尽量保持公开 URL 稳定，但个人博客不承诺永久兼容所有历史路径或未文档化的接口。</p>
+        <ul>
+            <li>页面统一位于 <code>/src/pages/&lt;name&gt;.html</code>；旧 <code>/pages/*</code> 路径会 301 重定向到 <code>/src/pages/*</code>。</li>
+            <li>文章支持 <code>/post/&lt;id&gt;</code> 和旧的 <code>/post.html?id=&lt;id&gt;</code>；无效编号会回到文章列表。</li>
+            <li><code>/admin.html</code>、<code>/link-apply.html</code> 等短入口尽量保留；后台内部接口和字段可能随安全或功能升级调整，不视为公开稳定 API。</li>
+            <li>RSS 地址为 <a href="/rss.xml">/rss.xml</a>，站点地图为 <a href="/sitemap.xml">/sitemap.xml</a>；若收藏链接失效，可先访问首页或通过 RSS 查找最新内容。</li>
+        </ul>
+
+        <h2 id="notify">5. 更新通知</h2>
+        <p>主要版本更新会通过站点首页、版本页、文章发布或 RSS 提示。本站没有邮件订阅列表，不主动向访问者发送版本通知。你可以订阅 <a href="/rss.xml">RSS</a> 获取文章和重要更新。</p>
+
+        <h2 id="contact">6. 版本相关联系</h2>
+        <p>发现版本记录与实际功能不一致，或需要查询历史变更，请发送邮件至 <a href="mailto:3351708803@qq.com">3351708803@qq.com</a>，或通过<a href="/src/pages/contact.html">联系页</a>说明具体页面与问题。</p>
+        <p class="legal-updated">站点版本 v1.2.0 · 最后更新：2026-11-26 · 生效日期：2026-11-26</p>
+    </article>
+</section>
+    </main>
+
+    <footer></footer>
+</body>
+</html>

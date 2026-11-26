@@ -12,6 +12,10 @@
  *  - Response is always 200 so the frontend can diff partial failures per-URL
  */
 
+const crypto = require('crypto');
+const dns = require('dns').promises;
+const net = require('net');
+
 const PROBE_TIMEOUT_MS = 5000;
 const MAX_URLS = 50;
 const SESSION_COOKIE_NAME = 'yanmo_admin_session';
@@ -33,13 +37,35 @@ function parseCookies(req) {
     return out;
 }
 
-function isAdminSession(req) {
-    // H-05 fix: only allow admin sessions to trigger outbound probes.
-    // A valid session cookie (even unverified here) ensures the caller has
-    // authenticated. Full HMAC verification happens in [...route].js — this
-    // lightweight check blocks anonymous callers without duplicating the crypto.
+function getAdminSession(req) {
+    // H-05 fix: only a cryptographically valid admin session may trigger
+    // outbound probes. A cookie merely existing is not authentication.
+    const secret = String(process.env.ADMIN_SESSION_SECRET || '');
+    if (!secret) return null;
     const cookies = parseCookies(req);
-    return Boolean(cookies[SESSION_COOKIE_NAME]);
+    const token = String(cookies[SESSION_COOKIE_NAME] || '');
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+    const expected = crypto.createHmac('sha256', secret).update(parts[0]).digest('hex');
+    const a = Buffer.from(expected);
+    const b = Buffer.from(parts[1]);
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+    try {
+        const payload = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
+        if (!payload || !payload.u || Number(payload.exp || 0) <= Date.now()) return null;
+        return payload;
+    } catch {
+        return null;
+    }
+}
+
+function requireAdminCsrf(req, session) {
+    const provided = String(req.headers['x-csrf-token'] || '').trim();
+    const expected = String(session && session.csrf || '').trim();
+    if (!provided || !expected) return false;
+    const a = Buffer.from(provided);
+    const b = Buffer.from(expected);
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 function makeAbortSignal(ms) {
@@ -109,6 +135,58 @@ function validateUrl(raw) {
     return parsed;
 }
 
+function isPrivateAddress(address) {
+    const ip = String(address || '').toLowerCase();
+    if (net.isIPv4(ip)) {
+        return /^0\./.test(ip) ||
+            /^10\./.test(ip) ||
+            /^127\./.test(ip) ||
+            /^169\.254\./.test(ip) ||
+            /^192\.168\./.test(ip) ||
+            /^172\.(1[6-9]|2[0-9]|3[01])\./.test(ip) ||
+            /^100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\./.test(ip) ||
+            /^198\.(18|19)\./.test(ip);
+    }
+    if (net.isIPv6(ip)) {
+        if (ip === '::1' || ip === '::') return true;
+        if (/^f[cd][0-9a-f]{2}:/i.test(ip)) return true;
+        if (/^fe[89ab][0-9a-f]:/i.test(ip)) return true;
+        if (/^::ffff:/i.test(ip)) return true;
+        return false;
+    }
+    return true;
+}
+
+async function resolvesPublic(hostname) {
+    try {
+        const records = await dns.lookup(hostname, { all: true, verbatim: true });
+        return records.length > 0 && records.every(record => !isPrivateAddress(record.address));
+    } catch {
+        return false;
+    }
+}
+
+async function safeFetch(rawUrl, options) {
+    let current = String(rawUrl || '');
+    for (let hop = 0; hop < 4; hop++) {
+        const parsed = validateUrl(current);
+        if (!parsed) throw new Error('UNSAFE_URL');
+        const host = parsed.hostname.replace(/^\[|\]$/g, '');
+        if (process.env.CHECK_LINKS_DNS_CHECK !== '0' && !(await resolvesPublic(host))) {
+            throw new Error('UNSAFE_HOST');
+        }
+        const response = await fetch(parsed.href, { ...options, redirect: 'manual' });
+        if (response.status >= 300 && response.status < 400) {
+            const location = response.headers.get('location');
+            if (!location) return response;
+            current = new URL(location, parsed.href).href;
+            continue;
+        }
+        return response;
+    }
+    throw new Error('TOO_MANY_REDIRECTS');
+}
+
 /**
  * Try to parse the first <item> or <entry> from an RSS/Atom response body.
  * Returns { title, url } or null.
@@ -157,14 +235,13 @@ async function probeUrl(rawUrl) {
         const feedUrl = origin + feedPath;
         const { signal, clear } = makeAbortSignal(PROBE_TIMEOUT_MS);
         try {
-            const res = await fetch(feedUrl, {
+            const res = await safeFetch(feedUrl, {
                 method: 'GET',
                 signal,
                 headers: {
                     'User-Agent': 'YanMoBlog-LinkProbe/2.0 (+https://yanmo.dev)',
                     'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
                 },
-                redirect: 'follow',
             });
             clear();
 
@@ -192,7 +269,7 @@ async function probeUrl(rawUrl) {
     // RSS not found — fall back to liveness HEAD on the root URL
     const { signal, clear } = makeAbortSignal(PROBE_TIMEOUT_MS);
     try {
-        const res = await fetch(origin, {
+        const res = await safeFetch(origin, {
             method: 'HEAD',
             signal,
             headers: { 'User-Agent': 'YanMoBlog-LinkProbe/2.0 (+https://yanmo.dev)' },
@@ -220,18 +297,31 @@ module.exports = async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    // H-05 fix: require an admin session cookie — anonymous callers must not
+    // H-05 fix: require an admin session cookie + CSRF — anonymous callers must not
     // be able to use this endpoint as an SSRF proxy.
-    if (!isAdminSession(req)) {
+    const session = getAdminSession(req);
+    if (!session) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
+    if (!requireAdminCsrf(req, session)) {
+        return res.status(403).json({ error: 'CSRF token 无效或缺失' });
+    }
 
-    // CORS — allow only same origin on Vercel; relax for local dev
-    const origin = req.headers['origin'] || '';
-    const host   = req.headers['host']   || '';
-    const isSameOrigin = !origin || origin.includes(host) || host.includes('localhost');
-    if (!isSameOrigin) {
-        return res.status(403).json({ error: 'CORS_VIOLATION' });
+    // CORS — only same-origin browser requests are allowed.
+    const origin = String(req.headers['origin'] || '');
+    const host = String(req.headers['host'] || '').toLowerCase();
+    if (origin) {
+        let originHost = '';
+        try {
+            originHost = new URL(origin).host.toLowerCase();
+        } catch {
+            return res.status(403).json({ error: 'CORS_VIOLATION' });
+        }
+        if (!host || originHost !== host) {
+            return res.status(403).json({ error: 'CORS_VIOLATION' });
+        }
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Vary', 'Origin');
     }
 
     // Parse body
@@ -244,7 +334,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Validate and deduplicate
-    const unique = [...new Set(urls.map(u => String(u || '').trim()).filter(Boolean))];
+    const unique = [...new Set(urls.map(u => String(u || '').trim()).filter(u => u && u.length <= 2048))];
     if (unique.length === 0) {
         return res.status(400).json({ error: 'No URLs provided' });
     }

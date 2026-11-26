@@ -6,28 +6,48 @@
     
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>留言板申请 - 赛博开发者</title>
+    <title>留言 - YanMo Labs</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
     <link rel="stylesheet" href="/src/css/styles.css">
-    
+    <link rel="stylesheet" href="/src/css/beautify.css">
     <link rel="stylesheet" href="/src/css/music-box.css">
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <meta name="description" content="给 YanMo 留言，分享问题、勘误或交流想法。">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="留言 - YanMo Labs">
+    <meta property="og:description" content="给 YanMo 留言，分享问题、勘误或交流想法。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="留言 - YanMo Labs">
+    <meta name="twitter:description" content="给 YanMo 留言，分享问题、勘误或交流想法。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
 </head>
-<body>
+<body class="message-apply-view">
     <header>
         <nav>
             <div class="logo">
-                <a href="/src/pages/index.html">YanMo的个人博客</a>
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
             </div>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
             <div class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/src/pages/index.html">首页</a></li>
-                    <li><a href="/src/pages/articles.html">文章</a></li>
-                    <li><a href="/src/pages/about.html">关于我</a></li>
-                    <li><a href="/src/pages/contact.html">联系</a></li>
-                    <li><a href="/src/pages/guestbook.html">留言板</a></li>
-                    <li><a href="/src/pages/links.html">友链</a></li>
+                    <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html" class="active"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
                 </ul>
                 <div class="nav-actions">
                     <button type="button" class="theme-toggle">切换到白昼模式</button>
@@ -39,28 +59,42 @@
     <script src="/src/js/local-api.js"></script>
     <script src="/src/js/palette-manager.js"></script>
     <script src="/src/js/music-box.js" defer></script>
+    <script src="/src/js/ux-enhancements.js"></script>
 
     <main>
         <section class="guestbook-page">
-            <h1>留言板申请 | MESSAGE APPLY</h1>
-            <p class="guestbook-description">欢迎留下你的想法和建议</p>
-            
+            <a class="apply-back" href="/src/pages/guestbook.html">← 返回留言板</a>
+            <div class="terminal-label">OPEN_CHANNEL // NEW_MESSAGE // REVIEW_REQUIRED</div>
+            <h1 class="glitch-text page-title" data-text="写留言 NEW MESSAGE"><span class="page-title-cn">写留言</span><span class="page-title-en">NEW MESSAGE</span></h1>
+            <p class="guestbook-description">留下问题、勘误或想交流的内容。通过自动检测后会立即显示在留言板。</p>
+
+            <div class="apply-note">
+                <span class="apply-note-icon" aria-hidden="true">›_</span>
+                <div>
+                    <strong>公开留言，自动检测</strong>
+                    <p>提交后会检测不当言论与垃圾信息，通过后立即公开；邮箱不会公开。</p>
+                </div>
+            </div>
+
             <div class="guestbook-form">
                 <h2>写留言</h2>
                 <form id="message-form">
                     <div class="form-group">
                         <label for="name">姓名</label>
-                        <input type="text" id="name" name="name" required>
+                        <input type="text" id="name" name="name" placeholder="怎么称呼你？" autocomplete="name" required>
                     </div>
                     <div class="form-group">
                         <label for="email">邮箱</label>
-                        <input type="email" id="email" name="email" required>
+                        <input type="email" id="email" name="email" placeholder="用于回复，不会公开" autocomplete="email" required>
                     </div>
                     <div class="form-group">
                         <label for="message">留言内容</label>
-                        <textarea id="message" name="message" rows="6" required></textarea>
+                        <textarea id="message" name="message" rows="6" placeholder="写下问题、建议或想交流的内容..." required></textarea>
                     </div>
-                    <button type="submit" class="btn">提交留言</button>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">提交审核 →</button>
+                        <span class="form-hint">自动检测后立即公开</span>
+                    </div>
                     <div id="form-message" class="form-message" role="status" aria-live="polite"></div>
                 </form>
                 <script>
@@ -85,7 +119,7 @@
                             });
                             
                             if (response.ok) {
-                                formMessage.textContent = '留言提交成功！';
+                                formMessage.innerHTML = '留言已发布，已显示在留言板。 <a href="/src/pages/guestbook.html">查看留言板 →</a>';
                                 formMessage.style.color = '#00ff80';
                                 document.getElementById('message-form').reset();
                             } else {
@@ -106,7 +140,7 @@
     <footer>
         <div class="footer-content">
             <div class="footer-info">
-                <h3>YanMo的个人博客</h3>
+                <h3>YanMo Labs</h3>
                 <p>信息安全专家 | 渗透测试 | 人工智能</p>
                 <p>—— 技术改变未来，代码创造世界 ——</p>
             </div>
@@ -126,7 +160,7 @@
             </div>
         </div>
         <div class="footer-copyright">
-            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
         </div>
     </footer>
 

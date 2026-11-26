@@ -1,0 +1,30 @@
+/* Album detail: smaller photo cards */
+
+html[data-skin="lumina"] .daily-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.85rem;
+}
+
+html[data-skin="lumina"] #daily-grid.is-single {
+    grid-template-columns: minmax(0, 320px);
+    justify-content: flex-start;
+}
+
+html[data-skin="lumina"] #daily-grid.is-sparse:not(.is-single) {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+html[data-skin="lumina"] .daily-card {
+    border-radius: 16px;
+}
+
+@media (max-width: 700px) {
+    html[data-skin="lumina"] .daily-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 0.7rem;
+    }
+
+    html[data-skin="lumina"] #daily-grid.is-single {
+        grid-template-columns: minmax(0, 300px);
+    }
+}

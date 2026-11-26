@@ -5,15 +5,10 @@
     <meta charset="UTF-8">
     <script src="/src/js/theme-boot.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>关于我 - YanMo的个人博客</title>
+    <title>关于我 - YanMo Labs</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
     <meta name="description" content="YanMo：信息安全在读，关注 Web 渗透、漏洞复现、蓝队运营与 AI 安全。这里是他的公开实验台与技术笔记。">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap"
-        rel="stylesheet">
     <link rel="stylesheet" href="/src/css/styles.css">
     <link rel="stylesheet" href="/src/css/beautify.css">
     <style>
@@ -39,6 +34,13 @@
             max-width: 1120px;
             margin: 0 auto;
             padding: clamp(1.4rem, 3.6vw, 2.6rem);
+        }
+
+        /* 旧版 styles.css 有一层横向扫光；这里明确关闭，避免边框看起来太刻意。 */
+        .about-view section.about-section::before {
+            content: none !important;
+            display: none !important;
+            animation: none !important;
         }
 
         /* ── Hero ─────────────────────────────────────────────────────── */
@@ -1541,6 +1543,24 @@
     </style>
     <link rel="stylesheet" href="/src/css/music-box.css">
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="profile">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="关于我 - YanMo Labs">
+    <meta property="og:description" content="YanMo：信息安全在读，关注 Web 渗透、漏洞复现、蓝队运营与 AI 安全。这里是他的公开实验台与技术笔记。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="关于我 - YanMo Labs">
+    <meta name="twitter:description" content="YanMo：信息安全在读，关注 Web 渗透、漏洞复现、蓝队运营与 AI 安全。这里是他的公开实验台与技术笔记。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
 </head>
 
 
@@ -1548,7 +1568,7 @@
     <header>
         <nav>
             <div class="logo">
-                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo的个人博客">YanMo的个人博客</a>
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
             </div>
             <button type="button" class="hamburger" aria-label="Toggle menu">
                 <span></span>
@@ -1557,12 +1577,10 @@
             </button>
             <div class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/src/pages/index.html"><span class="shimmer"></span>首页</a></li>
                     <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
-                    <li><a href="/src/pages/about.html" class="active"><span class="shimmer"></span>关于我</a></li>
-                    <li><a href="/src/pages/contact.html"><span class="shimmer"></span>联系</a></li>
-                    <li><a href="/src/pages/guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html" class="active"><span class="shimmer"></span>关于</a></li>
                     <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
             </div>
@@ -1573,7 +1591,7 @@
         <section class="about-section">
 
             <!-- ── 0x00 · Profile ─────────────────────────────────────── -->
-            <div class="about-hero reveal">
+            <div class="about-hero reveal" id="whoami">
                 <div class="about-hero-main">
                     <div class="about-hero-eyebrow">信息安全在读 · 页面更新于 2026.11</div>
                     <h1 class="about-hero-h1">YANMO</h1>
@@ -1587,33 +1605,13 @@
                     <div class="about-tags">
                         <span class="about-tag">Web 渗透</span>
                         <span class="about-tag">漏洞复现</span>
-                        <span class="about-tag">CTF</span>
                         <span class="about-tag">蓝队运营</span>
-                        <span class="about-tag">日志分析</span>
                         <span class="about-tag">AI 安全</span>
                     </div>
                     <div class="about-hero-actions">
                         <a class="btn" href="/src/pages/articles.html">阅读文章 →</a>
                         <a class="btn ghost-btn" href="/src/pages/contact.html">联系我</a>
                         <a class="btn ghost-btn" href="https://github.com/YanMo5" target="_blank" rel="noopener">GitHub ↗</a>
-                    </div>
-                    <div class="hero-metrics">
-                        <div class="hero-metric">
-                            <div class="mv">2023</div>
-                            <div class="mk">起步年份</div>
-                        </div>
-                        <div class="hero-metric">
-                            <div class="mv">20+</div>
-                            <div class="mk">复现笔记</div>
-                        </div>
-                        <div class="hero-metric">
-                            <div class="mv">08</div>
-                            <div class="mk">CTF 参赛</div>
-                        </div>
-                        <div class="hero-metric">
-                            <div class="mv">03</div>
-                            <div class="mk">实验环境</div>
-                        </div>
                     </div>
                 </div>
                 <aside class="about-id-card" aria-label="个人信息卡">
@@ -1638,74 +1636,10 @@
                 </aside>
             </div>
 
-            <!-- ── 数据速览 ───────────────────────────────────────────── -->
-            <div class="hero-stats reveal">
-                <div class="stats-row">
-                    <div class="stat-item">
-                        <div class="stat-number" data-target="5" data-dynamic="articles">0</div>
-                        <div class="stat-label">已发布文章</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number" data-target="4">0</div>
-                        <div class="stat-label">专注方向</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number" data-target="12" data-suffix="+">0</div>
-                        <div class="stat-label">常用工具</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-number" data-target="3" data-suffix="+">0</div>
-                        <div class="stat-label">学习年限</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── 页内导航 ───────────────────────────────────────────── -->
-            <nav class="about-quicknav" aria-label="关于页内导航">
-                <span class="quicknav-label">INDEX</span>
-                <a href="#whoami">01 · 关于我</a>
-                <a href="#latest">02 · 最近更新</a>
-                <a href="#skills">03 · 能力矩阵</a>
-                <a href="#journey">04 · 成长路线</a>
-                <a href="#log">05 · 实战记录</a>
-                <a href="#principles">06 · 原则与问答</a>
-                <a href="#contact">07 · 联系方式</a>
-            </nav>
-
             <!-- ── 0x01 · Whoami ──────────────────────────────────────── -->
-            <div class="about-block reveal" id="whoami">
-                <div class="block-label">// 0x01 · WHOAMI</div>
-                <h2 class="block-title">关于我 / WHOAMI <span class="block-hint">最近校对 2026.11</span></h2>
-
-                <div class="ab-split">
-                    <div class="ab-prose">
-                        <p>
-                            我的方向集中在三块：<strong>Web 应用安全</strong>（OWASP Top 10、漏洞复现与修复验证）、
-                            <strong>企业安全运营</strong>（日志狩猎、零信任落地、应急响应），以及
-                            <strong>AI 安全</strong>（Prompt Injection、RAG 数据泄露、模型供应链风险）。
-                            比起堆工具，我更在意一条完整链路能否被解释清楚。
-                        </p>
-                        <p>
-                            最早是从写 Python 脚本做自动化开始接触安全的。后来慢慢发现，「打得动」不等于「讲得清」——
-                            于是开始把每个靶场、每个 N-day 的复现过程整理成文章，逼自己把利用条件、影响面、
-                            检测思路和修复方案都写完整。这也是我判断自己是否真的学会的标准。
-                        </p>
-                        <p>
-                            这个站点是我自己从零搭的：静态前端 + Express / SQLite 后端 + SMTP 邮件通知 + Vercel 部署。
-                            写博客本身也是一次安全工程实践——输入校验、CSRF、限流、上传与日志，这些坑都是真实踩过的。
-                            站内所有实验均在自建环境或授权范围内完成。
-                        </p>
-                    </div>
-                    <aside class="ab-now">
-                        <h3>// NOW · 现在进行时</h3>
-                        <ul>
-                            <li><span class="k">在读</span><span>信息安全专业课，维护自建靶场与 AD 实验环境</span></li>
-                            <li><span class="k">在学</span><span>内网渗透（Kerberos / AD）、日志分析与检测规则编写</span></li>
-                            <li><span class="k">在做</span><span>复现近年 N-day，整理可复用的漏洞笔记与检查清单</span></li>
-                            <li><span class="k">在备</span><span>OSCP，把零散的技术点串成一套可验证的方法论</span></li>
-                        </ul>
-                    </aside>
-                </div>
+            <div class="about-block reveal" id="focus">
+                <div class="block-label">// 0x01 · FOCUS</div>
+                <h2 class="block-title">研究方向 / FOCUS <span class="block-hint">三条主线</span></h2>
 
                 <div class="focus-grid">
                     <article class="focus-card">
@@ -1734,478 +1668,14 @@
                     </article>
                 </div>
 
-                <div class="block-label">// STACK · 常用工具箱</div>
-                <div class="ab-stack">
-                    <div class="ab-stack-row">
-                        <div class="ab-stack-key">语言</div>
-                        <div class="ab-chips">
-                            <span class="ab-chip">Python</span>
-                            <span class="ab-chip">JavaScript</span>
-                            <span class="ab-chip">SQL</span>
-                            <span class="ab-chip">Bash</span>
-                            <span class="ab-chip">HTML / CSS</span>
-                        </div>
-                    </div>
-                    <div class="ab-stack-row">
-                        <div class="ab-stack-key">安全工具</div>
-                        <div class="ab-chips">
-                            <span class="ab-chip">Burp Suite</span>
-                            <span class="ab-chip">Nmap</span>
-                            <span class="ab-chip">SQLMap</span>
-                            <span class="ab-chip">Wireshark</span>
-                            <span class="ab-chip">Ghidra</span>
-                            <span class="ab-chip">Metasploit</span>
-                        </div>
-                    </div>
-                    <div class="ab-stack-row">
-                        <div class="ab-stack-key">开发栈</div>
-                        <div class="ab-chips">
-                            <span class="ab-chip">Node.js</span>
-                            <span class="ab-chip">Express</span>
-                            <span class="ab-chip">SQLite</span>
-                            <span class="ab-chip">Git</span>
-                            <span class="ab-chip">Docker</span>
-                            <span class="ab-chip">Vercel</span>
-                        </div>
-                    </div>
-                    <div class="ab-stack-row">
-                        <div class="ab-stack-key">实验环境</div>
-                        <div class="ab-chips">
-                            <span class="ab-chip">Kali Linux</span>
-                            <span class="ab-chip">Ubuntu Server</span>
-                            <span class="ab-chip">Windows AD Lab</span>
-                            <span class="ab-chip">DVWA</span>
-                            <span class="ab-chip">Vulhub</span>
-                        </div>
-                    </div>
-                </div>
             </div>
 
 
-            <!-- ── 0x02 · Latest ──────────────────────────────────────── -->
-            <div class="about-block reveal" id="latest">
-                <div class="block-label">// 0x02 · LATEST_UPDATES</div>
-                <h2 class="block-title">最近更新 / LATEST <span class="block-hint">读取文章接口 · 按发布时间倒序</span></h2>
-
-                <div class="latest-grid" id="latest-grid" aria-live="polite" aria-busy="true">
-                    <div class="latest-card is-skeleton" aria-hidden="true">
-                        <div class="latest-top">
-                            <span class="latest-skel-line w-30"></span>
-                            <span class="latest-skel-line w-20"></span>
-                        </div>
-                        <span class="latest-skel-line w-90"></span>
-                        <span class="latest-skel-line w-70"></span>
-                    </div>
-                    <div class="latest-card is-skeleton" aria-hidden="true">
-                        <div class="latest-top">
-                            <span class="latest-skel-line w-30"></span>
-                            <span class="latest-skel-line w-20"></span>
-                        </div>
-                        <span class="latest-skel-line w-90"></span>
-                        <span class="latest-skel-line w-70"></span>
-                    </div>
-                    <div class="latest-card is-skeleton" aria-hidden="true">
-                        <div class="latest-top">
-                            <span class="latest-skel-line w-30"></span>
-                            <span class="latest-skel-line w-20"></span>
-                        </div>
-                        <span class="latest-skel-line w-90"></span>
-                        <span class="latest-skel-line w-70"></span>
-                    </div>
-                </div>
-
-                <p class="latest-foot">
-                    <span id="latest-status">正在读取文章列表…</span>
-                    <a href="/src/pages/articles.html">查看全部文章 →</a>
-                </p>
-            </div>
-
-
-            <!-- ── 0x03 · Capability ──────────────────────────────────── -->
-            <div class="about-block reveal" id="skills">
-                <div class="block-label">// 0x03 · CAPABILITY</div>
-                <h2 class="block-title">能力矩阵 / SKILL MATRIX</h2>
-
-                <div class="skill-matrix-wrap">
-                    <div class="radar-wrap">
-                        <canvas id="radar-canvas" width="320" height="320" aria-label="能力雷达图：当前水平与阶段目标"></canvas>
-                        <div class="radar-tooltip" id="radar-tooltip"></div>
-                        <div class="radar-legend">
-                            <span class="radar-legend-item"><span class="radar-legend-dot dot-current"></span>当前水平</span>
-                            <span class="radar-legend-item"><span class="radar-legend-dot dot-target"></span>阶段目标</span>
-                        </div>
-                    </div>
-
-                    <div class="skill-bars">
-                        <div class="skill-legend">
-                            <span class="skill-legend-item"><span class="skill-legend-bar"></span>当前水平</span>
-                            <span class="skill-legend-item"><span class="skill-legend-tick"></span>阶段目标</span>
-                        </div>
-                        <div class="skill-category">// OFFENSE · 攻击面</div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">Web 渗透</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="80"></div>
-                                <span class="skill-target" style="left: 90%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">80%</span>
-                        </div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">漏洞复现</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="76"></div>
-                                <span class="skill-target" style="left: 88%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">76%</span>
-                        </div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">提权与内网</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="62"></div>
-                                <span class="skill-target" style="left: 80%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">62%</span>
-                        </div>
-
-                        <div class="skill-category">// DEFENSE · 防守面</div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">日志狩猎</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="66"></div>
-                                <span class="skill-target" style="left: 82%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">66%</span>
-                        </div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">应急响应</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="60"></div>
-                                <span class="skill-target" style="left: 78%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">60%</span>
-                        </div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">安全加固</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="68"></div>
-                                <span class="skill-target" style="left: 82%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">68%</span>
-                        </div>
-
-                        <div class="skill-category">// TOOLING · 工具链</div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">Python</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="84"></div>
-                                <span class="skill-target" style="left: 92%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">84%</span>
-                        </div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">Burp Suite</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="78"></div>
-                                <span class="skill-target" style="left: 88%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">78%</span>
-                        </div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">Linux Shell</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="72"></div>
-                                <span class="skill-target" style="left: 85%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">72%</span>
-                        </div>
-
-                        <div class="skill-category">// RESEARCH · 研究面</div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">AI 安全</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="64"></div>
-                                <span class="skill-target" style="left: 82%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">64%</span>
-                        </div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">供应链安全</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="60"></div>
-                                <span class="skill-target" style="left: 80%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">60%</span>
-                        </div>
-                        <div class="skill-row">
-                            <span class="skill-lbl">报告与文档</span>
-                            <div class="skill-track">
-                                <div class="skill-fill" data-level="72"></div>
-                                <span class="skill-target" style="left: 88%" aria-hidden="true"></span>
-                            </div>
-                            <span class="skill-pct">72%</span>
-                        </div>
-                    </div>
-                </div>
-
-                <p class="skill-note">
-                    进度条为<strong>自评</strong>，刻度线是这一阶段的验收目标；数值来自「能否独立复现 + 能否讲清修复」，
-                    而不是刷过多少靶场。
-                </p>
-            </div>
-
-
-            <!-- ── 0x04 · Journey ─────────────────────────────────────── -->
-            <div class="about-block reveal" id="journey">
-                <div class="block-label">// 0x04 · JOURNEY</div>
-                <h2 class="block-title">成长路线 / JOURNEY <span class="block-hint">按「能动手 → 能讲清 → 能体系化」推进</span></h2>
-
-                <div class="timeline">
-                    <div class="timeline-item">
-                        <div class="timeline-date">2026.11 · NOW</div>
-                        <div class="timeline-content">
-                            <h4>公开实验台：把过程写下来</h4>
-                            <p>
-                                把漏洞复现、安全运营与 AI 安全的研究整理成体系化笔记，本站同步迭代。
-                                关于页完成第三轮改版：接入文章接口，「最近更新」随发文自动同步；
-                                每篇文章都要求自己给出可复现步骤、影响范围与验证过的修复建议。
-                            </p>
-                            <div class="timeline-tags">
-                                <span class="timeline-tag">写作</span>
-                                <span class="timeline-tag">站点工程</span>
-                                <span class="timeline-tag">AI 安全</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-date">2025 – 2026</div>
-                        <div class="timeline-content">
-                            <h4>从「会用工具」到「能讲清楚」</h4>
-                            <p>
-                                参加校内外 CTF（Web 方向），开始写完整 write-up：不只贴 payload，
-                                还补上漏洞原理、利用条件、检测思路与修复验证，逐渐形成自己的记录模板。
-                            </p>
-                            <div class="timeline-tags">
-                                <span class="timeline-tag">CTF · Web</span>
-                                <span class="timeline-tag">Write-up</span>
-                                <span class="timeline-tag">Burp Suite</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-date">2024 – 2025</div>
-                        <div class="timeline-content">
-                            <h4>Python 脚本 → 安全工程</h4>
-                            <p>
-                                用脚本自动化信息收集与报告整理，第一次完整搭起自己的靶场环境
-                                （Kali + Vulhub + Windows AD），也开始理解「攻防是一体两面」。
-                            </p>
-                            <div class="timeline-tags">
-                                <span class="timeline-tag">Python</span>
-                                <span class="timeline-tag">自建靶场</span>
-                                <span class="timeline-tag">Vulhub</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-date">2023 – 2024</div>
-                        <div class="timeline-content">
-                            <h4>入门：从 CTF 杂项开始</h4>
-                            <p>
-                                从杂项与 Web 基础题入手，补齐 HTTP、编码转换、常见漏洞原理这些基本功；
-                                这个阶段的笔记很粗糙，但保留了最初的问题意识。
-                            </p>
-                            <div class="timeline-tags">
-                                <span class="timeline-tag">基础</span>
-                                <span class="timeline-tag">杂项</span>
-                                <span class="timeline-tag">HTTP</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── 0x05 · Field log ───────────────────────────────────── -->
-            <div class="about-block reveal" id="log">
-                <div class="block-label">// 0x05 · FIELD_LOG</div>
-                <h2 class="block-title">实战记录 / FIELD LOG <span class="block-hint">仅收录自建环境与授权范围内的实践</span></h2>
-
-                <div class="log-toolbar" id="log-toolbar" role="group" aria-label="按类型筛选实战记录">
-                    <button type="button" class="log-filter is-active" data-filter="all" aria-pressed="true">全部</button>
-                    <button type="button" class="log-filter" data-filter="src" aria-pressed="false">项目与站点</button>
-                    <button type="button" class="log-filter" data-filter="ctf" aria-pressed="false">CTF</button>
-                    <button type="button" class="log-filter" data-filter="cve" aria-pressed="false">漏洞复现</button>
-                    <button type="button" class="log-filter" data-filter="cert" aria-pressed="false">认证</button>
-                    <button type="button" class="log-filter" data-filter="geek" aria-pressed="false">平台</button>
-                    <span class="log-count" id="log-count" role="status" aria-live="polite">显示 6 / 6</span>
-                </div>
-
-                <div class="achievements-grid" id="log-grid">
-                    <div class="achievement-card type-src" data-cat="src">
-                        <div class="ach-top">
-                            <div class="ach-type">SITE // SELF_BUILT</div>
-                            <span class="ach-status is-live">已上线</span>
-                        </div>
-                        <div class="ach-title">本站：从零搭建的个人博客</div>
-                        <div class="ach-meta">
-                            静态前端 + Express / SQLite 后端 + SMTP 邮件通知 + Vercel 部署。
-                            文章系统、留言板、友链、主题与配色切换均为自建；上线前补了输入校验、CSRF 与限流。
-                        </div>
-                        <div class="ach-note">// 技术栈：Node.js · Express · SQLite · Vercel</div>
-                    </div>
-
-                    <div class="achievement-card type-geek" data-cat="src">
-                        <div class="ach-top">
-                            <div class="ach-type">LAB // SELF_HOSTED</div>
-                            <span class="ach-status is-wip">维护中</span>
-                        </div>
-                        <div class="ach-title">自建靶场与实验环境</div>
-                        <div class="ach-meta">
-                            Kali + Vulhub 复现环境，加上一套 Windows AD 域用于内网横向练习；
-                            整个环境隔离在本地 NAT 网段，随用快照还原，不触碰任何真实目标。
-                        </div>
-                        <div class="ach-note">// 关键词：隔离 · 快照 · 可复现</div>
-                    </div>
-
-                    <div class="achievement-card type-ctf" data-cat="ctf">
-                        <div class="ach-top">
-                            <div class="ach-type">CTF // WEB_TRACK</div>
-                            <span class="ach-status is-wip">进行中</span>
-                        </div>
-                        <div class="ach-title">校内外 CTF · Web 方向</div>
-                        <div class="ach-meta">
-                            以 Web 为主线：信息收集 → SQLi / XSS / SSRF 利用 → getshell → 权限维持。
-                            赛后把完整链路整理成可复现的解题笔记，标记出自己卡住的环节。
-                        </div>
-                        <div class="ach-note">// 关键词：Web 渗透 · 利用链 · write-up</div>
-                    </div>
-
-                    <div class="achievement-card type-cve" data-cat="cve">
-                        <div class="ach-top">
-                            <div class="ach-type">CVE // REPRODUCE</div>
-                            <span class="ach-status">持续更新</span>
-                        </div>
-                        <div class="ach-title">漏洞复现笔记</div>
-                        <div class="ach-meta">
-                            关注近年 N-day 的复现条件与影响面，并验证补丁是否真正生效。
-                            所有实验都在自己搭建的靶场中完成，不做无授权测试。
-                        </div>
-                        <div class="ach-note">// 原则：先授权，再动手</div>
-                    </div>
-
-                    <div class="achievement-card type-cert" data-cat="cert">
-                        <div class="ach-top">
-                            <div class="ach-type">CERT // ROADMAP</div>
-                            <span class="ach-status">路线推进</span>
-                        </div>
-                        <div class="ach-title">认证路线</div>
-                        <div class="ach-meta">按「能动手 → 能体系化」的节奏推进：</div>
-                        <div>
-                            <span class="cert-badge earned"><span class="cert-dot"></span>eJPT · 已取得</span><br>
-                            <span class="cert-badge pending"><span class="cert-dot"></span>OSCP · 2026 目标</span><br>
-                            <span class="cert-badge pending"><span class="cert-dot"></span>OSEP · 2027 计划</span>
-                        </div>
-                    </div>
-
-                    <div class="achievement-card type-geek" data-cat="geek">
-                        <div class="ach-top">
-                            <div class="ach-type">GEEK // PLATFORM</div>
-                            <span class="ach-status">持续使用</span>
-                        </div>
-                        <div class="ach-title">常在的平台</div>
-                        <div class="ach-meta">练习、看题解、读别人的思路：</div>
-                        <div class="geek-badge-row">
-                            <span class="geek-chip">GitHub</span>
-                            <span class="geek-chip">HackTheBox</span>
-                            <span class="geek-chip">TryHackMe</span>
-                            <span class="geek-chip">CTFtime</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── 0x06 · Principles + FAQ ────────────────────────────── -->
-            <div class="about-block reveal" id="principles">
-                <div class="block-label">// 0x06 · PRINCIPLES</div>
-                <h2 class="block-title">协作原则 / PRINCIPLES <span class="block-hint">写文章与做实验的底线</span></h2>
-
-                <div class="principle-grid">
-                    <article class="principle-card">
-                        <div class="principle-num">P-01</div>
-                        <h3>先授权，再动手</h3>
-                        <p>只在自建环境或书面授权范围内测试。文章里的演示数据、域名与日志均来自实验环境，不做无授权探测。</p>
-                    </article>
-                    <article class="principle-card">
-                        <div class="principle-num">P-02</div>
-                        <h3>复现要能回滚</h3>
-                        <p>记录版本、配置、payload 与修复前后的对比，让别人按笔记能重跑一遍；不能复现的过程不算结论。</p>
-                    </article>
-                    <article class="principle-card">
-                        <div class="principle-num">P-03</div>
-                        <h3>结论要有证据</h3>
-                        <p>不写「可能存在」这类模糊判断，给出请求响应、日志片段或截图，并明确标注仍未验证的部分。</p>
-                    </article>
-                    <article class="principle-card">
-                        <div class="principle-num">P-04</div>
-                        <h3>修复优先于炫技</h3>
-                        <p>能落地的加固方案（配置、检测规则、代码修复）比利用链本身更值得写，也更容易被别人复用。</p>
-                    </article>
-                </div>
-
-                <div class="faq-list">
-                    <details class="faq-item">
-                        <summary>站内的文章可以转载吗？</summary>
-                        <div class="faq-body">
-                            可以，请保留作者信息并注明出处与原文链接，不要拆分或曲解原意。
-                            <strong>商业用途</strong>或整站搬运请先发邮件沟通。
-                        </div>
-                    </details>
-                    <details class="faq-item">
-                        <summary>会接渗透测试或安全评估吗？</summary>
-                        <div class="faq-body">
-                            目前以学习和授权项目为主。可以邮件说明<strong>测试范围、目标类型与时间窗口</strong>，
-                            我再判断是否合适；没有书面授权的目标一律不接。
-                        </div>
-                    </details>
-                    <details class="faq-item">
-                        <summary>靶场环境能分享吗？</summary>
-                        <div class="faq-body">
-                            环境都基于公开镜像搭建，编排与配置脚本整理在 GitHub。
-                            涉及具体练习目标的配置不会公开，避免影响他人的解题体验。
-                        </div>
-                    </details>
-                    <details class="faq-item">
-                        <summary>文章里的利用代码该怎么用？</summary>
-                        <div class="faq-body">
-                            仅限<strong>授权测试与教学环境</strong>。对未授权目标使用造成的一切后果由使用者自负，
-                            本站不提供任何针对真实目标的攻击支持。
-                        </div>
-                    </details>
-                    <details class="faq-item">
-                        <summary>发现文章有错误，或者想补充内容？</summary>
-                        <div class="faq-body">
-                            欢迎通过<a href="mailto:3351708803@qq.com">邮件</a>或
-                            <a href="https://github.com/YanMo5" target="_blank" rel="noopener">GitHub issue</a> 指出，
-                            附上复现步骤或依据即可；核对后我会更新正文并在文末注明修订。
-                        </div>
-                    </details>
-                </div>
-            </div>
-
-            <!-- ── 0x07 · Contact ─────────────────────────────────────── -->
+            <!-- ── 0x02 · Contact ─────────────────────────────────────── -->
             <div class="about-block reveal" id="contact">
-                <div class="block-label">// 0x07 · COMMS</div>
-                <h2 class="block-title">联系方式 / CONTACT <span class="block-hint">邮件优先 · 通常 1–2 天内回复</span></h2>
-
-                <p class="ab-intro">
-                    有问题想讨论、发现文章里有错误，或者想聊聊安全方向，都欢迎直接找我。
-                    邮件是最稳的方式，其次是留言板（不需要注册）。
-                </p>
-
-                <div class="comms-meta">
-                    <span class="comms-meta-item"><span class="comms-meta-k">响应时间</span><span class="comms-meta-v">1–2 天（工作日）</span></span>
-                    <span class="comms-meta-item"><span class="comms-meta-k">时区</span><span class="comms-meta-v">UTC+8</span></span>
-                    <span class="comms-meta-item"><span class="comms-meta-k">适合的话题</span><span class="comms-meta-v">技术讨论 · 勘误 · 授权项目</span></span>
-                </div>
+                <div class="block-label">// 0x02 · CONTACT</div>
+                <h2 class="block-title">保持联系 / CONTACT <span class="block-hint">邮件优先 · 通常 1–2 天内回复</span></h2>
+                <p class="ab-intro">技术讨论、文章勘误或授权范围内的交流，邮件最稳；也可以直接走站内表单。</p>
 
                 <div class="comms-grid">
                     <div class="comms-card tier-1">
@@ -2213,74 +1683,25 @@
                         <div class="comms-icon">MAIL</div>
                         <div class="comms-name">Email</div>
                         <div class="comms-handle" data-copy="3351708803@qq.com" id="copy-email" role="button" tabindex="0" title="点击复制邮箱">3351708803@qq.com</div>
-                        <div class="comms-desc">技术讨论、文章勘误与授权项目优先走邮件；附上环境信息和复现步骤会更快定位问题。</div>
-                        <span class="comms-badge">首选 · 可附截图与日志</span>
+                        <div class="comms-desc">技术讨论、文章勘误与授权项目优先走邮件。</div>
                         <div class="comms-copy-feedback" id="fb-email">COPIED</div>
                     </div>
 
                     <div class="comms-card tier-1">
-                        <span class="comms-tier-label">PRIMARY</span>
+                        <span class="comms-tier-label">CODE</span>
                         <div class="comms-icon">GIT</div>
                         <div class="comms-name">GitHub</div>
                         <a class="comms-handle" href="https://github.com/YanMo5" target="_blank" rel="noopener">github.com/YanMo5</a>
-                        <div class="comms-desc">本站源码、脚本与实验配置都在这里；发现 bug 或文章错误，直接提 issue 也可以。</div>
-                        <span class="comms-badge">代码 · issue</span>
-                    </div>
-
-                    <div class="comms-card tier-2">
-                        <span class="comms-tier-label">FAST</span>
-                        <div class="comms-icon">QQ</div>
-                        <div class="comms-name">QQ</div>
-                        <div class="comms-handle" data-copy="3351708803" id="copy-qq" role="button" tabindex="0" title="点击复制 QQ 号">3351708803</div>
-                        <div class="comms-desc">日常交流与快速提问，加好友时请简单说明来意；敏感信息不要走即时聊天。</div>
-                        <span class="comms-badge">即时 · 非正式</span>
-                        <div class="comms-copy-feedback" id="fb-qq">COPIED</div>
+                        <div class="comms-desc">源码、脚本与实验配置；发现问题可以直接开 issue。</div>
                     </div>
 
                     <div class="comms-card tier-2">
                         <span class="comms-tier-label">ON_SITE</span>
-                        <div class="comms-icon">MSG</div>
-                        <div class="comms-name">留言板</div>
-                        <a class="comms-handle" href="/src/pages/guestbook.html">/src/pages/guestbook.html</a>
-                        <div class="comms-desc">不需要登录就能留言，适合公开讨论与提问；请勿粘贴漏洞细节或个人隐私。</div>
-                        <span class="comms-badge">站内 · 无需注册</span>
-                    </div>
-
-                    <div class="comms-card tier-3">
-                        <span class="comms-tier-label">FORM</span>
                         <div class="comms-icon">FORM</div>
                         <div class="comms-name">联系表单</div>
                         <a class="comms-handle" href="/src/pages/contact.html">/src/pages/contact.html</a>
-                        <div class="comms-desc">正式问题、合作意向或较长的描述用表单，便于归档与后续跟进。</div>
-                        <span class="comms-badge">结构化 · 可留邮箱</span>
+                        <div class="comms-desc">较长的描述、合作意向或需要归档的问题用表单。</div>
                     </div>
-
-                    <div class="comms-card tier-3">
-                        <span class="comms-tier-label">FRIENDS</span>
-                        <div class="comms-icon">LINK</div>
-                        <div class="comms-name">友链申请</div>
-                        <a class="comms-handle" href="/src/pages/link-apply.html">/src/pages/link-apply.html</a>
-                        <div class="comms-desc">同是写技术博客的朋友，先看友链页的要求，再提交站点信息即可。</div>
-                        <span class="comms-badge">站点互换</span>
-                    </div>
-                </div>
-
-                <p class="ab-note">
-                    <strong>关于加密沟通：</strong>目前没有公开 PGP 公钥。若涉及敏感信息（未公开漏洞、账号数据等），
-                    请先用邮件说明来意，我会单独回复可用于加密通信的公钥与指纹；
-                    请不要在公开留言里粘贴密钥、漏洞细节或任何个人隐私。
-                </p>
-            </div>
-
-            <!-- CTA -->
-            <div class="about-cta reveal">
-                <div class="about-cta-text">
-                    <strong>想看具体怎么打、怎么防？</strong>
-                    <span>文章区按 Web 安全 / 安全运营 / AI 安全分类整理；有具体问题，邮件或留言都行。</span>
-                </div>
-                <div class="about-cta-actions">
-                    <a href="/src/pages/articles.html" class="btn">阅读文章 →</a>
-                    <a href="/src/pages/contact.html" class="btn ghost-btn">联系我 →</a>
                 </div>
             </div>
 
@@ -2290,7 +1711,7 @@
     <footer>
         <div class="footer-content">
             <div class="footer-info">
-                <h3>YanMo的个人博客</h3>
+                <h3>YanMo Labs</h3>
                 <p>大学生安全学习记录 | Web安全 | CTF | AI安全探索</p>
                 <p>—— 技术改变未来，代码创造世界 ——</p>
             </div>
@@ -2310,7 +1731,7 @@
             </div>
         </div>
         <div class="footer-copyright">
-            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
         </div>
     </footer>
 

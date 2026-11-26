@@ -1,0 +1,26 @@
+# 不参与 Vercel 部署的内部文件
+.env
+.env.*
+data/
+server/
+tests/
+docs/
+说明.md
+部署.md
+debug.log
+*.log
+
+# 本地环境
+.venv/
+venv/
+__pycache__/
+
+# Local scratch / tooling not needed on Vercel
+_shots/
+_tmp/
+scripts/
+tmp*/
+pip-*/
+node_modules/
+%SystemDrive%/
+undefined/

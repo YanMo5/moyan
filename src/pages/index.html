@@ -7,10 +7,7 @@
     <title>YanMo // Cyber Gateway</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
-    <meta name="description" content="YanMo — Cybersecurity student, CTF learner, web security researcher.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@300;400;700&family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <meta name="description" content="YanMo 的个人安全实验室：Web 渗透、漏洞复现、CTF、蓝队运营与 AI 安全研究笔记。">
     <link rel="stylesheet" href="/src/css/styles.css">
     <link rel="stylesheet" href="/src/css/beautify.css">
     <style>
@@ -64,15 +61,15 @@
             font-family: var(--font-mono);
             font-size: clamp(0.85rem, 1.4vw, 1.1rem);
             color: var(--theme-primary);
-            min-height: 1.8em;
-            margin-bottom: 2.8rem;
-            display: flex;
-            align-items: center;
-            gap: 2px;
+            min-height: 2.2em;
+            margin-bottom: 2.4rem;
+            display: block;
+            line-height: 1.65;
         }
-        #hero-slogan   { white-space: nowrap; overflow: hidden; }
+        #hero-slogan   { white-space: normal; overflow: visible; }
         #hero-cursor   { display: inline-block; width: 10px; height: 1.1em; background: var(--theme-primary); opacity: 1; animation: blink-cur 0.75s step-end infinite; vertical-align: text-bottom; }
         @keyframes blink-cur { 0%,100%{opacity:1} 50%{opacity:0} }
+        @media (max-width: 640px) { .hero-slogan-wrap { min-height: 3.6em; } }
 
         .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
         .btn-primary {
@@ -361,10 +358,67 @@
     </style>
     <link rel="stylesheet" href="/src/css/music-box.css">
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="YanMo // Cyber Gateway">
+    <meta property="og:description" content="YanMo 的个人安全实验室：Web 渗透、漏洞复现、CTF、蓝队运营与 AI 安全研究笔记。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="YanMo // Cyber Gateway">
+    <meta name="twitter:description" content="YanMo 的个人安全实验室：Web 渗透、漏洞复现、CTF、蓝队运营与 AI 安全研究笔记。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
 </head>
-<body>
+<body class="page-home">
+    <div class="site-video-bg" aria-hidden="true">
+        <video class="site-video hero-video is-active" muted playsinline preload="auto" poster="/assets/video/hero-poster.jpg"
+               data-badge="SCENE 01 · 春樱">
+            <source src="/assets/video/hero-loop.mp4" type="video/mp4">
+            <source src="/assets/video/hero-loop.webm" type="video/webm">
+        </video>
+        <video class="site-video hero-video hero-video--quote" muted playsinline preload="none" poster="/assets/video/hero-motivation-1-hq-poster.jpg"
+               data-badge="SCENE 02 · 进步">
+            <source src="/assets/video/hero-motivation-1-hq.mp4" type="video/mp4">
+        </video>
+        <video class="site-video hero-video" muted playsinline preload="none" poster="/assets/video/hero-forest-hq-poster.jpg"
+               data-badge="SCENE 03 · 山湖">
+            <source src="/assets/video/hero-forest-hq.mp4" type="video/mp4">
+        </video>
+        <video class="site-video hero-video hero-video--quote" muted playsinline preload="none" poster="/assets/video/hero-motivation-2-hq-poster.jpg"
+               data-badge="SCENE 04 · 长夜">
+            <source src="/assets/video/hero-motivation-2-hq.mp4" type="video/mp4">
+        </video>
+        <video class="site-video hero-video" muted playsinline preload="none" poster="/assets/video/hero-ocean-poster.jpg"
+               data-badge="SCENE 05 · 海岸">
+            <source src="/assets/video/hero-ocean.mp4" type="video/mp4">
+        </video>
+        <video class="site-video hero-video hero-video--quote" muted playsinline preload="none" poster="/assets/video/hero-motivation-3-poster.jpg"
+               data-badge="SCENE 06 · 出发">
+            <source src="/assets/video/hero-motivation-3.mp4" type="video/mp4">
+        </video>
+        <video class="site-video hero-video" muted playsinline preload="none" poster="/assets/video/hero-campfire-poster.jpg"
+               data-badge="SCENE 07 · 篝火">
+            <source src="/assets/video/hero-campfire.mp4" type="video/mp4">
+        </video>
+        <video class="site-video hero-video" muted playsinline preload="none" poster="/assets/video/hero-train-poster.jpg"
+               data-badge="SCENE 08 · 末班车">
+            <source src="/assets/video/hero-train.mp4" type="video/mp4">
+        </video>
+        <span class="site-video-overlay"></span>
+        <span class="site-video-badge" id="site-video-badge">SCENE 01 · 春樱</span>
+    </div>
     <!-- Canvas Background -->
     <canvas id="cyber-canvas" aria-hidden="true"></canvas>
+    <!-- Drifting background grid (homepage owns the animated layer) -->
+    <div class="ym-grid" aria-hidden="true"><div class="ym-grid-inner"><div class="ym-grid-tiles"></div></div></div>
 
     <!-- Nav -->
     <header>
@@ -377,12 +431,10 @@
             </button>
             <div class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/src/pages/index.html" class="active"><span class="shimmer"></span>首页</a></li>
                     <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
-                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于我</a></li>
-                    <li><a href="/src/pages/contact.html"><span class="shimmer"></span>联系</a></li>
-                    <li><a href="/src/pages/guestbook.html"><span class="shimmer"></span>留言板</a></li>
                     <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
                     <li><button type="button" id="cli-open-btn" title="Ctrl+K">[ TERMINAL ]</button></li>
                     <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
                 </ul>
@@ -392,16 +444,43 @@
 
     <main>
         <!-- ── Hero ─────────────────────────────────────────── -->
-        <section class="hero" aria-label="Hero">
-            <p class="hero-eyebrow">// YANMO CYBER GATEWAY // INITIALIZING...</p>
-            <h1 class="hero-title glitch-text" data-text="YANMO">YANMO</h1>
-            <div class="hero-slogan-wrap">
-                <span id="hero-slogan"></span><span id="hero-cursor"></span>
+        <section class="hero hero-cover" aria-label="Hero">
+            <div class="hero-cover-content">
+                <p class="hero-cover-eyebrow">REPRODUCIBLE SECURITY RESEARCH</p>
+                <h1 class="hero-cover-title">YanMo <span>安全研究笔记</span></h1>
+                <p class="hero-cover-subtitle">把攻击路径写成可复现的防御笔记。</p>
             </div>
-            <div class="hero-actions">
-                <a href="/src/pages/articles.html" class="btn-primary">VIEW_WRITEUPS →</a>
-                <a href="/src/pages/about.html"    class="btn-ghost">WHOAMI</a>
-                <button type="button" id="cli-open-btn-hero" class="btn-ghost">OPEN_TERMINAL [$]</button>
+            <a class="hero-scroll" href="#latest">SCROLL TO EXPLORE <span aria-hidden="true">↓</span></a>
+            <div class="hero-cover-meta" aria-hidden="true">
+                <span>WEB OFFENSE</span><span>BLUE TEAM</span><span>AI SAFETY</span>
+            </div>
+        </section>
+
+        <div class="hero-marquee" aria-hidden="true">
+            <div class="hero-marquee-track">
+                <div class="hero-marquee-group">
+                    <span>WEB SECURITY</span><span>RED TEAM</span><span>BLUE TEAM</span><span>AI SAFETY</span>
+                    <span>CTF WRITE-UPS</span><span>THREAT INTEL</span><span>OPEN SOURCE</span><span>SECURITY RESEARCH</span>
+                </div>
+                <div class="hero-marquee-group">
+                    <span>WEB SECURITY</span><span>RED TEAM</span><span>BLUE TEAM</span><span>AI SAFETY</span>
+                    <span>CTF WRITE-UPS</span><span>THREAT INTEL</span><span>OPEN SOURCE</span><span>SECURITY RESEARCH</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Latest write-ups (content-first) ─────────────── -->
+        <section class="cyber-section reveal" id="latest" aria-label="Latest articles">
+            <div class="section-wrap">
+                <div class="section-header">
+                    <span class="section-label">// 01</span>
+                    <h2 class="section-title">LATEST_WRITEUPS</h2>
+                    <a class="home-latest-more" href="/src/pages/articles.html">全部文章 <span aria-hidden="true">→</span></a>
+                </div>
+                <p class="section-desc">最近的研究记录，先从一篇完整的复现或复盘开始。</p>
+                <div class="home-latest-grid" id="home-latest-grid">
+                    <div class="widget-loading">[ LOADING_WRITEUPS... ]</div>
+                </div>
             </div>
         </section>
 
@@ -412,9 +491,10 @@
                     <!-- GitHub Arsenal -->
                     <div class="widget-panel">
                         <div class="section-header section-header--widget">
-                            <span class="section-label">// 01</span>
+                            <span class="section-label">// 02</span>
                             <h2 class="section-title">OPEN_SOURCE_ARSENAL</h2>
                         </div>
+                        <p class="widget-desc">长期维护的工具、靶场脚本与实验项目。</p>
                         <div id="github-arsenal">
                             <div class="widget-loading">[ FETCHING REPOS... ]</div>
                         </div>
@@ -426,9 +506,11 @@
                     <!-- Zero-Day Alert Feed -->
                     <div class="widget-panel">
                         <div class="section-header section-header--widget">
-                            <span class="section-label">// 02</span>
-                            <h2 class="section-title">ZERO-DAY_ALERT_FEED</h2>
+                            <span class="section-label">// 03</span>
+                            <h2 class="section-title">CVE_WATCH / NVD_LATEST</h2>
+                            <span class="widget-live"><i aria-hidden="true"></i>LIVE</span>
                         </div>
+                        <p class="widget-desc">来自 NIST NVD 的公开漏洞情报，按发布时间自动刷新。</p>
                         <div id="zeroday-feed">
                             <div class="widget-loading">[ QUERYING NVD... ]</div>
                         </div>
@@ -444,10 +526,45 @@
         <section class="cyber-section reveal" aria-label="CVE Wall of Fame">
             <div class="section-wrap">
                 <div class="section-header">
-                    <span class="section-label">// 03</span>
+                    <span class="section-label">// 04</span>
                     <h2 class="section-title">CVE_HALL_OF_FAME</h2>
                 </div>
+                <p class="section-desc">那些改变攻防叙事的经典漏洞，以及它们真实的利用条件与影响面。</p>
                 <div id="cve-wall"></div>
+            </div>
+        </section>
+
+        <!-- ── Explore ──────────────────────────────────────── -->
+        <section class="cyber-section reveal explore-section" aria-label="Continue exploring">
+            <div class="section-wrap">
+                <div class="section-header">
+                    <span class="section-label">// 05</span>
+                    <h2 class="section-title">KEEP_EXPLORING</h2>
+                </div>
+                <p class="section-desc">从一篇写清楚的笔记开始，继续深入攻防、工程与研究的交叉地带。</p>
+                <div class="explore-grid">
+                    <a class="explore-card" href="/src/pages/articles.html">
+                        <span class="explore-index">01</span>
+                        <span class="explore-kicker">WRITE-UPS</span>
+                        <h3>安全文章</h3>
+                        <p>渗透测试、漏洞复现、蓝队运营与 AI 安全的完整记录。</p>
+                        <span class="explore-arrow" aria-hidden="true">→</span>
+                    </a>
+                    <a class="explore-card" href="/src/pages/about.html">
+                        <span class="explore-index">02</span>
+                        <span class="explore-kicker">OPERATOR</span>
+                        <h3>关于我</h3>
+                        <p>方向、工具箱、成长路线，以及这个站点背后的工程实践。</p>
+                        <span class="explore-arrow" aria-hidden="true">→</span>
+                    </a>
+                    <a class="explore-card" href="/src/pages/guestbook.html">
+                        <span class="explore-index">03</span>
+                        <span class="explore-kicker">OPEN_CHANNEL</span>
+                        <h3>留言板</h3>
+                        <p>留下问题、勘误或想法。公开讨论，通常 1–2 天内回复。</p>
+                        <span class="explore-arrow" aria-hidden="true">→</span>
+                    </a>
+                </div>
             </div>
         </section>
     </main>
@@ -469,12 +586,19 @@
 
     <!-- ── Footer ────────────────────────────────────────────── -->
     <footer class="site-footer">
-        <span class="footer-copy">© 2025 YanMo // ALL_RIGHTS_RESERVED // EDUCATIONAL_USE_ONLY</span>
+        <div class="footer-brand">
+            <span class="footer-mark" aria-hidden="true">Y</span>
+            <div>
+                <strong>YANMO</strong>
+                <span>SECURITY RESEARCH</span>
+            </div>
+        </div>
+        <span class="footer-copy">© 2026 YanMo Labs · Built with curiosity.</span>
         <nav class="footer-links" aria-label="Footer navigation">
-            <a href="/src/pages/about.html">ABOUT</a>
-            <a href="/src/pages/articles.html">POSTS</a>
-            <a href="/src/pages/contact.html">CONTACT</a>
-            <a href="https://github.com/YanMo5" target="_blank" rel="noopener">GITHUB</a>
+            <a href="/src/pages/about.html">关于</a>
+            <a href="/src/pages/articles.html">文章</a>
+            <a href="/src/pages/contact.html">联系</a>
+            <a href="https://github.com/YanMo5" target="_blank" rel="noopener">GitHub ↗</a>
         </nav>
     </footer>
 
@@ -489,5 +613,6 @@
         document.getElementById('cli-open-btn-hero')
             ?.addEventListener('click', () => window.YanMoCLI?.open());
     </script>
+
 </body>
 </html>

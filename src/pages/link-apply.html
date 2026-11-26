@@ -6,28 +6,48 @@
     
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>友链申请 - 赛博开发者</title>
+    <title>友链申请 - YanMo Labs</title>
     <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
     <link rel="shortcut icon" href="/assets/images/site-avatar.png">
     <link rel="stylesheet" href="/src/css/styles.css">
-    
+    <link rel="stylesheet" href="/src/css/beautify.css">
     <link rel="stylesheet" href="/src/css/music-box.css">
     <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <meta name="description" content="申请与 YanMo 交换友情链接，提交站点名称、地址和简介。">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="友链申请 - YanMo Labs">
+    <meta property="og:description" content="申请与 YanMo 交换友情链接，提交站点名称、地址和简介。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="友链申请 - YanMo Labs">
+    <meta name="twitter:description" content="申请与 YanMo 交换友情链接，提交站点名称、地址和简介。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
 </head>
-<body>
+<body class="link-apply-view">
     <header>
         <nav>
             <div class="logo">
-                <a href="/src/pages/index.html">YanMo的个人博客</a>
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
             </div>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
             <div class="nav-container">
                 <ul class="nav-links">
-                    <li><a href="/src/pages/index.html">首页</a></li>
-                    <li><a href="/src/pages/articles.html">文章</a></li>
-                    <li><a href="/src/pages/about.html">关于我</a></li>
-                    <li><a href="/src/pages/contact.html">联系</a></li>
-                    <li><a href="/src/pages/guestbook.html">留言板</a></li>
-                    <li><a href="/src/pages/links.html">友链</a></li>
+                    <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/links.html" class="active"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
                 </ul>
                 <div class="nav-actions">
                     <button type="button" class="theme-toggle">切换到白昼模式</button>
@@ -39,14 +59,22 @@
     <script src="/src/js/local-api.js"></script>
     <script src="/src/js/palette-manager.js"></script>
     <script src="/src/js/music-box.js" defer></script>
+    <script src="/src/js/ux-enhancements.js"></script>
 
     <main>
         <section class="links-page">
-            <h1>友链申请 | LINK APPLY</h1>
-            <p class="links-description">申请成为友情链接，共同成长</p>
-            
+            <div class="terminal-label">PEER_NETWORK // HANDSHAKE // OPEN_CALL</div>
+            <h1 class="page-title"><span class="page-title-cn">友链申请</span><span class="page-title-en">LINK APPLY</span></h1>
+            <p class="links-description">申请成为友情链接。先把站点信息写清楚，剩下的交给 handshake。</p>
+
             <div class="links-form">
-                <h2>申请友链</h2>
+                <div class="form-card-head">
+                    <div>
+                        <span class="form-card-kicker">// APPLICATION_FORM</span>
+                        <h2>申请信息</h2>
+                    </div>
+                    <span class="form-card-badge">1–3 个工作日审核</span>
+                </div>
                 <form id="link-form">
                     <div class="form-group">
                         <label for="site-avatar">站点头像（可选）</label>
@@ -62,15 +90,15 @@
                     </div>
                     <div class="form-group">
                         <label for="site-name">网站名称</label>
-                        <input type="text" id="site-name" name="site-name" required>
+                        <input type="text" id="site-name" name="site-name" placeholder="例如：YanMo Labs" required>
                     </div>
                     <div class="form-group">
                         <label for="site-url">网站链接</label>
-                        <input type="url" id="site-url" name="site-url" required>
+                        <input type="url" id="site-url" name="site-url" placeholder="https://example.com" required>
                     </div>
                     <div class="form-group">
                         <label for="site-description">网站描述</label>
-                        <textarea id="site-description" name="site-description" rows="4" required></textarea>
+                        <textarea id="site-description" name="site-description" rows="4" placeholder="一句话说明你的站点方向、更新频率与主要内容" required></textarea>
                     </div>
                     <button type="submit" class="btn">提交申请</button>
                     <div id="form-message" class="form-message" role="status" aria-live="polite"></div>
@@ -473,7 +501,7 @@
     <footer>
         <div class="footer-content">
             <div class="footer-info">
-                <h3>YanMo的个人博客</h3>
+                <h3>YanMo Labs</h3>
                 <p>信息安全专家 | 渗透测试 | 人工智能</p>
                 <p>—— 技术改变未来，代码创造世界 ——</p>
             </div>
@@ -493,7 +521,7 @@
             </div>
         </div>
         <div class="footer-copyright">
-            <p>赛博开发者 © 2026 All Copyrights Reserved.</p>
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
         </div>
     </footer>
 

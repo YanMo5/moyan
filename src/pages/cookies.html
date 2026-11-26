@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <script src="/src/js/theme-boot.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie 协议 - YanMo Labs</title>
+    <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
+    <link rel="shortcut icon" href="/assets/images/site-avatar.png">
+    <link rel="stylesheet" href="/src/css/styles.css">
+    <link rel="stylesheet" href="/src/css/beautify.css">
+    <link rel="stylesheet" href="/src/css/music-box.css">
+    <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <link rel="stylesheet" href="/src/css/legal.css">
+    <meta name="description" content="Cookie 协议 - YanMo Labs 网站协议文档。">
+    <meta name="theme-color" content="#070b14">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
+</head>
+<body class="policy-view">
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
+            </div>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button type="button" class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <script src="/src/js/palette-manager.js"></script>
+    <script src="/src/js/music-box.js" defer></script>
+    <script src="/src/js/ux-enhancements.js"></script>
+    <main>
+        <section class="policy-page legal-doc">
+    <a class="apply-back" href="/src/pages/policy.html">← 返回协议目录</a>
+    <div class="terminal-label">LEGAL // COOKIES // EFFECTIVE</div>
+    <h1 class="glitch-text page-title" data-text="Cookie 协议 COOKIE POLICY">
+        <span class="page-title-cn">Cookie 协议</span>
+        <span class="page-title-en">COOKIE POLICY</span>
+    </h1>
+    <div class="legal-meta"><span><i aria-hidden="true"></i>版本 v1.1</span><span><i aria-hidden="true"></i>更新 2026-11-26</span><span><i aria-hidden="true"></i>状态 已生效</span></div>
+    <div class="legal-banner">本协议自 2026-11-26 起生效，说明本站实际使用的 Cookie、localStorage 与 sessionStorage。本站当前不投放广告，也不接入第三方行为分析或跨站追踪脚本。</div>
+    <nav class="legal-toc" aria-label="文档目录"><a href="#what">基本概念</a><a href="#necessary">必要 Cookie</a><a href="#functional">功能偏好</a><a href="#analytics">统计与广告</a><a href="#third-party">第三方资源</a><a href="#manage">如何管理</a><a href="#changes">协议更新</a><a href="#contact">联系方式</a></nav>
+    <article class="legal-body">
+        <h2 id="what">1. 什么是 Cookie 与本地存储</h2>
+        <p>Cookie 是服务器发送到浏览器的小型文本标识；localStorage 和 sessionStorage 是浏览器提供的本地键值空间。本站使用它们保存管理员登录状态、界面偏好和短期缓存，不使用它们存放密码、支付信息或完整的个人资料。</p>
+        <p>localStorage 通常持续到手动清除；sessionStorage 通常在关闭当前标签页后清除。你可以在浏览器开发者工具或站点设置中查看和删除它们。</p>
+
+        <h2 id="necessary">2. 严格必要的 Cookie</h2>
+        <ul>
+            <li><code>yanmo_admin_session</code>：管理员登录会话标识。设置为 HttpOnly、SameSite=Lax，生产环境 HTTPS 下启用 Secure；服务端绝对有效期最长 24 小时，空闲约 12 小时后失效。仅用于管理后台鉴权和安全审计。</li>
+            <li><code>yanmo.site.admin.session.v1</code>、<code>yanmo.site.admin.real-session.v1</code>、<code>yanmo.site.admin.csrf.v1</code>、<code>yanmo.site.admin.expired.v1</code>：保存在 sessionStorage 中的管理端登录标记、CSRF 令牌和过期提示，关闭标签页后清除。</li>
+        </ul>
+        <p>清除管理员 Cookie 会使当前后台会话退出，但不影响普通页面浏览。管理员会话失效时，后台会跳转登录页并提示重新登录。</p>
+
+        <h2 id="functional">3. 功能偏好与本地缓存</h2>
+        <p>本站会在浏览器本地保存以下类别的数据，用于记住你的选择、减少重复请求或改善加载速度：</p>
+        <ul>
+            <li><strong>主题与外观：</strong><code>yanmo.site.skin</code>、<code>yanmo.site.scheme</code>、<code>yanmo.site.bg-color</code>、<code>yanmo.site.text-color</code>、<code>yanmo.site.font-mode</code> 等，用于记住皮肤、明暗模式、配色和字体。</li>
+            <li><strong>音乐播放器：</strong><code>yanmo.music.*</code> 前缀下的音量、曲目、播放状态等偏好。</li>
+            <li><strong>联系表单：</strong><code>contact_name</code>、<code>contact_email</code>，用于下次打开联系页时回填昵称和邮箱；不会自动提交。</li>
+            <li><strong>页面过渡：</strong><code>yanmo.site.nav-transition</code>、<code>yanmo.site.transition-seen</code>，保存在 sessionStorage，避免重复动画或硬切。</li>
+            <li><strong>留言缓存：</strong><code>yanmo.site.messages.cache.v1</code>、<code>yanmo.site.messages.timestamp.v1</code>，用于减少重复请求和短暂展示缓存。</li>
+            <li><strong>接口与本地回退：</strong><code>yanmo.site.api.mode.v1</code>、<code>yanmo.site.data.v1</code>；正常服务端模式下不作为主要数据源。</li>
+            <li><strong>访问与站点状态：</strong><code>yanmo.site.visit.*</code> 等键用于本地访问状态或计数显示。</li>
+        </ul>
+        <p>这些数据通常不会发送到服务器；清除浏览器站点数据后，主题、音乐、表单回填和缓存会恢复默认。清除联系表单回填不会删除已经提交到站内的留言或邮件副本。</p>
+
+        <h2 id="analytics">4. 统计与广告</h2>
+        <p>本站当前只使用自建的聚合访问量/文章阅读量统计，不接入 Google Analytics、广告平台、像素追踪或跨站行为分析，不建立个人画像，也不出售数据。若未来接入第三方统计或广告，会在本页补充服务商、字段、目的、保存期限和关闭方式，并在需要时先征得同意。</p>
+
+        <h2 id="third-party">5. 第三方资源与请求</h2>
+        <ul>
+            <li><strong>Google Fonts、cdnjs：</strong>页面可能按需加载字体、图标或代码高亮资源；请求会携带你的 IP、User-Agent 和来源页面。</li>
+            <li><strong>thum.io：</strong>友链卡片会请求对方首页的截图缩略图；thum.io 可能收到你的 IP 和 User-Agent，但不会收到你的留言内容。</li>
+            <li><strong>GitHub、QQ 邮箱等外链：</strong>只有你主动点击后才会打开，第三方站点有自己的 Cookie 与隐私政策。</li>
+            <li><strong>QQ SMTP：</strong>联系表单的邮件由服务器通过 QQ 邮箱发送，属于服务端邮件处理，不在你的浏览器中写入 QQ 邮箱 Cookie。</li>
+        </ul>
+        <p>本站不控制第三方站点设置的 Cookie。访问第三方站点前，请阅读其隐私政策。</p>
+
+        <h2 id="manage">6. 如何管理</h2>
+        <ul>
+            <li>通过浏览器设置查看、删除本站的 Cookie、localStorage 和 sessionStorage；</li>
+            <li>使用无痕/隐私窗口访问，关闭窗口后本地会话数据通常会被清除；</li>
+            <li>在管理后台退出登录，清除管理员会话；如怀疑会话泄露，请立即退出并更换管理员凭据；</li>
+            <li>如只想清除表单回填，可删除 <code>contact_name</code> 和 <code>contact_email</code>，不影响已提交内容。</li>
+        </ul>
+        <p>禁用严格必要的 Cookie 可能导致管理后台无法登录；禁用本地存储会导致主题、音乐、表单回填等偏好无法保存。当前不使用广告或行为分析 Cookie，因此本站不显示单独的 Cookie 同意横幅；如未来引入非必要 Cookie，会先提供选择。</p>
+
+        <h2 id="changes">7. 协议更新</h2>
+        <p>当 Cookie 种类、本地存储键、服务商或使用目的发生变化时，我们会更新本页并调整版本与日期。请以本页最新内容为准。</p>
+
+        <h2 id="contact">8. 联系方式</h2>
+        <p>如对 Cookie 或本地存储有疑问，请联系 <a href="mailto:3351708803@qq.com">3351708803@qq.com</a>，主题注明“Cookie 咨询”。</p>
+        <p class="legal-updated">版本 v1.1 · 最后更新：2026-11-26 · 生效日期：2026-11-26</p>
+    </article>
+</section>
+    </main>
+
+    <footer></footer>
+</body>
+</html>

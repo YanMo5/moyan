@@ -2,6 +2,10 @@
 
 一个基于 HTML、CSS、JavaScript 与 Node.js（Express + SQLite）的个人博客项目，聚焦信息安全学习记录与内容展示。
 
+> 最近一次安全与质量审计：[docs/AUDIT-2026-11-25.md](docs/AUDIT-2026-11-25.md)。
+>
+> 部署到自己的服务器或 Vercel：[部署.md](部署.md)。
+
 ## 主要特点
 
 ### 视觉与交互
@@ -14,12 +18,14 @@
 - 前台完整内容链路：
 	- 首页：只展示本站入口（Gateway Hero + 终端）、开源项目与安全情报看板，不承载文章正文。
 	- 文章列表：按列表浏览文章，支持跳转详情。
+	- 日常：独立的照片流页面，展示照片/证书与感悟，支持灯箱查看。
 	- 文章详情：阅读正文，异常参数时有回退机制保障可访问性。
 	- 关于/联系：展示作者信息与联系表单。
-	- 留言板：访客留言互动。
+	- 留言板：公开访客日志 + 「写留言」入口；表单独立到 `/src/pages/message-apply.html`，提交后由本地规则自动检测不当言论与垃圾信息，通过后立即展示。
 	- 友链页：展示通过审核的友链信息与头像。
 - 后台管理能力：
-	- 文章管理：新增、编辑、删除与发布内容维护。
+	- 文章管理：新增、编辑、删除与发布内容维护；支持可选封面图上传（自动压缩为 WebP），无封面自动使用分类色渐变占位。
+	- 日常管理：上传照片、自动压缩、填写感悟、编辑说明、查看与删除日常。
 	- 留言管理：查看与处理用户留言。
 	- 友链审核：审核申请、控制展示状态。
 	- 账户设置：支持管理员账号与密码修改。
@@ -33,6 +39,15 @@
 	- `server`：请求真实后端，适合联调与真实数据验证。
 
 ### 最近更新（关键）
+- 全站视觉升级：新增 `aurora.css` 视觉层，统一首页双栏 Hero、终端状态卡、文章编辑式卡片、详情封面、表单控件、登录页、页脚与移动端导航；并加入 Hero 极光渐变描边、分类色文章卡片、页脚 ghost wordmark 等细节，暗色 / 亮色 / 赛博皮肤均有对应回退。
+- 页面识别系统：文章、日常、联系、留言、友链分别使用独立的页面强调色与编号 watermark；页面标题统一为中文第一行、英文第二行居中，移动端自动缩小。
+- 首页视频 Hero：8 段场景轮播（春樱 / 慢一点 / 秋山 / 夜路 / 海岸 / 起伏 / 篝火 / 末班车），每段完整播放一遍后直接硬切到下一段，不做叠化也不加黑场，避免闪屏、双画面和双字幕；其中 3 段是自制的 12 秒电影感励志短片（每段 3 句中英字幕），5 段是风景/夜景；全部统一 30fps，避免 24fps 在 60Hz 屏幕上的抖动。切后台暂停，`prefers-reduced-motion` 下只显示海报。视频与来源见 `assets/video/README.md`。
+- 关于二级导航：`随便逛逛`（随机打开一篇文章）、`隐私协议`（独立文档）、`关于本人`（关于页简介锚点）。
+- 工具库：`/src/pages/tools.html`，支持搜索、分类筛选、网盘链接与提取码复制；后台可直接增删改工具并填写网盘/提取码；`src/data/tools.json` 用于首次播种与接口不可用时的静态回退。
+- 后台工具库：管理页新增工具库增删改与网盘/提取码字段，接口为 `GET /api/tools` 与受管理员会话/CSRF 保护的增删改接口；文章、日常、留言、友链、审计、账户与页面入口统一收进后台索引。
+- 统一参考式页脚：居中社交图标、四列「资产测绘 / 云沙箱 / 网络检测 / 本站协议」链接、底部版权与快捷导航；公共页面由 `ux-enhancements.js` 自动注入。协议入口分别指向 `src/pages/privacy.html`、`cookies.html`、`version.html`；`policy.html` 作为协议目录页。
+- 页面切换动画：全屏过渡层中央使用站点头像 + 手写签名作为个人标识，替代通用字母 Logo；页面名称改为中文友好标签，状态文案使用「正在翻页 / 下一站 / 快到了」等；首次约 1.05 秒、后续约 0.85 秒，100% 后短暂停留再进入。支持 Esc 取消，浏览器返回自动复位；减少动态偏好下直接跳转。
+- 日常独立页面：顶部导航「日常」进入独立的照片流，与文章系统分离；后台可上传图片、自动压缩为 WebP、填写/修改感悟、查看/删除已发布日常，前台支持网格浏览与灯箱查看。
 - 目录规范化：页面、样式、脚本、资源、配置分别归入 `src/`、`assets/`、`config/`，根目录只保留包管理、部署与仓库元文件。
 - 旧地址兼容：`/index.html`、`/admin.html`、`/admin-dashboard.html`、`/link-apply.html`、`/pages/*` 自动跳转或重写到 `/src/pages/` 下的规范页面，根目录不再放 HTML。
 - 本地后端统一为 Node.js（Express + SQLite），启动与测试只需要 Node.js 环境。
@@ -44,6 +59,9 @@
 	- 支持手动裁剪取景（可调缩放与位置）。
 	- 统一导出 WebP，兼顾体积与清晰度。
 - 友链与后台头像样式统一为圆形展示。
+- 性能优化：Node 静态资源与 API 启用 gzip；默认使用系统字体，Google 字体仅在赛博皮肤下按需加载，避免国内网络阻塞首屏。
+- SEO 基础：页面补充 description / Open Graph / Twitter Card / RSS 自动发现，服务端提供 `/robots.txt`、`/sitemap.xml`、`/rss.xml`，并使用 1200×630 品牌分享图。
+- 首页内容密度：新增 `LATEST_WRITEUPS` 最新文章橱窗；CVE 面板使用 30 分钟本地缓存、旧数据降级和示例数据兜底，避免长时间停留在查询状态。
 
 ### 安全与稳定性
 - 管理员凭据采用文件持久化，兼容历史密码文件读取；密码使用 PBKDF2-SHA256 加盐哈希（默认 600,000 次迭代，登录成功时自动升级旧哈希）。
@@ -56,7 +74,9 @@
 - 认证接口返回 `Cache-Control: no-store`，并附加 `X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy` 等安全响应头。
 - 本地静态服务只暴露 `src/` 与 `assets/`；Vercel 路由同时拦截 `server/`、`data/`、`lib/`、`config/`、`tests/`、`docs/` 及包元文件，避免后端源码与凭据文件被直接下载。
 - 提供管理员应急重置（已登录 + 本机 + 确认口令）与凭据文件回退机制，降低维护阻塞。
-- 上传链路包含大小校验、格式处理与失败提示，避免脏数据入库。
+- 留言自动检测：本地规则拦截辱骂、威胁、仇恨、成人垃圾与链接刷屏；不会误伤“攻击面 / 漏洞 / 渗透 / 杀进程”等安全术语，命中后返回 400 并提示修改。
+- 全接口输入防护：统一长度/控制字符/邮箱/HTTP URL/图片 Data URL 校验，记录 ID 数值化，JSON 体积上限与解析错误统一返回 JSON；留言、联系、友链申请加入按 IP 的速率限制。
+- 链接探活防护：要求有效签名管理员会话，并在 DNS 解析与重定向前校验目标，阻断内网、回环、IMDS、ULA、非标准端口与协议跳转（SSRF）。
 - 本地模拟与真实后端接口行为尽量一致，减少“开发可用、上线异常”的偏差。
 
 ## 技术栈
@@ -100,6 +120,7 @@ npm run dev                  # 开发模式（nodemon 热重载）
 | 首页 | `/src/pages/index.html` | — |
 | 文章列表 | `/src/pages/articles.html` | `/pages/articles.html` |
 | 文章详情 | `/post/<id>` | `/src/pages/post.html?id=<id>` |
+| 日常 | `/src/pages/daily.html` | — |
 | 友链申请 | `/src/pages/link-apply.html` | `/link-apply.html` |
 | 管理登录 | `/src/pages/admin.html` | `/admin.html` |
 | 管理后台 | `/src/pages/admin-dashboard.html` | `/admin-dashboard.html` |
@@ -119,7 +140,7 @@ npm run test:ui    # 打开 Vitest UI（需先 npm i -D @vitest/ui）
 
 - 配置：`config/vitest.config.js`（`root` 指回仓库根，`include` 匹配 `tests/**/*.test.js`）。
 - 覆盖：Node 后端接口与鉴权、审计日志（分页/筛选/CSV 导出）、Vercel API 路由（登录/限流/CSRF/输入校验/审计）、友链可用性检查（含 SSRF 防护）、SMTP 邮件。
-- 当前为 4 个测试文件、83 个用例；测试使用临时数据库与临时凭据文件，结束后自动清理，不会污染 `data/`。
+- 当前为 4 个测试文件、91 个用例；覆盖服务端认证/权限、API、邮件、友链检查、工具库 CRUD；测试使用临时数据库与临时凭据文件，结束后自动清理，不会污染 `data/`。
 
 ## 管理员账号
 
@@ -143,19 +164,31 @@ BoKe-main/                                # 仓库根目录（同时是站点根
 │   │   ├── index.html                    # 首页
 │   │   ├── about.html                    # 关于页
 │   │   ├── articles.html                 # 文章列表页
+│   │   ├── daily.html                    # 日常照片流（独立于文章）
+│   │   ├── tools.html                    # 工具库（搜索/分类/网盘下载）
 │   │   ├── post.html                     # 文章详情页（模板）
 │   │   ├── contact.html                  # 联系页
 │   │   ├── guestbook.html                # 留言板页面
 │   │   ├── links.html                    # 友链展示页
 │   │   ├── link-apply.html               # 友链申请页（含头像上传/裁剪）
 │   │   ├── message-apply.html            # 留言申请页
+│   │   ├── policy.html                   # 网站协议目录页
+│   │   ├── privacy.html                  # 隐私协议草案
+│   │   ├── cookies.html                  # Cookie 协议草案
+│   │   ├── version.html                  # 版本协议与变更记录
 │   │   ├── admin.html                    # 管理员登录页
 │   │   └── admin-dashboard.html          # 管理后台页面
 │   ├── css/                              # 样式（URL: /src/css/*.css）
 │   │   ├── styles.css                    # 主样式：布局、组件、响应式等
 │   │   ├── beautify.css                  # 视觉增强样式：特效与细节修饰
 │   │   ├── music-box.css                 # 音乐盒样式
-│   │   └── theme-lumina.css              # 主题皮肤
+│   │   ├── theme-lumina.css              # Lumina 主题基础层
+│   │   ├── aurora.css                    # 视觉系统 v3：首页、文章、详情、表单、登录
+│   │   ├── legal.css                     # 协议文档排版
+│   │   └── tools.css                     # 工具库页面样式
+│   ├── data/                             # 静态数据（URL: /src/data/*.json）
+│   │   ├── tools.json                    # 工具库索引与网盘链接
+│   │   └── README.md                     # 工具数据填写说明
 │   └── js/                               # 前端脚本（URL: /src/js/*.js）
 │       ├── date-utils.js                 # 日期工具
 │       ├── home-page.js                  # 首页逻辑
@@ -163,6 +196,7 @@ BoKe-main/                                # 仓库根目录（同时是站点根
 │       ├── music-box.js                  # 音乐盒
 │       ├── palette-manager.js            # 配色管理
 │       ├── theme-boot.js                 # 主题预加载（防闪烁）
+│       ├── tools-page.js                 # 工具库搜索/筛选/网盘下载
 │       ├── utils.js                      # 通用工具
 │       └── ux-enhancements.js            # 交互增强
 ├── assets/                               # 静态资源（URL: /assets/*）
@@ -216,6 +250,7 @@ BoKe-main/                                # 仓库根目录（同时是站点根
 | `PORT` | 本地 Node | 监听端口，默认 `3000` |
 | `DB_PATH` | 本地 Node | SQLite 文件路径，默认 `data/blog.db` |
 | `ENV_FILE` | 本地 Node | 指定 `.env` 路径，默认仓库根 `.env` |
+| `SITE_URL` | 本地 Node / Vercel | 公开站点地址，用于 sitemap / RSS 绝对链接；不填则按请求 Host 推断 |
 | `ADMIN_CREDENTIALS_FILE` | 本地 Node | 管理员凭据文件，默认 `data/admin-credentials.json` |
 | `ADMIN_PASSWORD_FILE` | 本地 Node | 历史密码文件，默认 `data/admin-password.txt` |
 | `TRUST_PROXY` | 本地 Node | 仅部署在可信反向代理后时设为 `1`，才信任 `X-Forwarded-For` |

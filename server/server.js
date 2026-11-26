@@ -1,4 +1,5 @@
 const express = require('express');
+const compression = require('compression');
 const bodyParser = require('body-parser');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
@@ -40,9 +41,15 @@ function loadEnvFile(filePath) {
 loadEnvFile(process.env.ENV_FILE || path.join(__dirname, '..', '.env'));
 
 const mailer = require('../lib/mailer.cjs');
+const moderation = require('../lib/moderation.cjs');
+const validation = require('../lib/validation.cjs');
+const rateLimit = require('../lib/rate-limit.cjs');
 
 const app = express();
 const port = parseInt(process.env.PORT || '3000', 10);
+
+// 对 HTML/CSS/JS/JSON 启用 gzip，显著降低首屏传输体积
+app.use(compression());
 
 /**
  * 只有显式开启 TRUST_PROXY 时才信任 X-Forwarded-For。
@@ -61,13 +68,35 @@ const AUTH_NO_STORE_PATHS = new Set([
 ]);
 
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
+    // CORS：只允许与当前 Host 完全一致的同源浏览器请求，避免通配 Origin。
+    const requestOrigin = String(req.headers.origin || '');
+    const requestHost = String(req.headers.host || '').toLowerCase();
+    if (requestOrigin) {
+        let originHost = '';
+        try {
+            originHost = new URL(requestOrigin).host.toLowerCase();
+        } catch (error) {
+            return res.status(403).json({ error: 'Origin not allowed' });
+        }
+        if (!requestHost || originHost !== requestHost) {
+            return res.status(403).json({ error: 'Origin not allowed' });
+        }
+        res.header('Access-Control-Allow-Origin', requestOrigin);
+        res.header('Vary', 'Origin');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, X-CSRF-Token');
+    }
     res.header('X-Content-Type-Options', 'nosniff');
     res.header('X-Frame-Options', 'SAMEORIGIN');
     res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    res.header(
+        'Content-Security-Policy',
+        "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; " +
+        "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' https:; " +
+        "connect-src 'self' https:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+    );
     if (SESSION_COOKIE_SECURE) {
         res.header('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
     }
@@ -88,11 +117,12 @@ app.use((req, res, next) => {
 });
 
 const rootDir = path.join(__dirname, '..');
+const TOOLS_DATA_FILE = path.join(rootDir, 'src', 'data', 'tools.json');
 const adminPasswordFile = process.env.ADMIN_PASSWORD_FILE || path.join(rootDir, 'data', 'admin-password.txt');
 const adminCredentialsFile = process.env.ADMIN_CREDENTIALS_FILE || path.join(rootDir, 'data', 'admin-credentials.json');
 const SESSION_COOKIE_NAME = 'yanmo_admin_session';
-const SESSION_TTL_MS = parseEnvInt('SESSION_TTL_MS', 12 * 60 * 60 * 1000, 5 * 60 * 1000, 7 * 24 * 60 * 60 * 1000);
-const SESSION_IDLE_TTL_MS = parseEnvInt('SESSION_IDLE_TTL_MS', 2 * 60 * 60 * 1000, 5 * 60 * 1000, SESSION_TTL_MS);
+const SESSION_TTL_MS = parseEnvInt('SESSION_TTL_MS', 24 * 60 * 60 * 1000, 5 * 60 * 1000, 7 * 24 * 60 * 60 * 1000);
+const SESSION_IDLE_TTL_MS = parseEnvInt('SESSION_IDLE_TTL_MS', 12 * 60 * 60 * 1000, 5 * 60 * 1000, SESSION_TTL_MS);
 const CSRF_HEADER_NAME = 'x-csrf-token';
 const PASSWORD_HASH_ITERATIONS = parseEnvInt('PASSWORD_HASH_ITERATIONS', 600000, 100000, 2000000);
 const LOGIN_WINDOW_MS = parseEnvInt('LOGIN_WINDOW_MS', 10 * 60 * 1000, 60 * 1000, 60 * 60 * 1000);
@@ -103,6 +133,7 @@ const MAX_LOGIN_PASSWORD_LENGTH = 256;
 const MIN_ADMIN_PASSWORD_LENGTH = 10;
 const MAX_ADMIN_PASSWORD_LENGTH = 128;
 const adminSessions = new Map();
+const ADMIN_SESSIONS_FILE = process.env.ADMIN_SESSIONS_FILE || path.join(rootDir, 'data', 'admin-sessions.json');
 const loginFailures = new Map();
 
 function isTruthyEnv(value) {
@@ -156,12 +187,88 @@ function isSessionExpired(sessionData, at = Date.now()) {
     return lastSeenAt > 0 && at - lastSeenAt > SESSION_IDLE_TTL_MS;
 }
 
+let adminSessionPersistTimer = null;
+let adminSessionPersistDirty = false;
+
+/** 把有效会话原子写入磁盘，服务重启后仍保持登录。 */
+function persistAdminSessions() {
+    try {
+        const now = Date.now();
+        const serialized = {};
+        for (const [sid, sessionData] of adminSessions.entries()) {
+            if (!isSessionExpired(sessionData, now)) {
+                serialized[sid] = sessionData;
+            }
+        }
+        const dir = path.dirname(ADMIN_SESSIONS_FILE);
+        fs.mkdirSync(dir, { recursive: true });
+        const tempFile = ADMIN_SESSIONS_FILE + '.tmp';
+        fs.writeFileSync(tempFile, JSON.stringify(serialized), { encoding: 'utf8', mode: 0o600 });
+        try {
+            fs.renameSync(tempFile, ADMIN_SESSIONS_FILE);
+        } catch (renameError) {
+            try { fs.unlinkSync(ADMIN_SESSIONS_FILE); } catch (ignore) { /* noop */ }
+            fs.renameSync(tempFile, ADMIN_SESSIONS_FILE);
+        }
+        adminSessionPersistDirty = false;
+    } catch (error) {
+        console.error('[session] 持久化失败:', error.message);
+    }
+}
+
+function scheduleAdminSessionPersist() {
+    adminSessionPersistDirty = true;
+    if (adminSessionPersistTimer) {
+        return;
+    }
+    adminSessionPersistTimer = setTimeout(() => {
+        adminSessionPersistTimer = null;
+        if (adminSessionPersistDirty) {
+            persistAdminSessions();
+        }
+    }, 30000);
+    if (adminSessionPersistTimer.unref) {
+        adminSessionPersistTimer.unref();
+    }
+}
+
+function loadAdminSessions() {
+    try {
+        if (!fs.existsSync(ADMIN_SESSIONS_FILE)) {
+            return;
+        }
+        const raw = fs.readFileSync(ADMIN_SESSIONS_FILE, 'utf8');
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return;
+        }
+        const now = Date.now();
+        let restored = 0;
+        Object.entries(parsed).forEach(([sid, sessionData]) => {
+            if (sid && sessionData && typeof sessionData === 'object' && !isSessionExpired(sessionData, now)) {
+                adminSessions.set(sid, sessionData);
+                restored++;
+            }
+        });
+        if (restored) {
+            console.log('[session] 恢复管理员会话:', restored);
+        }
+    } catch (error) {
+        console.error('[session] 读取会话文件失败:', error.message);
+    }
+}
+
 function cleanupExpiredSessions() {
     const now = Date.now();
+    let removed = false;
     for (const [sid, sessionData] of adminSessions.entries()) {
         if (isSessionExpired(sessionData, now)) {
             adminSessions.delete(sid);
+            removed = true;
         }
+    }
+    if (removed) {
+        scheduleAdminSessionPersist();
     }
 }
 
@@ -172,11 +279,16 @@ function invalidateOtherAdminSessions(currentSid) {
             adminSessions.delete(sid);
         }
     }
+    persistAdminSessions();
 }
 
 function invalidateAllAdminSessions() {
     adminSessions.clear();
+    persistAdminSessions();
 }
+
+// 启动时恢复上次服务进程留下的有效会话
+loadAdminSessions();
 
 /**
  * 管理员新密码强度校验。
@@ -266,6 +378,7 @@ function createAdminSession(username) {
         csrfToken: csrfToken,
         username: String(username || '')
     });
+    persistAdminSessions();
     return { sid, csrfToken };
 }
 
@@ -274,6 +387,7 @@ function clearAdminSession(req) {
     const sid = cookies[SESSION_COOKIE_NAME];
     if (sid) {
         adminSessions.delete(sid);
+        persistAdminSessions();
     }
 }
 
@@ -293,6 +407,7 @@ function requireAdmin(req, res, next) {
     const sessionData = adminSessions.get(sid);
     if (isSessionExpired(sessionData)) {
         adminSessions.delete(sid);
+        scheduleAdminSessionPersist();
         writeAdminAuditLog({
             action: 'admin_auth_required',
             status: 'denied',
@@ -304,6 +419,7 @@ function requireAdmin(req, res, next) {
 
     // 滑动续期：每次请求刷新空闲计时，但绝对过期时间保持不变。
     sessionData.lastSeenAt = Date.now();
+    scheduleAdminSessionPersist();
     req.adminSession = sessionData;
     req.adminSessionId = sid;
     return next();
@@ -333,6 +449,25 @@ function requireAdminCsrf(req, res, next) {
     return next();
 }
 
+function publicRateLimit(req, action, limit, windowMs) {
+    const key = action + '|' + getClientIdentifier(req);
+    const result = rateLimit.hit(key, limit, windowMs);
+    if (!result.allowed) {
+        return { allowed: false, retryAfter: result.retryAfter };
+    }
+    return { allowed: true, retryAfter: 0 };
+}
+
+function rejectRateLimited(res, result) {
+    res.setHeader('Retry-After', String(result.retryAfter || 60));
+    return res.status(429).json({ error: '请求过于频繁，请稍后再试', code: 'RATE_LIMITED' });
+}
+
+function isLoopbackRequest(req) {
+    const remote = String(req.socket && req.socket.remoteAddress || '').toLowerCase();
+    return remote === '127.0.0.1' || remote === '::1' || remote === '::ffff:127.0.0.1' || remote.endsWith('127.0.0.1');
+}
+
 function getClientIdentifier(req) {
     // 仅当显式信任反向代理时才读取转发头，避免伪造 X-Forwarded-For 绕过限流。
     const forwarded = TRUST_PROXY ? String(req.headers['x-forwarded-for'] || '').trim() : '';
@@ -340,6 +475,69 @@ function getClientIdentifier(req) {
         return forwarded.split(',')[0].trim() || 'unknown';
     }
     return String(req.ip || (req.socket && req.socket.remoteAddress) || 'unknown');
+}
+
+const visitorGeoCache = new Map();
+
+function normalizeVisitorIp(ip) {
+    return String(ip || 'unknown').replace(/^::ffff:/i, '').trim() || 'unknown';
+}
+
+function isPrivateVisitorIp(ip) {
+    const value = normalizeVisitorIp(ip).toLowerCase();
+    if (!value || value === 'unknown') return true;
+    if (value === '::1' || value === '127.0.0.1' || value === 'localhost') return true;
+    if (value.startsWith('10.') || value.startsWith('192.168.') || value.startsWith('169.254.')) return true;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(value)) return true;
+    if (value.startsWith('fc') || value.startsWith('fd') || value.startsWith('fe80:')) return true;
+    return false;
+}
+
+async function lookupVisitorRegion(ip) {
+    const value = normalizeVisitorIp(ip);
+    if (isPrivateVisitorIp(value)) return '本地 / 内网';
+    const cached = visitorGeoCache.get(value);
+    if (cached && cached.expiresAt > Date.now()) return cached.region;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3500);
+    try {
+        const response = await fetch('https://ipwho.is/' + encodeURIComponent(value) + '?lang=zh-CN', {
+            signal: controller.signal,
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!response.ok) throw new Error('geo HTTP ' + response.status);
+        const data = await response.json();
+        if (!data || data.success === false) throw new Error('geo lookup failed');
+        const parts = [data.country, data.region, data.city].filter(Boolean);
+        const region = parts.join(' / ') || '未知';
+        visitorGeoCache.set(value, { region: region, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+        if (visitorGeoCache.size > 1000) {
+            const oldest = visitorGeoCache.keys().next().value;
+            visitorGeoCache.delete(oldest);
+        }
+        return region;
+    } catch (error) {
+        return '未知';
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+function recordVisitor(req) {
+    const ip = normalizeVisitorIp(getClientIdentifier(req));
+    const path = String(req.originalUrl || req.path || '/').slice(0, 500);
+    const ua = String(req.headers['user-agent'] || '').slice(0, 500);
+    const referrer = String(req.headers.referer || '').slice(0, 500);
+    lookupVisitorRegion(ip).then((region) => {
+        db.run(
+            'INSERT INTO visitors (ip, region, path, user_agent, referrer) VALUES (?, ?, ?, ?, ?)',
+            [ip, region, path, ua, referrer],
+            (err) => {
+                if (err) console.error('[visitor] 写入失败:', err.message);
+            }
+        );
+    });
 }
 
 function clearLoginFailures(clientId) {
@@ -444,7 +642,7 @@ function getAdminCredentials() {
 
 // 配置中间件
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '2mb' }));
 // 站点入口：加载页（原根目录 index.html 已归入 src/pages/）
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'src', 'pages', 'loading.html'));
@@ -455,7 +653,8 @@ const legacyPageRedirects = {
     '/index.html': '/src/pages/index.html',
     '/admin.html': '/src/pages/admin.html',
     '/admin-dashboard.html': '/src/pages/admin-dashboard.html',
-    '/link-apply.html': '/src/pages/link-apply.html'
+    '/link-apply.html': '/src/pages/link-apply.html',
+    '/message-apply.html': '/src/pages/message-apply.html'
 };
 app.get(Object.keys(legacyPageRedirects), (req, res) => {
     res.redirect(301, legacyPageRedirects[req.path]);
@@ -473,6 +672,30 @@ app.use('/pages', (req, res) => {
 //   /src/js/**     前端脚本
 //   /assets/**     图片 / 音频 / 第三方库
 // 绝不能把仓库根目录整体 static 暴露，否则 /data/admin-credentials.json、/server/server.js 等会被直接下载。
+
+// 记录公开页面的 HTML 访问，用于后台访客统计。管理页、API 与静态资源不计入。
+app.use((req, res, next) => {
+    if (req.method !== 'GET') return next();
+    const pathName = String(req.path || '');
+    if (
+        pathName.startsWith('/api/') ||
+        pathName.startsWith('/assets/') ||
+        pathName.startsWith('/src/css/') ||
+        pathName.startsWith('/src/js/') ||
+        pathName.startsWith('/data/') ||
+        /admin/i.test(pathName)
+    ) {
+        return next();
+    }
+    res.on('finish', () => {
+        const contentType = String(res.getHeader('Content-Type') || '');
+        if (res.statusCode === 200 && contentType.includes('text/html')) {
+            recordVisitor(req);
+        }
+    });
+    next();
+});
+
 app.use(express.static(path.join(__dirname, '..', 'src', 'pages')));
 app.use('/src', express.static(path.join(__dirname, '..', 'src')));
 app.use('/assets', express.static(path.join(__dirname, '..', 'assets')));
@@ -513,15 +736,38 @@ const db = new sqlite3.Database(dbPath, (err) => {
                     subject TEXT DEFAULT '',
                     message TEXT NOT NULL,
                     is_read INTEGER DEFAULT 0,
+                    source TEXT DEFAULT 'guestbook',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            // Migrate existing messages table that predate subject / is_read columns
-            const messageMigrations = [
-                "ALTER TABLE messages ADD COLUMN subject TEXT DEFAULT ''",
-                "ALTER TABLE messages ADD COLUMN is_read INTEGER DEFAULT 0"
-            ];
-            messageMigrations.forEach(sql => db.run(sql, [], () => {}));
+            // Migrate existing messages table that predate subject / is_read / source columns
+            db.run("ALTER TABLE messages ADD COLUMN subject TEXT DEFAULT ''", [], () => {});
+            db.run("ALTER TABLE messages ADD COLUMN is_read INTEGER DEFAULT 0", [], () => {});
+            db.run("ALTER TABLE messages ADD COLUMN source TEXT DEFAULT 'guestbook'", [], (sourceError) => {
+                if (!sourceError) {
+                    // One-time backfill: old contact-form rows used a subject or the [主题] prefix.
+                    db.run(
+                        "UPDATE messages SET source = 'contact' WHERE TRIM(COALESCE(subject, '')) <> '' OR message LIKE '[主题]%' OR message LIKE '[接口联调]%'",
+                        [],
+                        () => {}
+                    );
+                }
+            });
+
+            // 访客访问记录：IP、地区、页面、UA 和来源。仅管理员可见。
+            db.run(`
+                CREATE TABLE IF NOT EXISTS visitors (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ip TEXT NOT NULL,
+                    region TEXT DEFAULT '',
+                    path TEXT DEFAULT '',
+                    user_agent TEXT DEFAULT '',
+                    referrer TEXT DEFAULT '',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            db.run('CREATE INDEX IF NOT EXISTS idx_visitors_created_at ON visitors(created_at)');
+            db.run('CREATE INDEX IF NOT EXISTS idx_visitors_ip ON visitors(ip)');
             
             db.run(`
                 CREATE TABLE IF NOT EXISTS links (
@@ -555,9 +801,101 @@ const db = new sqlite3.Database(dbPath, (err) => {
                     title TEXT NOT NULL,
                     content TEXT NOT NULL,
                     category TEXT NOT NULL,
+                    cover_image TEXT DEFAULT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `);
+
+            // 兼容旧库：封面图为后加字段
+            db.run('ALTER TABLE articles ADD COLUMN cover_image TEXT DEFAULT NULL', [], () => {});
+
+            db.run(`
+                CREATE TABLE IF NOT EXISTS daily_posts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    caption TEXT NOT NULL DEFAULT '',
+                    image_data TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+
+            db.run(`
+                CREATE TABLE IF NOT EXISTS daily_albums (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT NOT NULL,
+                    description TEXT DEFAULT '',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+            // 兼容旧库：照片归属相册为后加字段；旧照片归入默认相册
+            db.run('ALTER TABLE daily_posts ADD COLUMN album_id INTEGER DEFAULT NULL', [], () => {});
+            db.get('SELECT COUNT(*) AS count FROM daily_posts WHERE album_id IS NULL', [], (err, row) => {
+                if (err || !row || !row.count) return;
+                db.get('SELECT id FROM daily_albums ORDER BY id ASC LIMIT 1', [], (albumErr, album) => {
+                    if (albumErr) return;
+                    if (album) {
+                        db.run('UPDATE daily_posts SET album_id = ? WHERE album_id IS NULL', [album.id]);
+                        return;
+                    }
+                    db.run(
+                        'INSERT INTO daily_albums (title, description) VALUES (?, ?)',
+                        ['默认相册', '历史日常照片'],
+                        function (insertErr) {
+                            if (!insertErr) {
+                                db.run('UPDATE daily_posts SET album_id = ? WHERE album_id IS NULL', [this.lastID]);
+                            }
+                        }
+                    );
+                });
+            });
+
+            db.run(`
+                CREATE TABLE IF NOT EXISTS tools (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    category TEXT NOT NULL DEFAULT '',
+                    version TEXT DEFAULT '',
+                    size TEXT DEFAULT '',
+                    description TEXT DEFAULT '',
+                    glyph TEXT DEFAULT '',
+                    tone TEXT DEFAULT 'blue',
+                    download_url TEXT DEFAULT '',
+                    pan_url TEXT DEFAULT '',
+                    pan_code TEXT DEFAULT '',
+                    source TEXT DEFAULT '',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    sort_order INTEGER DEFAULT 0
+                )
+            `);
+
+            db.get('SELECT COUNT(*) AS count FROM tools', [], (err, row) => {
+                if (err || !row || row.count > 0) return;
+                try {
+                    const parsed = JSON.parse(fs.readFileSync(TOOLS_DATA_FILE, 'utf8'));
+                    const items = Array.isArray(parsed.tools) ? parsed.tools : [];
+                    items.forEach((tool, index) => {
+                        db.run(
+                            'INSERT INTO tools (name, category, version, size, description, glyph, tone, download_url, pan_url, pan_code, source, updated_at, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                            [
+                                validation.trimmed(tool.name, 120),
+                                validation.trimmed(tool.category, 40),
+                                validation.trimmed(tool.version, 40),
+                                validation.trimmed(tool.size, 40),
+                                validation.trimmed(tool.description, 600),
+                                validation.trimmed(tool.glyph, 4),
+                                validation.trimmed(tool.tone, 20) || 'blue',
+                                validation.trimmed(tool.downloadUrl, 2048),
+                                validation.trimmed(tool.panUrl, 2048),
+                                validation.trimmed(tool.panCode, 40),
+                                validation.trimmed(tool.source, 40),
+                                validation.trimmed(tool.updatedAt, 40) || new Date().toISOString().slice(0, 10),
+                                index
+                            ]
+                        );
+                    });
+                } catch (error) {
+                    console.warn('[tools] seed skipped:', error.message);
+                }
+            });
 
             db.run(`
                 CREATE TABLE IF NOT EXISTS admin_audit_logs (
@@ -656,19 +994,40 @@ function csvEscape(value) {
 
 // 处理留言提交
 app.post('/api/messages', (req, res) => {
-    const { name, email, message, subject } = req.body;
+    const limited = publicRateLimit(req, 'message', 12, 10 * 60 * 1000);
+    if (!limited.allowed) return rejectRateLimited(res, limited);
+
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ error: '请求格式不正确' });
+    }
+    const name = validation.trimmed(req.body.name, 80);
+    const email = validation.trimmed(req.body.email, 200);
+    const message = validation.trimmed(req.body.message, 2000);
+    const subject = validation.trimmed(req.body.subject, 200);
+
     if (!name || !email || !message) {
-        return res.status(400).json({ error: 'All fields are required' });
+        return res.status(400).json({ error: '请完整填写称呼、邮箱和留言内容' });
+    }
+    if (!validation.isEmail(email)) {
+        return res.status(400).json({ error: '邮箱格式不正确' });
+    }
+
+    const verdict = moderation.checkMessage({ name, message });
+    if (!verdict.ok) {
+        return res.status(400).json({
+            error: '留言包含不当内容或垃圾信息，请修改后重试',
+            code: 'MESSAGE_REJECTED'
+        });
     }
 
     db.run(
         'INSERT INTO messages (name, email, subject, message) VALUES (?, ?, ?, ?)',
-        [name, email, subject || '', message],
+        [name, email, subject, message],
         function(err) {
             if (err) {
                 console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
             }
-            res.status(201).json({ id: this.lastID, name, email, subject: subject || '', message });
+            res.status(201).json({ id: this.lastID, name, email, subject, message, moderation: 'auto-passed' });
         }
     );
 });
@@ -676,24 +1035,27 @@ app.post('/api/messages', (req, res) => {
 // 处理“联系我”页面提交（带 subject 主题字段）
 // 流程：先落库 → 再尝试 SMTP 通知站长 → 如实告知前端是否真的发出去了
 app.post('/api/contact', (req, res) => {
-    const body = req.body || {};
-    const name = String(body.name || '').trim();
-    const email = String(body.email || '').trim();
-    const subject = String(body.subject || '').trim();
-    const message = String(body.message || '').trim();
+    const limited = publicRateLimit(req, 'contact', 8, 10 * 60 * 1000);
+    if (!limited.allowed) return rejectRateLimited(res, limited);
+
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ success: false, error: '请求格式不正确' });
+    }
+    const body = req.body;
+    const name = validation.trimmed(body.name, 80);
+    const email = validation.trimmed(body.email, 200);
+    const subject = validation.trimmed(body.subject, 200);
+    const message = validation.trimmed(body.message, 8000);
 
     if (!name || !email || !message) {
         return res.status(400).json({ success: false, error: '请完整填写姓名、邮箱和留言内容' });
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!validation.isEmail(email)) {
         return res.status(400).json({ success: false, error: '邮箱格式不正确' });
-    }
-    if (message.length > 8000) {
-        return res.status(400).json({ success: false, error: '留言内容过长，请控制在 8000 字以内' });
     }
 
     db.run(
-        'INSERT INTO messages (name, email, subject, message) VALUES (?, ?, ?, ?)',
+        "INSERT INTO messages (name, email, subject, message, source) VALUES (?, ?, ?, ?, 'contact')",
         [name, email, subject, message],
         async function(err) {
             if (err) {
@@ -729,24 +1091,62 @@ app.get('/api/mail-status', requireAdmin, async (req, res) => {
     res.status(200).json(status);
 });
 
+// 发送一封测试邮件（仅管理员 + CSRF）
+app.post('/api/mail-test', requireAdmin, requireAdminCsrf, async (req, res) => {
+    const status = mailer.getStatus();
+    if (!status.configured) {
+        return res.status(400).json({
+            ok: false,
+            error: 'SMTP 尚未配置，请先完成 SMTP_HOST / SMTP_USER / SMTP_PASS / CONTACT_TO',
+            reason: 'not_configured'
+        });
+    }
+
+    const result = await mailer.sendContactNotification({
+        name: 'SMTP 自检',
+        email: status.to || status.user || '',
+        subject: 'YanMo 博客 SMTP 测试',
+        message: '这是一封来自后台「邮件通道自检」的测试邮件。收到即表示 SMTP 配置可用。'
+    });
+
+    if (!result || result.ok !== true) {
+        return res.status(502).json({
+            ok: false,
+            error: (result && (result.error || result.reason)) || '发送失败',
+            reason: (result && result.reason) || 'send_failed'
+        });
+    }
+
+    res.json({
+        ok: true,
+        to: status.to || status.user || null,
+        message_id: result.messageId || null,
+        at: new Date().toISOString()
+    });
+});
+
 // 处理友链申请
 app.post('/api/links', (req, res) => {
-    const {
-        'site-name': siteName,
-        'site-url': siteUrl,
-        'site-description': siteDescription,
-        'site-avatar': siteAvatar
-    } = req.body;
-    if (!siteName || !siteUrl || !siteDescription) {
-        return res.status(400).json({ error: 'All fields are required' });
+    const limited = publicRateLimit(req, 'link-apply', 10, 60 * 60 * 1000);
+    if (!limited.allowed) return rejectRateLimited(res, limited);
+
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ error: '请求格式不正确' });
     }
 
-    if (!isValidHttpUrl(siteUrl)) {
+    const siteName = validation.trimmed(req.body['site-name'], 100);
+    const siteUrl = validation.httpUrl(req.body['site-url'], 2048);
+    const siteDescription = validation.trimmed(req.body['site-description'], 500);
+    const siteAvatar = validation.imageDataUrl(req.body['site-avatar'], 300000);
+
+    if (!siteName || !siteUrl || !siteDescription) {
+        return res.status(400).json({ error: '请完整填写站点名称、地址和简介' });
+    }
+    if (!siteUrl) {
         return res.status(400).json({ error: 'site-url must be a valid http/https url' });
     }
-
-    if (siteAvatar && String(siteAvatar).length > 1000000) {
-        return res.status(400).json({ error: '头像文件过大，请控制在 1MB 以内' });
+    if (siteAvatar === null) {
+        return res.status(400).json({ error: '头像格式无效或文件过大' });
     }
     
     db.run(
@@ -770,9 +1170,18 @@ app.get('/api/messages', (req, res) => {
         const sessionData = sid ? adminSessions.get(sid) : null;
         if (sessionData && Number(sessionData.expiresAt || 0) > Date.now()) isAdmin = true;
     } catch (_) {}
-    const sql = isAdmin
-        ? 'SELECT id, name, email, subject, message, is_read, created_at FROM messages ORDER BY created_at DESC'
-        : 'SELECT id, name, message, created_at FROM messages ORDER BY created_at DESC';
+
+    const source = String(req.query.source || '').trim();
+    let where = " WHERE COALESCE(source, 'guestbook') = 'guestbook'";
+    if (isAdmin) {
+        if (source === 'contact') where = " WHERE source = 'contact'";
+        else if (source === 'guestbook') where = " WHERE COALESCE(source, 'guestbook') = 'guestbook'";
+        else where = '';
+    }
+    const select = isAdmin
+        ? 'SELECT id, name, email, subject, message, is_read, source, created_at FROM messages'
+        : 'SELECT id, name, message, created_at FROM messages';
+    const sql = select + where + ' ORDER BY created_at DESC';
     db.all(sql, [], (err, rows) => {
         if (err) {
             console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
@@ -781,9 +1190,27 @@ app.get('/api/messages', (req, res) => {
     });
 });
 
+// 管理端邮件列表（联系表单的站内副本）
+app.get('/api/contact', requireAdmin, (req, res) => {
+    db.all(
+        "SELECT id, name, email, subject, message, is_read, created_at FROM messages WHERE source = 'contact' ORDER BY created_at DESC",
+        [],
+        (err, rows) => {
+            if (err) {
+                console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
+            }
+            res.json(rows || []);
+        }
+    );
+});
+
 // 标记留言为已读 / 未读（管理员）
 app.patch('/api/messages/:id', requireAdmin, requireAdminCsrf, (req, res) => {
-    const { id } = req.params;
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Message not found' });
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ error: '请求格式不正确' });
+    }
     const { is_read } = req.body;
     if (typeof is_read !== 'boolean' && !['true', 'false', 0, 1, '0', '1'].includes(is_read)) {
         return res.status(400).json({ error: 'invalid is_read' });
@@ -806,7 +1233,8 @@ app.get('/api/links', (req, res) => {
     db.all(
         `SELECT id, site_name, site_url, site_description, site_avatar,
                 category, is_online, last_checked,
-                latest_post_title, latest_post_url, created_at
+                latest_post_title, latest_post_url, created_at,
+                'approved' AS status
          FROM links WHERE status = 'approved' ORDER BY created_at DESC`,
         [],
         (err, rows) => {
@@ -818,9 +1246,99 @@ app.get('/api/links', (req, res) => {
     );
 });
 
+// 管理端获取全部友链（含待审核 / 已拒绝）
+app.get('/api/admin/links', requireAdmin, (req, res) => {
+    db.all('SELECT * FROM links ORDER BY created_at DESC', [], (err, rows) => {
+        if (err) {
+            console.error('[500]', err.message);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        res.json(rows || []);
+    });
+});
+
+// 访客统计（仅管理员）
+app.get('/api/admin/visitors', requireAdmin, (req, res) => {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const pageSize = Math.min(50, Math.max(1, parseInt(req.query.page_size, 10) || 10));
+    const ip = validation.trimmed(req.query.ip, 100);
+    const region = validation.trimmed(req.query.region, 100);
+
+    const filters = [];
+    const params = [];
+    if (ip) {
+        filters.push('ip LIKE ?');
+        params.push('%' + ip + '%');
+    }
+    if (region) {
+        filters.push('region LIKE ?');
+        params.push('%' + region + '%');
+    }
+    const where = filters.length ? ' WHERE ' + filters.join(' AND ') : '';
+    const todayClause = (filters.length ? where + ' AND ' : ' WHERE ') + "date(created_at, 'localtime') = date('now', 'localtime')";
+
+    db.get('SELECT COUNT(*) AS total, COUNT(DISTINCT ip) AS unique_ips FROM visitors' + where, params, (countError, countRow) => {
+        if (countError) {
+            console.error('[500]', countError.message);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        const total = Number(countRow && countRow.total) || 0;
+        const uniqueIps = Number(countRow && countRow.unique_ips) || 0;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        const currentPage = Math.min(page, totalPages);
+        const offset = (currentPage - 1) * pageSize;
+
+        db.all(
+            'SELECT id, ip, region, path, user_agent, referrer, created_at FROM visitors' + where + ' ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?',
+            params.concat([pageSize, offset]),
+            (listError, rows) => {
+                if (listError) {
+                    console.error('[500]', listError.message);
+                    return res.status(500).json({ error: 'Internal server error' });
+                }
+                db.get(
+                    'SELECT COUNT(*) AS today_total, COUNT(DISTINCT ip) AS today_unique FROM visitors' + todayClause,
+                    params,
+                    (todayError, todayRow) => {
+                        if (todayError) {
+                            console.error('[500]', todayError.message);
+                            return res.status(500).json({ error: 'Internal server error' });
+                        }
+                        db.all(
+                            'SELECT region, COUNT(*) AS count FROM visitors GROUP BY region ORDER BY count DESC, region ASC LIMIT 8',
+                            [],
+                            (regionError, regionRows) => {
+                                if (regionError) {
+                                    console.error('[500]', regionError.message);
+                                    return res.status(500).json({ error: 'Internal server error' });
+                                }
+                                res.json({
+                                    page: currentPage,
+                                    page_size: pageSize,
+                                    total: total,
+                                    total_pages: totalPages,
+                                    unique_ips: uniqueIps,
+                                    today_total: Number(todayRow && todayRow.today_total) || 0,
+                                    today_unique: Number(todayRow && todayRow.today_unique) || 0,
+                                    items: rows || [],
+                                    top_regions: regionRows || []
+                                });
+                            }
+                        );
+                    }
+                );
+            }
+        );
+    });
+});
+
 // 审核友链
 app.put('/api/links/:id', requireAdmin, requireAdminCsrf, (req, res) => {
-    const { id } = req.params;
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Link not found' });
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ error: '请求格式不正确' });
+    }
     const { status, category } = req.body;
 
     if (!['pending', 'approved', 'rejected'].includes(String(status || ''))) {
@@ -869,7 +1387,8 @@ app.put('/api/links/:id', requireAdmin, requireAdminCsrf, (req, res) => {
 
 // 删除留言
 app.delete('/api/messages/:id', requireAdmin, requireAdminCsrf, (req, res) => {
-    const { id } = req.params;
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Message not found' });
     
     db.run(
         'DELETE FROM messages WHERE id = ?',
@@ -892,7 +1411,8 @@ app.delete('/api/messages/:id', requireAdmin, requireAdminCsrf, (req, res) => {
 
 // 删除友链
 app.delete('/api/links/:id', requireAdmin, requireAdminCsrf, (req, res) => {
-    const { id } = req.params;
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Link not found' });
     
     db.run(
         'DELETE FROM links WHERE id = ?',
@@ -915,17 +1435,29 @@ app.delete('/api/links/:id', requireAdmin, requireAdminCsrf, (req, res) => {
 
 // 获取文章列表
 app.get('/api/articles', (req, res) => {
-    db.all('SELECT * FROM articles ORDER BY created_at DESC', [], (err, rows) => {
+    const rawLimit = parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(50, rawLimit) : 0;
+    const sql = limit
+        ? 'SELECT * FROM articles ORDER BY created_at DESC LIMIT ?'
+        : 'SELECT * FROM articles ORDER BY created_at DESC';
+    db.all(sql, limit ? [limit] : [], (err, rows) => {
         if (err) {
             console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
         }
-        res.json(rows || []);
+        // 列表不返回内联 Base64 图片，避免归档页/后台表格被大图拖慢；
+        // 单篇文章接口仍返回完整正文。
+        const safeRows = (rows || []).map((row) => ({
+            ...row,
+            content: String(row.content || '').replace(/!\[([^\]]*)\]\(data:image\/[^)]+\)/gi, '![$1](pasted-image)')
+        }));
+        res.json(safeRows);
     });
 });
 
 // 获取单篇文章
 app.get('/api/articles/:id', (req, res) => {
-    const { id } = req.params;
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Article not found' });
     
     db.get('SELECT * FROM articles WHERE id = ?', [id], (err, row) => {
         if (err) {
@@ -938,17 +1470,30 @@ app.get('/api/articles/:id', (req, res) => {
     });
 });
 
+function normalizeArticleCover(value) {
+    return validation.imageDataUrl(value, ARTICLE_COVER_MAX_BYTES);
+}
+
 // 创建文章
 app.post('/api/articles', requireAdmin, requireAdminCsrf, (req, res) => {
-    const { title, content, category } = req.body;
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ error: '请求格式不正确' });
+    }
+    const title = validation.trimmed(req.body.title, 200);
+    const content = validation.text(req.body.content, 1500000).trim();
+    const category = validation.trimmed(req.body.category, 80);
+    const coverImage = normalizeArticleCover(req.body.cover_image);
+    if (coverImage === null) {
+        return res.status(400).json({ error: '封面图格式无效或体积过大' });
+    }
     
     if (!title || !content || !category) {
         return res.status(400).json({ error: 'Title, content and category are required' });
     }
     
     db.run(
-        'INSERT INTO articles (title, content, category) VALUES (?, ?, ?)',
-        [title, content, category],
+        'INSERT INTO articles (title, content, category, cover_image) VALUES (?, ?, ?, ?)',
+        [title, content, category, coverImage],
         function(err) {
             if (err) {
                 console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
@@ -960,23 +1505,33 @@ app.post('/api/articles', requireAdmin, requireAdminCsrf, (req, res) => {
                 clientIp: getClientIdentifier(req),
                 detail: `article_id=${this.lastID}`
             });
-            res.status(201).json({ id: this.lastID, title, content, category });
+            res.status(201).json({ id: this.lastID, title, content, category, cover_image: coverImage });
         }
     );
 });
 
 // 更新文章
 app.put('/api/articles/:id', requireAdmin, requireAdminCsrf, (req, res) => {
-    const { id } = req.params;
-    const { title, content, category } = req.body;
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Article not found' });
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ error: '请求格式不正确' });
+    }
+    const title = validation.trimmed(req.body.title, 200);
+    const content = validation.text(req.body.content, 1500000).trim();
+    const category = validation.trimmed(req.body.category, 80);
+    const coverImage = normalizeArticleCover(req.body.cover_image);
+    if (coverImage === null) {
+        return res.status(400).json({ error: '封面图格式无效或体积过大' });
+    }
     
     if (!title || !content || !category) {
         return res.status(400).json({ error: 'Title, content and category are required' });
     }
     
     db.run(
-        'UPDATE articles SET title = ?, content = ?, category = ? WHERE id = ?',
-        [title, content, category, id],
+        'UPDATE articles SET title = ?, content = ?, category = ?, cover_image = ? WHERE id = ?',
+        [title, content, category, coverImage, id],
         function(err) {
             if (err) {
                 console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
@@ -988,14 +1543,15 @@ app.put('/api/articles/:id', requireAdmin, requireAdminCsrf, (req, res) => {
                 clientIp: getClientIdentifier(req),
                 detail: `article_id=${id}`
             });
-            res.json({ id, title, content, category });
+            res.json({ id, title, content, category, cover_image: coverImage });
         }
     );
 });
 
 // 删除文章
 app.delete('/api/articles/:id', requireAdmin, requireAdminCsrf, (req, res) => {
-    const { id } = req.params;
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Article not found' });
     
     db.run('DELETE FROM articles WHERE id = ?', [id], function(err) {
         if (err) {
@@ -1007,6 +1563,479 @@ app.delete('/api/articles/:id', requireAdmin, requireAdminCsrf, (req, res) => {
             username: req.adminSession.username,
             clientIp: getClientIdentifier(req),
             detail: `article_id=${id}`
+        });
+        res.json({ id, deleted: true });
+    });
+});
+
+// ── 日常相册集 ─────────────────────────────────────────────────────────
+const ALBUM_TITLE_MAX = 80;
+const ALBUM_DESC_MAX = 600;
+
+function resolveAlbumId(rawAlbumId, callback) {
+    const albumId = validation.parseId(rawAlbumId);
+    if (albumId) {
+        db.get('SELECT id FROM daily_albums WHERE id = ?', [albumId], (err, row) => {
+            if (err) return callback(err);
+            callback(null, row ? albumId : null);
+        });
+        return;
+    }
+
+    // 兼容旧客户端：没有 album_id 时放入第一个相册；没有相册则建默认相册。
+    db.get('SELECT id FROM daily_albums ORDER BY id ASC LIMIT 1', [], (err, row) => {
+        if (err) return callback(err);
+        if (row) return callback(null, row.id);
+        db.run(
+            'INSERT INTO daily_albums (title, description) VALUES (?, ?)',
+            ['默认相册', '未分类的日常照片'],
+            function (insertErr) {
+                if (insertErr) return callback(insertErr);
+                callback(null, this.lastID);
+            }
+        );
+    });
+}
+
+app.get('/api/albums', (req, res) => {
+    db.all(
+        `SELECT a.id, a.title, a.description, a.created_at,
+            (SELECT COUNT(*) FROM daily_posts p WHERE p.album_id = a.id) AS photo_count,
+            (SELECT p.image_data FROM daily_posts p WHERE p.album_id = a.id ORDER BY p.created_at DESC, p.id DESC LIMIT 1) AS cover_image
+         FROM daily_albums a
+         ORDER BY a.created_at DESC, a.id DESC`,
+        [],
+        (err, rows) => {
+            if (err) {
+                console.error('[500]', err.message);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+            res.json(rows || []);
+        }
+    );
+});
+
+app.get('/api/albums/:id', (req, res) => {
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Album not found' });
+
+    db.get(
+        `SELECT a.id, a.title, a.description, a.created_at,
+            (SELECT COUNT(*) FROM daily_posts p WHERE p.album_id = a.id) AS photo_count
+         FROM daily_albums a WHERE a.id = ?`,
+        [id],
+        (err, album) => {
+            if (err) {
+                console.error('[500]', err.message);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+            if (!album) return res.status(404).json({ error: 'Album not found' });
+
+            db.all(
+                'SELECT id, album_id, caption, image_data, created_at FROM daily_posts WHERE album_id = ? ORDER BY created_at DESC, id DESC',
+                [id],
+                (photosErr, photos) => {
+                    if (photosErr) {
+                        console.error('[500]', photosErr.message);
+                        return res.status(500).json({ error: 'Internal server error' });
+                    }
+                    res.json({ album, photos: photos || [] });
+                }
+            );
+        }
+    );
+});
+
+app.post('/api/albums', requireAdmin, requireAdminCsrf, (req, res) => {
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ error: '请求格式不正确' });
+    }
+    const title = validation.trimmed(req.body.title, ALBUM_TITLE_MAX);
+    if (!title) return res.status(400).json({ error: '相册名称不能为空' });
+    const description = validation.trimmed(req.body.description, ALBUM_DESC_MAX);
+
+    db.run(
+        'INSERT INTO daily_albums (title, description) VALUES (?, ?)',
+        [title, description],
+        function (err) {
+            if (err) {
+                console.error('[500]', err.message);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+            const albumId = this.lastID;
+            db.get(
+                `SELECT a.id, a.title, a.description, a.created_at, 0 AS photo_count, NULL AS cover_image
+                 FROM daily_albums a WHERE a.id = ?`,
+                [albumId],
+                (readErr, row) => {
+                    if (readErr) {
+                        console.error('[500]', readErr.message);
+                        return res.status(500).json({ error: 'Internal server error' });
+                    }
+                    writeAdminAuditLog({
+                        action: 'album_create',
+                        status: 'success',
+                        username: req.adminSession.username,
+                        clientIp: getClientIdentifier(req),
+                        detail: 'album_id=' + albumId
+                    });
+                    res.status(201).json(row);
+                }
+            );
+        }
+    );
+});
+
+app.put('/api/albums/:id', requireAdmin, requireAdminCsrf, (req, res) => {
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Album not found' });
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ error: '请求格式不正确' });
+    }
+    const title = validation.trimmed(req.body.title, ALBUM_TITLE_MAX);
+    if (!title) return res.status(400).json({ error: '相册名称不能为空' });
+    const description = validation.trimmed(req.body.description, ALBUM_DESC_MAX);
+
+    db.run(
+        'UPDATE daily_albums SET title = ?, description = ? WHERE id = ?',
+        [title, description, id],
+        function (err) {
+            if (err) {
+                console.error('[500]', err.message);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+            if (!this.changes) return res.status(404).json({ error: 'Album not found' });
+            writeAdminAuditLog({
+                action: 'album_update',
+                status: 'success',
+                username: req.adminSession.username,
+                clientIp: getClientIdentifier(req),
+                detail: 'album_id=' + id
+            });
+            res.json({ id, title, description });
+        }
+    );
+});
+
+app.delete('/api/albums/:id', requireAdmin, requireAdminCsrf, (req, res) => {
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Album not found' });
+
+    db.get('SELECT id, title FROM daily_albums WHERE id = ?', [id], (err, album) => {
+        if (err) {
+            console.error('[500]', err.message);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        if (!album) return res.status(404).json({ error: 'Album not found' });
+
+        db.serialize(() => {
+            db.run('DELETE FROM daily_posts WHERE album_id = ?', [id]);
+            db.run('DELETE FROM daily_albums WHERE id = ?', [id], function (deleteErr) {
+                if (deleteErr) {
+                    console.error('[500]', deleteErr.message);
+                    return res.status(500).json({ error: 'Internal server error' });
+                }
+                writeAdminAuditLog({
+                    action: 'album_delete',
+                    status: 'success',
+                    username: req.adminSession.username,
+                    clientIp: getClientIdentifier(req),
+                    detail: 'album_id=' + id
+                });
+                res.json({ id, deleted: true });
+            });
+        });
+    });
+});
+
+// ── 日常照片流 ─────────────────────────────────────────────────────────
+const DAILY_IMAGE_PATTERN = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+const DAILY_IMAGE_MAX_BYTES = 300000;
+const DAILY_CAPTION_MAX = 1000;
+const ARTICLE_COVER_PATTERN = /^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+const ARTICLE_COVER_MAX_BYTES = 240000;
+
+// 获取日常列表（公开）
+app.get('/api/daily', (req, res) => {
+    const limit = validation.intInRange(req.query.limit, 12, 1, 12);
+    const offset = validation.intInRange(req.query.offset, 0, 0, 100000);
+    db.all(
+        'SELECT id, album_id, caption, image_data, created_at FROM daily_posts ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?',
+        [limit, offset],
+        (err, rows) => {
+            if (err) {
+                console.error('[500]', err.message);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+            res.json(rows || []);
+        }
+    );
+});
+
+// 发布日常（需要管理员 + CSRF）
+app.post('/api/daily', requireAdmin, requireAdminCsrf, (req, res) => {
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ error: '请求格式不正确' });
+    }
+    const caption = validation.trimmed(req.body.caption, DAILY_CAPTION_MAX);
+    const imageData = validation.imageDataUrl(req.body.image, DAILY_IMAGE_MAX_BYTES);
+
+    if (imageData === null) {
+        return res.status(400).json({ error: '图片压缩后仍然过大，请换一张更小的图片' });
+    }
+    if (!imageData) {
+        return res.status(400).json({ error: '请上传有效的图片文件' });
+    }
+
+    resolveAlbumId(req.body.album_id, (albumErr, albumId) => {
+        if (albumErr) {
+            console.error('[500]', albumErr.message);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        if (!albumId) {
+            return res.status(400).json({ error: '相册不存在，请先创建相册' });
+        }
+
+        db.run(
+            'INSERT INTO daily_posts (caption, image_data, album_id) VALUES (?, ?, ?)',
+            [caption, imageData, albumId],
+            function(err) {
+                if (err) {
+                    console.error('[500]', err.message);
+                    return res.status(500).json({ error: 'Internal server error' });
+                }
+                const dailyId = this.lastID;
+                db.get('SELECT id, album_id, caption, image_data, created_at FROM daily_posts WHERE id = ?', [dailyId], (err2, row) => {
+                    if (err2) {
+                        console.error('[500]', err2.message);
+                        return res.status(500).json({ error: 'Internal server error' });
+                    }
+                    writeAdminAuditLog({
+                        action: 'daily_create',
+                        status: 'success',
+                        username: req.adminSession.username,
+                        clientIp: getClientIdentifier(req),
+                        detail: 'daily_id=' + dailyId + ' album_id=' + albumId
+                    });
+                    res.status(201).json(row);
+                });
+            }
+        );
+    });
+});
+
+// 修改日常说明（需要管理员 + CSRF）
+app.put('/api/daily/:id', requireAdmin, requireAdminCsrf, (req, res) => {
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Daily post not found' });
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ error: '请求格式不正确' });
+    }
+    const caption = validation.trimmed(req.body.caption, DAILY_CAPTION_MAX);
+
+    db.run(
+        'UPDATE daily_posts SET caption = ? WHERE id = ?',
+        [caption, id],
+        function(err) {
+            if (err) {
+                console.error('[500]', err.message);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+            if (!this.changes) {
+                return res.status(404).json({ error: 'Daily post not found' });
+            }
+            db.get('SELECT id, album_id, caption, image_data, created_at FROM daily_posts WHERE id = ?', [id], (err2, row) => {
+                if (err2) {
+                    console.error('[500]', err2.message);
+                    return res.status(500).json({ error: 'Internal server error' });
+                }
+                writeAdminAuditLog({
+                    action: 'daily_update',
+                    status: 'success',
+                    username: req.adminSession.username,
+                    clientIp: getClientIdentifier(req),
+                    detail: 'daily_id=' + id
+                });
+                res.json(row);
+            });
+        }
+    );
+});
+
+// 删除日常（需要管理员 + CSRF）
+app.delete('/api/daily/:id', requireAdmin, requireAdminCsrf, (req, res) => {
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Daily post not found' });
+    db.run('DELETE FROM daily_posts WHERE id = ?', [id], function(err) {
+        if (err) {
+            console.error('[500]', err.message);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        if (!this.changes) {
+            return res.status(404).json({ error: 'Daily post not found' });
+        }
+        writeAdminAuditLog({
+            action: 'daily_delete',
+            status: 'success',
+            username: req.adminSession.username,
+            clientIp: getClientIdentifier(req),
+            detail: 'daily_id=' + id
+        });
+        res.json({ id, deleted: true });
+    });
+});
+
+// 工具库
+const TOOL_TONES = ['blue', 'cyan', 'green', 'orange', 'purple', 'gray'];
+
+function mapToolRow(row) {
+    return {
+        id: row.id,
+        name: row.name,
+        category: row.category,
+        version: row.version,
+        size: row.size,
+        description: row.description,
+        glyph: row.glyph,
+        tone: row.tone,
+        downloadUrl: row.download_url,
+        panUrl: row.pan_url,
+        panCode: row.pan_code,
+        source: row.source,
+        updatedAt: row.updated_at,
+        sortOrder: row.sort_order
+    };
+}
+
+function parseToolPayload(body) {
+    if (!validation.isPlainObject(body)) return { error: '请求格式不正确' };
+
+    const name = validation.trimmed(body.name, 120);
+    const category = validation.trimmed(body.category, 40);
+    if (!name || !category) return { error: '工具名称和分类不能为空' };
+
+    const readUrl = (value, label) => {
+        const raw = validation.trimmed(value, 2048);
+        if (!raw) return '';
+        const parsed = validation.httpUrl(raw, 2048);
+        if (!parsed) return { error: label + '必须是有效的 http/https 公网地址' };
+        return parsed;
+    };
+
+    const downloadUrl = readUrl(body.downloadUrl, '官方下载地址');
+    if (downloadUrl && typeof downloadUrl === 'object') return downloadUrl;
+    const panUrl = readUrl(body.panUrl, '网盘地址');
+    if (panUrl && typeof panUrl === 'object') return panUrl;
+
+    const tone = validation.trimmed(body.tone, 20);
+    return {
+        value: {
+            name,
+            category,
+            version: validation.trimmed(body.version, 40),
+            size: validation.trimmed(body.size, 40),
+            description: validation.trimmed(body.description, 600),
+            glyph: validation.trimmed(body.glyph, 4),
+            tone: TOOL_TONES.includes(tone) ? tone : 'blue',
+            downloadUrl,
+            panUrl,
+            panCode: validation.trimmed(body.panCode, 40),
+            source: validation.trimmed(body.source, 40),
+            updatedAt: validation.trimmed(body.updatedAt, 40) || new Date().toISOString().slice(0, 10)
+        }
+    };
+}
+
+// 获取工具列表（公开）
+app.get('/api/tools', (req, res) => {
+    db.all('SELECT * FROM tools ORDER BY sort_order ASC, id ASC', [], (err, rows) => {
+        if (err) {
+            console.error('[500]', err.message);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        res.setHeader('Cache-Control', 'no-store');
+        res.json((rows || []).map(mapToolRow));
+    });
+});
+
+// 新增工具
+app.post('/api/tools', requireAdmin, requireAdminCsrf, (req, res) => {
+    const parsed = parseToolPayload(req.body);
+    if (parsed.error) return res.status(400).json({ error: parsed.error });
+    const tool = parsed.value;
+
+    db.run(
+        'INSERT INTO tools (name, category, version, size, description, glyph, tone, download_url, pan_url, pan_code, source, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [tool.name, tool.category, tool.version, tool.size, tool.description, tool.glyph, tool.tone, tool.downloadUrl, tool.panUrl, tool.panCode, tool.source, tool.updatedAt],
+        function (err) {
+            if (err) {
+                console.error('[500]', err.message);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+            writeAdminAuditLog({
+                action: 'tool_create',
+                status: 'success',
+                username: req.adminSession.username,
+                clientIp: getClientIdentifier(req),
+                detail: 'tool_id=' + this.lastID
+            });
+            db.get('SELECT * FROM tools WHERE id = ?', [this.lastID], (readErr, row) => {
+                if (readErr) return res.status(500).json({ error: 'Internal server error' });
+                res.status(201).json(mapToolRow(row));
+            });
+        }
+    );
+});
+
+// 更新工具
+app.put('/api/tools/:id', requireAdmin, requireAdminCsrf, (req, res) => {
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Tool not found' });
+    const parsed = parseToolPayload(req.body);
+    if (parsed.error) return res.status(400).json({ error: parsed.error });
+    const tool = parsed.value;
+
+    db.run(
+        'UPDATE tools SET name = ?, category = ?, version = ?, size = ?, description = ?, glyph = ?, tone = ?, download_url = ?, pan_url = ?, pan_code = ?, source = ?, updated_at = ? WHERE id = ?',
+        [tool.name, tool.category, tool.version, tool.size, tool.description, tool.glyph, tool.tone, tool.downloadUrl, tool.panUrl, tool.panCode, tool.source, tool.updatedAt, id],
+        function (err) {
+            if (err) {
+                console.error('[500]', err.message);
+                return res.status(500).json({ error: 'Internal server error' });
+            }
+            if (!this.changes) return res.status(404).json({ error: 'Tool not found' });
+            writeAdminAuditLog({
+                action: 'tool_update',
+                status: 'success',
+                username: req.adminSession.username,
+                clientIp: getClientIdentifier(req),
+                detail: 'tool_id=' + id
+            });
+            db.get('SELECT * FROM tools WHERE id = ?', [id], (readErr, row) => {
+                if (readErr) return res.status(500).json({ error: 'Internal server error' });
+                res.json(mapToolRow(row));
+            });
+        }
+    );
+});
+
+// 删除工具
+app.delete('/api/tools/:id', requireAdmin, requireAdminCsrf, (req, res) => {
+    const id = validation.parseId(req.params.id);
+    if (!id) return res.status(404).json({ error: 'Tool not found' });
+
+    db.run('DELETE FROM tools WHERE id = ?', [id], function (err) {
+        if (err) {
+            console.error('[500]', err.message);
+            return res.status(500).json({ error: 'Internal server error' });
+        }
+        if (!this.changes) return res.status(404).json({ error: 'Tool not found' });
+        writeAdminAuditLog({
+            action: 'tool_delete',
+            status: 'success',
+            username: req.adminSession.username,
+            clientIp: getClientIdentifier(req),
+            detail: 'tool_id=' + id
         });
         res.json({ id, deleted: true });
     });
@@ -1029,10 +2058,17 @@ app.get('/api/stats', (req, res) => {
                     console.error('[500]', err.message); return res.status(500).json({ error: 'Internal server error' });
                 }
                 
-                res.json({
-                    published_articles: articleCount.total || 0,
-                    total_messages: messageCount.total || 0,
-                    total_links: linkCount.total || 0
+                db.get('SELECT COUNT(*) as total FROM links WHERE status = ?', ['pending'], (pendingErr, pendingCount) => {
+                    if (pendingErr) {
+                        console.error('[500]', pendingErr.message);
+                        return res.status(500).json({ error: 'Internal server error' });
+                    }
+                    res.json({
+                        published_articles: articleCount.total || 0,
+                        total_messages: messageCount.total || 0,
+                        total_links: linkCount.total || 0,
+                        pending_links: pendingCount.total || 0
+                    });
                 });
             });
         });
@@ -1041,11 +2077,12 @@ app.get('/api/stats', (req, res) => {
 
 // 审计日志：分页 + 按动作/状态/关键词筛选（仅管理员）
 app.get('/api/admin-audit-logs', requireAdmin, (req, res) => {
-    const actionFilter = String(req.query.action || '').trim();
-    const statusFilter = String(req.query.status || '').trim();
-    const keyword = String(req.query.keyword || '').trim();
-    const page = parsePositiveInt(req.query.page, 1, 1, 100000);
-    const pageSize = parsePositiveInt(req.query.page_size, 20, 1, 100);
+    const actionFilter = validation.trimmed(req.query.action, 80);
+    let statusFilter = validation.trimmed(req.query.status, 20);
+    if (statusFilter && !['success', 'failed', 'denied', 'blocked'].includes(statusFilter)) statusFilter = '';
+    const keyword = validation.trimmed(req.query.keyword, 100);
+    const page = validation.intInRange(req.query.page, 1, 1, 100000);
+    const pageSize = validation.intInRange(req.query.page_size, 20, 1, 100);
 
     const whereClauses = [];
     const whereValues = [];
@@ -1098,9 +2135,10 @@ app.get('/api/admin-audit-logs', requireAdmin, (req, res) => {
 
 // 审计日志 CSV 导出（仅管理员，最多 1000 条，UTF-8 BOM 方便 Excel 打开）
 app.get('/api/admin-audit-logs/export', requireAdmin, (req, res) => {
-    const actionFilter = String(req.query.action || '').trim();
-    const statusFilter = String(req.query.status || '').trim();
-    const keyword = String(req.query.keyword || '').trim();
+    const actionFilter = validation.trimmed(req.query.action, 80);
+    let statusFilter = validation.trimmed(req.query.status, 20);
+    if (statusFilter && !['success', 'failed', 'denied', 'blocked'].includes(statusFilter)) statusFilter = '';
+    const keyword = validation.trimmed(req.query.keyword, 100);
 
     const whereClauses = [];
     const whereValues = [];
@@ -1145,7 +2183,10 @@ app.get('/api/admin-audit-logs/export', requireAdmin, (req, res) => {
 
 // 管理员登录
 app.post('/api/login', (req, res) => {
-    const body = req.body || {};
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ success: false, message: '请求格式不正确' });
+    }
+    const body = req.body;
     const clientId = getClientIdentifier(req);
 
     const retryAfter = checkLoginLock(clientId);
@@ -1165,8 +2206,8 @@ app.post('/api/login', (req, res) => {
         });
     }
 
-    const username = String(body.username || '').trim();
-    const password = String(body.password || '');
+    const username = validation.trimmed(body.username, MAX_LOGIN_USERNAME_LENGTH);
+    const password = String(body.password == null ? '' : body.password);
     const fieldsValid = username.length > 0
         && username.length <= MAX_LOGIN_USERNAME_LENGTH
         && password.length > 0
@@ -1235,7 +2276,10 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/change-password', requireAdmin, requireAdminCsrf, (req, res) => {
-    const body = req.body || {};
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ success: false, message: '请求格式不正确' });
+    }
+    const body = req.body;
     const { current_password: currentPassword, new_username: rawNewUsername, new_password: rawNewPassword } = body;
     const credentials = getAdminCredentials();
 
@@ -1255,8 +2299,8 @@ app.post('/api/change-password', requireAdmin, requireAdminCsrf, (req, res) => {
         return res.status(401).json({ success: false, message: 'Current password is incorrect' });
     }
 
-    const newUsername = String(rawNewUsername || '').trim();
-    const newPassword = String(rawNewPassword || '').trim();
+    const newUsername = validation.trimmed(rawNewUsername, MAX_LOGIN_USERNAME_LENGTH);
+    const newPassword = String(rawNewPassword == null ? '' : rawNewPassword).trim();
 
     if (!newUsername && !newPassword) {
         return res.status(400).json({ success: false, message: 'No updates were provided' });
@@ -1302,6 +2346,7 @@ app.post('/api/change-password', requireAdmin, requireAdminCsrf, (req, res) => {
     // 轮换 CSRF Token，避免改密前泄露的 Token 继续可用。
     const newCsrfToken = crypto.randomBytes(24).toString('hex');
     req.adminSession.csrfToken = newCsrfToken;
+    persistAdminSessions();
     writeAdminAuditLog({
         action: 'credentials_change',
         status: 'success',
@@ -1332,14 +2377,10 @@ app.post('/api/logout', requireAdmin, requireAdminCsrf, (req, res) => {
 });
 
 app.post('/api/reset-admin-credentials', requireAdmin, requireAdminCsrf, (req, res) => {
-    const remoteAddress = String(req.ip || req.socket.remoteAddress || '').toLowerCase();
-    const isLocal =
-        remoteAddress === '127.0.0.1' ||
-        remoteAddress === '::1' ||
-        remoteAddress === '::ffff:127.0.0.1' ||
-        remoteAddress.endsWith('127.0.0.1');
-
-    if (!isLocal) {
+    if (!validation.isPlainObject(req.body)) {
+        return res.status(400).json({ success: false, message: '请求格式不正确' });
+    }
+    if (!isLoopbackRequest(req)) {
         writeAdminAuditLog({
             action: 'credentials_reset',
             status: 'denied',
@@ -1377,13 +2418,7 @@ app.post('/api/reset-admin-credentials', requireAdmin, requireAdminCsrf, (req, r
 
 // RSS 探针更新接口（仅内部 poller 调用）
 app.post('/api/link-status', (req, res) => {
-    const origin = String(req.ip || req.socket.remoteAddress || '');
-    const isLocal =
-        origin === '127.0.0.1' ||
-        origin === '::1' ||
-        origin === '::ffff:127.0.0.1' ||
-        origin.endsWith('127.0.0.1');
-    if (!isLocal) {
+    if (!isLoopbackRequest(req)) {
         return res.status(403).json({ error: 'forbidden' });
     }
 
@@ -1422,7 +2457,129 @@ app.post('/api/link-status', (req, res) => {
     });
 });
 
+// ── SEO 基础文件：robots / sitemap / RSS ──────────────────────────────
+function siteBaseUrl(req) {
+    const configured = String(process.env.SITE_URL || '').trim().replace(/\/$/, '');
+    if (configured) return configured;
+    return req.protocol + '://' + req.get('host');
+}
+
+function escapeXml(value) {
+    return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
+function stripMarkdown(value) {
+    return String(value || '')
+        .replace(/```[\s\S]*?```/g, ' ')
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+        .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/[#>*_`~]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain').send(
+        'User-agent: *\n' +
+        'Allow: /\n' +
+        'Disallow: /api/\n' +
+        'Disallow: /src/pages/admin\n' +
+        'Disallow: /src/pages/admin-dashboard\n' +
+        'Sitemap: ' + siteBaseUrl(req) + '/sitemap.xml\n'
+    );
+});
+
+app.get('/sitemap.xml', (req, res) => {
+    const base = siteBaseUrl(req);
+    const staticPages = [
+        ['/src/pages/index.html', '1.0', 'weekly'],
+        ['/src/pages/articles.html', '0.9', 'weekly'],
+        ['/src/pages/daily.html', '0.7', 'weekly'],
+        ['/src/pages/about.html', '0.7', 'monthly'],
+        ['/src/pages/contact.html', '0.6', 'monthly'],
+        ['/src/pages/guestbook.html', '0.5', 'monthly'],
+        ['/src/pages/links.html', '0.5', 'monthly'],
+        ['/src/pages/link-apply.html', '0.4', 'monthly'],
+        ['/src/pages/policy.html', '0.2', 'yearly'],
+        ['/src/pages/privacy.html', '0.2', 'yearly'],
+        ['/src/pages/cookies.html', '0.2', 'yearly'],
+        ['/src/pages/version.html', '0.2', 'yearly'],
+        ['/src/pages/tools.html', '0.6', 'weekly']
+    ];
+
+    db.all('SELECT id, created_at FROM articles ORDER BY created_at DESC', [], (err, rows) => {
+        if (err) {
+            console.error('[sitemap]', err.message);
+            rows = [];
+        }
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+        staticPages.forEach(([page, priority, frequency]) => {
+            xml += '  <url><loc>' + escapeXml(base + page) + '</loc><changefreq>' + frequency + '</changefreq><priority>' + priority + '</priority></url>\n';
+        });
+        (rows || []).forEach((article) => {
+            xml += '  <url><loc>' + escapeXml(base + '/post/' + article.id) + '</loc>';
+            if (article.created_at) xml += '<lastmod>' + escapeXml(String(article.created_at).slice(0, 10)) + '</lastmod>';
+            xml += '<changefreq>monthly</changefreq><priority>0.8</priority></url>\n';
+        });
+        xml += '</urlset>\n';
+        res.type('application/xml').send(xml);
+    });
+});
+
+app.get('/rss.xml', (req, res) => {
+    const base = siteBaseUrl(req);
+    db.all('SELECT id, title, content, category, created_at FROM articles ORDER BY created_at DESC LIMIT 20', [], (err, rows) => {
+        if (err) {
+            console.error('[rss]', err.message);
+            rows = [];
+        }
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        xml += '<rss version="2.0"><channel>\n';
+        xml += '<title>YanMo Labs</title>\n';
+        xml += '<link>' + escapeXml(base) + '</link>\n';
+        xml += '<description>YanMo 的安全研究笔记：Web 渗透、漏洞复现、蓝队运营与 AI 安全。</description>\n';
+        xml += '<language>zh-CN</language>\n';
+        xml += '<lastBuildDate>' + new Date().toUTCString() + '</lastBuildDate>\n';
+        (rows || []).forEach((article) => {
+            const link = base + '/post/' + article.id;
+            const summary = stripMarkdown(article.content).slice(0, 260);
+            xml += '<item>\n';
+            xml += '<title>' + escapeXml(article.title) + '</title>\n';
+            xml += '<link>' + escapeXml(link) + '</link>\n';
+            xml += '<guid isPermaLink="true">' + escapeXml(link) + '</guid>\n';
+            if (article.created_at) xml += '<pubDate>' + new Date(article.created_at).toUTCString() + '</pubDate>\n';
+            if (article.category) xml += '<category>' + escapeXml(article.category) + '</category>\n';
+            xml += '<description>' + escapeXml(summary) + '</description>\n';
+            xml += '</item>\n';
+        });
+        xml += '</channel></rss>\n';
+        res.type('application/rss+xml').send(xml);
+    });
+});
+
+// 统一处理请求体解析错误，避免把 Express 默认 HTML 错误页暴露给前端
+app.use((err, req, res, next) => {
+    if (!err) return next();
+    if (err.type === 'entity.too.large') {
+        return res.status(413).json({ error: '请求体过大' });
+    }
+    if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
+        return res.status(400).json({ error: '请求体 JSON 格式不正确' });
+    }
+    return next(err);
+});
+
 // 启动服务器
 app.listen(port, () => {
-    rssPoller.start();
+    // 测试进程不启动外部 RSS 探测，避免测试期间访问外网/写入开发库
+    if (process.env.NODE_ENV !== 'test') {
+        rssPoller.start();
+    }
 });

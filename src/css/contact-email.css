@@ -1,0 +1,47 @@
+/* Contact email: clickable mailto + copy */
+
+.contact-email-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.contact-email-link {
+    color: var(--lm-accent);
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(var(--lm-accent-rgb), 0.38);
+    overflow-wrap: anywhere;
+}
+
+.contact-email-link:hover {
+    color: var(--lm-text);
+    border-bottom-color: var(--lm-accent);
+}
+
+.contact-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.18rem 0.46rem;
+    border: 1px solid rgba(var(--lm-accent-rgb), 0.26);
+    border-radius: 6px;
+    background: rgba(var(--lm-accent-rgb), 0.06);
+    color: var(--lm-text-dim);
+    font-family: var(--lm-mono);
+    font-size: 0.58rem;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: color 0.18s var(--lm-ease), border-color 0.18s var(--lm-ease), background 0.18s var(--lm-ease);
+}
+
+.contact-copy-btn:hover {
+    border-color: rgba(var(--lm-accent-rgb), 0.5);
+    background: rgba(var(--lm-accent-rgb), 0.12);
+    color: var(--lm-accent);
+}
+
+.contact-copy-btn.is-copied {
+    border-color: rgba(98, 232, 190, 0.45);
+    color: #62e8be;
+}

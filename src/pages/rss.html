@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+        <script src="/src/js/theme-boot.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSS 订阅 - YanMo Labs</title>
+    <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
+    <link rel="shortcut icon" href="/assets/images/site-avatar.png">
+    <meta name="description" content="订阅 YanMo Labs 的 RSS 文章源。">
+    <meta name="keywords" content="安全文章, 技术博客, 渗透测试, AI安全">
+    <link rel="stylesheet" href="/src/css/styles.css">
+    <link rel="stylesheet" href="/src/css/beautify.css">
+    <link rel="stylesheet" href="/src/css/music-box.css">
+    <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <meta name="theme-color" content="#070b14">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YanMo Labs">
+    <meta property="og:title" content="RSS 订阅 - YanMo Labs">
+    <meta property="og:description" content="订阅 YanMo Labs 的 RSS 文章源。">
+    <meta property="og:image" content="/assets/images/og-cover.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="YanMo Labs — Security Research">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="RSS 订阅 - YanMo Labs">
+    <meta name="twitter:description" content="订阅 YanMo Labs 的 RSS 文章源。">
+    <meta name="twitter:image" content="/assets/images/og-cover.png">
+    <meta name="twitter:image:alt" content="YanMo Labs — Security Research">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
+</head>
+
+<body class="articles-view taxonomy-view" data-taxonomy-view="rss">
+<header>
+        <nav>
+            <div class="logo">
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
+            </div>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="/src/pages/articles.html" class="active"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
+                    <li><button type="button" class="theme-toggle">切换到白昼模式</button></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+<main>
+        <section class="taxonomy-page rss-page reveal">
+            <div class="terminal-label">SYNDICATION // RSS // YANMO_LABS</div>
+            <h1 class="glitch-text page-title" data-text="RSS 订阅 RSS FEED"><span class="page-title-cn">RSS 订阅</span><span class="page-title-en">RSS FEED</span></h1>
+            <p class="taxonomy-lead">用任意 RSS 阅读器订阅 YanMo Labs 的最新文章。</p>
+
+            <div class="rss-subscribe">
+                <div class="rss-subscribe-copy">
+                    <span class="rss-eyebrow">// FEED SOURCE</span>
+                    <p>可以直接使用 Feedly、Inoreader、NewsBlur、Follow 或任意 RSS Reader 订阅这个源。</p>
+                    <code id="rss-url">/rss.xml</code>
+                </div>
+                <div class="rss-actions">
+                    <a href="/rss.xml" class="btn btn-ghost" target="_blank" rel="noopener">打开 XML</a>
+                    <button type="button" class="btn" id="rss-copy">复制链接</button>
+                </div>
+            </div>
+
+            <div class="rss-links">
+                <a href="/rss.xml" data-rss-service="feedly">Feedly</a>
+                <a href="/rss.xml" data-rss-service="inoreader">Inoreader</a>
+                <a href="/rss.xml" data-rss-service="newsblur">NewsBlur</a>
+                <a href="/rss.xml" data-rss-service="follow">Follow</a>
+            </div>
+
+            <div class="rss-feed-head"><h2>最新文章</h2><span>LATEST POSTS</span></div>
+            <div class="rss-feed" id="rss-feed">正在接入文章流…</div>
+        </section>
+</main>
+
+<footer>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>YanMo Labs</h3>
+                <p>信息安全专家 | 渗透测试 | 人工智能</p>
+                <p>—— 技术改变未来，代码创造世界 ——</p>
+            </div>
+            <div class="footer-social">
+                <h4>联系我 | Contact Me</h4>
+                <div class="social-links">
+                    <a href="#" class="social-link">QQ<span class="qq-tooltip">3351708803</span></a>
+                    <a href="#" class="social-link">Bilibili</a>
+                    <a href="https://github.com/YanMo5" target="_blank" rel="noopener noreferrer" class="social-link">GitHub</a>
+                    <a href="#" class="social-link">Email<span class="qq-tooltip">3351708803@qq.com</span></a>
+                    <a href="#" class="social-link">Discord</a>
+                </div>
+            </div>
+            <div class="footer-links">
+                <h4>友情链接</h4>
+                <a href="/src/pages/link-apply.html" class="footer-link">前往友链申请页面</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <p>YanMo Labs © 2026 · Built with curiosity.</p>
+        </div>
+    </footer>
+
+<script src="/src/js/local-api.js"></script>
+    <script src="/src/js/date-utils.js"></script>
+    <script src="/src/js/palette-manager.js"></script>
+    <script src="/src/js/music-box.js" defer></script>
+    <script src="/src/js/ux-enhancements.js"></script>
+    
+<script src="/src/js/taxonomy.js" defer></script>
+</body>
+</html>

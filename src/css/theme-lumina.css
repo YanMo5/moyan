@@ -14,8 +14,8 @@
    一套赛博令牌（--font-heading / --theme-secondary / --p-secondary …），
    :root 的优先级高于 html，只有 html:root 才能稳定覆盖它们。 */
 html:root {
-    --lm-sans: 'Inter', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
-    --lm-mono: 'Roboto Mono', 'JetBrains Mono', ui-monospace, Consolas, 'Courier New', monospace;
+    --lm-sans: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', sans-serif;
+    --lm-mono: ui-monospace, 'Cascadia Code', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
 
     --lm-radius-xs: 6px;
     --lm-radius-sm: 10px;
@@ -31,10 +31,10 @@ html:root {
     --lm-accent-2-rgb: 167, 139, 250;
 
     /* 表面与描边叠在用户选择的背景色之上，所以用半透明白 */
-    --lm-surface: rgba(255, 255, 255, 0.035);
+    --lm-surface: rgba(255, 255, 255, 0.06);
     --lm-surface-2: rgba(255, 255, 255, 0.065);
     --lm-surface-solid: #0f1522;
-    --lm-border: rgba(255, 255, 255, 0.09);
+    --lm-border: rgba(255, 255, 255, 0.11);
     --lm-border-strong: rgba(255, 255, 255, 0.18);
 
     --lm-shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.5);
@@ -45,8 +45,8 @@ html:root {
 
     /* 文本由调色板的 --text-color 派生，颜色选择器依旧生效 */
     --lm-text: var(--text-color, #e8eef9);
-    --lm-text-dim: rgba(var(--text-color-r, 232), var(--text-color-g, 238), var(--text-color-b, 249), 0.66);
-    --lm-text-faint: rgba(var(--text-color-r, 232), var(--text-color-g, 238), var(--text-color-b, 249), 0.44);
+    --lm-text-dim: rgba(var(--text-color-r, 232), var(--text-color-g, 238), var(--text-color-b, 249), 0.72);
+    --lm-text-faint: rgba(var(--text-color-r, 232), var(--text-color-g, 238), var(--text-color-b, 249), 0.54);
 
     /* 旧 token 重映射：让遗留 CSS 自动跟随新语言 */
     --font-heading: var(--lm-sans);

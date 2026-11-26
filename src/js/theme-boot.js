@@ -23,6 +23,9 @@
         font: 'yanmo.site.font-mode'
     };
 
+    /* 页面间交接标记：点击站内链接时写入，新页面在首屏绘制前读取 */
+    var NAV_TRANSITION_KEY = 'yanmo.site.nav-transition';
+
     var PRESETS = {
         lumina: {
             label: '现代',
@@ -306,13 +309,15 @@
         var skin = state.skin;
         var scheme = state.scheme;
 
-        root.setAttribute('data-skin', skin);
+        // 两种皮肤共用 Lumina 布局：data-skin 固定为 lumina，让 aurora.css 生效；
+        // 赛博差异由 data-visual=cyber 单独提供，避免回退到旧版错位骨架。
+        root.setAttribute('data-skin', 'lumina');
+        root.setAttribute('data-visual', skin === 'cyber' ? 'cyber' : 'lumina');
         root.setAttribute('data-scheme', scheme);
         root.style.colorScheme = scheme;
-        /* cyber-mode 是遗留 CSS 的结构性基类（布局/骨架依赖它），两种皮肤都保留；
-           视觉差异全部由 lumina-mode + theme-lumina.css 承担 */
+        /* cyber-mode 是遗留 CSS 的结构性基类，两种皮肤都保留。 */
         root.classList.add('cyber-mode');
-        root.classList.toggle('lumina-mode', skin === 'lumina');
+        root.classList.add('lumina-mode');
         if (document.body) document.body.classList.add('cyber-mode');
 
         applyChannels('bg-color', state.bg);
@@ -428,11 +433,39 @@
 
     /* ── 启动（在 <head> 同步执行，避免闪烁） ─────────────────────────── */
 
+    /* 默认 Lumina 使用系统字体，避免 Google Fonts 在部分网络下阻塞首屏；
+       只有切换到赛博皮肤时才按需加载复古显示字体。 */
+    function ensureCyberFonts() {
+        if (root.dataset.visual !== 'cyber' && root.dataset.skin !== 'cyber') return;
+        if (document.getElementById('yanmo-cyber-fonts')) return;
+        var fontLink = document.createElement('link');
+        fontLink.id = 'yanmo-cyber-fonts';
+        fontLink.rel = 'stylesheet';
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Press+Start+2P&display=swap';
+        document.head.appendChild(fontLink);
+    }
+
     state.skin = resolveSkin();
     state.scheme = resolveScheme();
     state.fontMode = resolveFontMode();
     adoptColors();
     apply('boot');
+    ensureCyberFonts();
+    document.addEventListener('yanmo:themechange', ensureCyberFonts);
+
+    /* 上一页点击了站内链接：在新页面首屏前显示同风格的交接遮罩 */
+    var navPending = false;
+    try {
+        navPending = window.sessionStorage.getItem(NAV_TRANSITION_KEY) === '1';
+        if (navPending) window.sessionStorage.removeItem(NAV_TRANSITION_KEY);
+    } catch (e) {
+        navPending = false;
+    }
+    // 小转场只使用上一页顶部的小胶囊；不再给新页面加全屏交接遮罩。
+    // navPending 仍需读取并清理，避免旧的 sessionStorage 标记残留。
+    if (navPending) {
+        root.classList.remove('ym-entering', 'ym-enter-done');
+    }
 
     function onReady() {
         syncFontMode(state.fontMode);

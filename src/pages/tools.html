@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <script src="/src/js/theme-boot.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工具库 - YanMo Labs</title>
+    <link rel="icon" href="/assets/images/site-avatar.png" type="image/png">
+    <link rel="shortcut icon" href="/assets/images/site-avatar.png">
+    <link rel="stylesheet" href="/src/css/styles.css">
+    <link rel="stylesheet" href="/src/css/beautify.css">
+    <link rel="stylesheet" href="/src/css/music-box.css">
+    <link id="skin-stylesheet" rel="stylesheet" href="/src/css/theme-lumina.css">
+    <link rel="stylesheet" href="/src/css/aurora.css">
+    <link rel="stylesheet" href="/src/css/tools.css">
+    <meta name="description" content="YanMo Labs 工具库：网络、安全、开发与实用工具集中索引，下载跳转网盘或官方来源。">
+    <meta name="theme-color" content="#070b14">
+    <meta name="author" content="YanMo">
+    <link rel="alternate" type="application/rss+xml" title="YanMo Labs RSS" href="/rss.xml">
+</head>
+<body class="tools-view">
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="/src/pages/index.html" class="glitch-text" data-text="YanMo">YanMo</a>
+            </div>
+            <button type="button" class="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="nav-container">
+                <ul class="nav-links">
+                    <li><a href="/src/pages/articles.html"><span class="shimmer"></span>文章</a></li>
+                    <li><a href="/src/pages/links.html"><span class="shimmer"></span>友链</a></li>
+                    <li><a href="/src/pages/daily.html" class="active"><span class="shimmer"></span>我的</a></li>
+                    <li><a href="/src/pages/about.html"><span class="shimmer"></span>关于</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <button type="button" class="theme-toggle">切换到白昼模式</button>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <script src="/src/js/palette-manager.js"></script>
+    <script src="/src/js/music-box.js" defer></script>
+    <script src="/src/js/ux-enhancements.js"></script>
+    <script src="/src/js/tools-page.js" defer></script>
+
+    <main>
+        <section class="tools-page">
+            <div class="terminal-label">MY_LAB // TOOLBOX // NETDISK_READY</div>
+            <h1 class="glitch-text page-title" data-text="工具库 TOOL LIBRARY">
+                <span class="page-title-cn">工具库</span>
+                <span class="page-title-en">TOOL LIBRARY</span>
+            </h1>
+            <p class="tools-description">把常用工具集中在一个地方。文件存放在网盘，点击下载会打开对应的分享链接；提取码可一键复制。</p>
+
+            <div class="tools-notice" id="tool-upload">
+                <span class="tools-notice-mark" aria-hidden="true">↥</span>
+                <div>
+                    <strong>工具文件不直接存放在本站</strong>
+                    <p>下载按钮跳转到网盘或官方来源。链接失效、需要补充工具，欢迎<a href="/src/pages/message-apply.html">留言</a>。</p>
+                </div>
+            </div>
+
+            <div class="tools-stats" aria-label="工具库统计">
+                <span><strong id="tool-count">--</strong> TOOLS</span>
+                <span><strong id="category-count">--</strong> CATEGORIES</span>
+                <span><strong>NETDISK</strong> SOURCE</span>
+            </div>
+
+            <div class="tools-toolbar">
+                <label class="tools-search" for="tool-search">
+                    <span aria-hidden="true">⌕</span>
+                    <input id="tool-search" type="search" placeholder="搜索工具名称、描述或分类…" autocomplete="off">
+                </label>
+                <div class="tools-categories" id="tool-categories" role="group" aria-label="工具分类"></div>
+            </div>
+
+            <div class="tools-grid" id="tools-grid" aria-live="polite" aria-busy="true">
+                <div class="tools-loading">[ LOADING_TOOLS... ]</div>
+            </div>
+            <div class="tools-empty" id="tools-empty" hidden>
+                <span aria-hidden="true">◌</span>
+                <h2>没有找到匹配的工具</h2>
+                <p>换一个关键词，或切换到「全部」分类再看看。</p>
+            </div>
+            <p class="tools-footnote">数据源：<code>src/data/tools.json</code> · 示例链接可在配置中替换为你的网盘分享地址。</p>
+        </section>
+    </main>
+
+    <footer></footer>
+</body>
+</html>

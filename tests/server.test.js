@@ -243,6 +243,15 @@ describe('POST /api/links', () => {
         });
         expect(res.status).toBe(400);
     });
+
+    it('public links expose approved status and hide pending entries', async () => {
+        const res = await fetch(`${BASE}/api/links`);
+        expect(res.status).toBe(200);
+        const links = await res.json();
+        expect(Array.isArray(links)).toBe(true);
+        expect(links.every((item) => item.status === 'approved')).toBe(true);
+        expect(links.some((item) => item.site_name === 'Test Site')).toBe(false);
+    });
 });
 
 describe('Admin login + protected routes', () => {
@@ -378,6 +387,14 @@ describe('Admin login + protected routes', () => {
         expect(putRes.status).toBe(200);
         const body = await putRes.json();
         expect(body.status).toBe('approved');
+
+        // 公开友链接口必须带上 status，且已通过项要能被 /links 页面识别。
+        const publicRes = await fetch(`${BASE}/api/links`);
+        expect(publicRes.status).toBe(200);
+        const publicLinks = await publicRes.json();
+        const approved = publicLinks.find((item) => item.id === created.id);
+        expect(approved).toBeDefined();
+        expect(approved.status).toBe('approved');
     });
 });
 
@@ -532,5 +549,127 @@ describe('POST /api/contact — 留言入库 + 邮件状态回传', () => {
         expect(status.configured).toBe(false);
         expect(Array.isArray(status.hints)).toBe(true);
         expect(status.hints.length).toBeGreaterThan(0);
+    });
+});
+
+
+// ── Tool library admin CRUD ───────────────────────────────────────────────
+describe('Tool library / admin tools', () => {
+    let admin;
+
+    beforeAll(async () => {
+        admin = await login();
+        expect(admin.status).toBe(200);
+        expect(admin.csrf).toBeTruthy();
+    });
+
+    it('lists seeded tools publicly', async () => {
+        const res = await fetch(BASE + '/api/tools');
+        expect(res.status).toBe(200);
+        const tools = await res.json();
+        expect(Array.isArray(tools)).toBe(true);
+        expect(tools.length).toBeGreaterThan(0);
+        expect(tools[0]).toHaveProperty('name');
+    });
+
+    it('requires an admin session and CSRF for writes', async () => {
+        const anonymous = await fetch(BASE + '/api/tools', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: 'No Auth', category: '网络安全' })
+        });
+        expect(anonymous.status).toBe(401);
+
+        const withoutCsrf = await fetch(BASE + '/api/tools', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', cookie: admin.cookie },
+            body: JSON.stringify({ name: 'No CSRF', category: '网络安全' })
+        });
+        expect(withoutCsrf.status).toBe(403);
+    });
+
+    it('creates, updates and deletes a tool', async () => {
+        const headers = {
+            'Content-Type': 'application/json',
+            cookie: admin.cookie,
+            'X-CSRF-Token': admin.csrf
+        };
+        const name = 'Audit Test Tool ' + Date.now();
+
+        const created = await fetch(BASE + '/api/tools', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                name,
+                category: '网络安全',
+                version: '1.0',
+                description: '自动化测试工具',
+                glyph: 'AT',
+                tone: 'blue',
+                panUrl: 'https://example.com/tool',
+                panCode: 'abcd',
+                source: '测试'
+            })
+        });
+        expect(created.status).toBe(201);
+        const tool = await created.json();
+        expect(tool.name).toBe(name);
+        expect(tool.panUrl).toBe('https://example.com/tool');
+
+        const list = await fetch(BASE + '/api/tools');
+        const tools = await list.json();
+        expect(tools.some((item) => item.id === tool.id)).toBe(true);
+
+        const updated = await fetch(BASE + '/api/tools/' + tool.id, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify({
+                name,
+                category: '网络安全',
+                version: '1.1',
+                description: '已更新',
+                glyph: 'AT',
+                tone: 'green',
+                downloadUrl: 'https://example.com/official'
+            })
+        });
+        expect(updated.status).toBe(200);
+        const updatedTool = await updated.json();
+        expect(updatedTool.version).toBe('1.1');
+        expect(updatedTool.tone).toBe('green');
+
+        const deleted = await fetch(BASE + '/api/tools/' + tool.id, {
+            method: 'DELETE',
+            headers
+        });
+        expect(deleted.status).toBe(200);
+
+        const after = await (await fetch(BASE + '/api/tools')).json();
+        expect(after.some((item) => item.id === tool.id)).toBe(false);
+    });
+
+    it('rejects invalid tool URLs', async () => {
+        const res = await fetch(BASE + '/api/tools', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                cookie: admin.cookie,
+                'X-CSRF-Token': admin.csrf
+            },
+            body: JSON.stringify({
+                name: 'Bad URL',
+                category: '网络安全',
+                panUrl: 'javascript:alert(1)'
+            })
+        });
+        expect(res.status).toBe(400);
+    });
+
+    it('ships the admin tool manager in the dashboard HTML', async () => {
+        const res = await fetch(BASE + '/src/pages/admin-dashboard.html');
+        expect(res.status).toBe(200);
+        const html = await res.text();
+        expect(html).toContain('id="tools"');
+        expect(html).toContain('id="tool-form"');
     });
 });
