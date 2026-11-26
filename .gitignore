@@ -81,3 +81,11 @@ pip-*/
 tmp*
 %SystemDrive%/
 undefined/
+
+# Docs screenshots / generated backups (not part of the site build)
+docs/*.png
+docs/*.gif
+docs/*.jpg
+docs/*.pre-merge.css
+docs/*.pre-upgrade.json
+docs/AUDIT-2026-11-25.md
